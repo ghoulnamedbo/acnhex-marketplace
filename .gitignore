@@ -1,0 +1,12 @@
+# Lock files
+*~lock~
+
+# Reference images (not needed for deployment)
+acnhex_reference.jpg
+
+# Claude Code settings
+.claude/
+
+# OS files
+.DS_Store
+Thumbs.db
