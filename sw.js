@@ -1,23 +1,23 @@
-const CACHE_NAME = 'acnhex-v1';
+const CACHE_NAME = 'acnhex-v2';
 const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/css/styles.css',
-  '/js/app.js',
-  '/js/data.js',
-  '/js/storage.js',
-  '/database.json',
-  '/Assets/logo_header.png',
-  '/Assets/bag.png',
-  '/Assets/Bag_ding.png',
-  '/Assets/Add_to_bag_icon.png',
-  '/Assets/Search.png',
-  '/Assets/Filter_icon.png',
-  '/Assets/Wishlistbutton_active.png',
-  '/Assets/Wishlistbutton_unactive.png',
-  '/Assets/Bottom_dock_home_active.png',
-  '/Assets/Bottom_dock_wishlist_active.png',
-  '/Assets/Bottom_dock_settings_active.png'
+  './',
+  './index.html',
+  './css/styles.css',
+  './js/app.js',
+  './js/data.js',
+  './js/storage.js',
+  './database.json',
+  './Assets/logo_header.png',
+  './Assets/bag.png',
+  './Assets/Bag_ding.png',
+  './Assets/Add_to_bag_icon.png',
+  './Assets/Search.png',
+  './Assets/Filter_icon.png',
+  './Assets/Wishlistbutton_active.png',
+  './Assets/Wishlistbutton_unactive.png',
+  './Assets/Bottom_dock_home_active.png',
+  './Assets/Bottom_dock_wishlist_active.png',
+  './Assets/Bottom_dock_settings_active.png'
 ];
 
 // Install event - cache assets
@@ -78,7 +78,7 @@ self.addEventListener('fetch', (event) => {
       .catch(() => {
         // Return offline fallback for navigation requests
         if (event.request.mode === 'navigate') {
-          return caches.match('/index.html');
+          return caches.match('./index.html');
         }
       })
   );

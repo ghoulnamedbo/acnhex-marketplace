@@ -72,7 +72,7 @@ const App = {
 
   registerServiceWorker() {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
+      navigator.serviceWorker.register('./sw.js')
         .then(reg => console.log('Service Worker registered:', reg.scope))
         .catch(err => console.error('Service Worker registration failed:', err));
     }
@@ -242,7 +242,7 @@ const App = {
         <!-- Search and Filter -->
         <div class="search-container">
           <div class="search-bar">
-            <img src="/Assets/Search.png" alt="Search">
+            <img src="./Assets/Search.png" alt="Search">
             <input
               type="text"
               id="search-input"
@@ -253,7 +253,7 @@ const App = {
             >
           </div>
           <button id="filter-btn" class="filter-btn">
-            <img src="/Assets/Filter_icon.png" alt="Filter">
+            <img src="./Assets/Filter_icon.png" alt="Filter">
             FILTER
           </button>
         </div>
@@ -405,13 +405,13 @@ const App = {
     return `
       <div class="item-card" data-item-key="${itemKey}">
         <button class="item-card-add" data-item-key="${itemKey}" title="Quick add to cart">
-          <img src="/Assets/Add_to_bag_icon.png" alt="Add">
+          <img src="./Assets/Add_to_bag_icon.png" alt="Add">
         </button>
         <button class="item-card-wishlist" data-filename="${defaultVariant.filename}" title="Add to wishlist">
-          <img src="/Assets/${isWishlisted ? 'Wishlistbutton_active' : 'Wishlistbutton_unactive'}.png" alt="Wishlist">
+          <img src="./Assets/${isWishlisted ? 'Wishlistbutton_active' : 'Wishlistbutton_unactive'}.png" alt="Wishlist">
         </button>
         <div class="item-card-image">
-          <img src="${defaultVariant.image}" alt="${item.name}" loading="lazy" onerror="this.src='/Assets/logo_header.png'">
+          <img src="${defaultVariant.image}" alt="${item.name}" loading="lazy" onerror="this.src='./Assets/logo_header.png'">
         </div>
         <div class="item-card-name" title="${item.name}">${item.name}</div>
         <div class="item-card-colors">${swatchesHtml}</div>
@@ -474,7 +474,7 @@ const App = {
 
     if (isWishlisted) {
       Storage.removeFromWishlist(filename);
-      buttonEl.querySelector('img').src = '/Assets/Wishlistbutton_unactive.png';
+      buttonEl.querySelector('img').src = './Assets/Wishlistbutton_unactive.png';
       this.showToast('Removed from wishlist');
     } else {
       const result = Data.getItemByFilename(filename);
@@ -483,7 +483,7 @@ const App = {
           name: result.item.name,
           filename: filename
         });
-        buttonEl.querySelector('img').src = '/Assets/Wishlistbutton_active.png';
+        buttonEl.querySelector('img').src = './Assets/Wishlistbutton_active.png';
         this.showToast('Added to wishlist');
       }
     }
@@ -660,7 +660,7 @@ const App = {
     if (wishlist.length === 0) {
       contentHtml = `
         <div class="empty-state">
-          <img src="/Assets/Wishlistbutton_unactive.png" alt="Empty" class="empty-state-icon">
+          <img src="./Assets/Wishlistbutton_unactive.png" alt="Empty" class="empty-state-icon">
           <div class="empty-state-title">Your wishlist is empty</div>
           <div class="empty-state-text">Tap the heart icon on items to add them here</div>
         </div>
@@ -687,13 +687,13 @@ const App = {
         return `
           <div class="item-card" data-item-key="${itemKey}">
             <button class="item-card-add" data-item-key="${itemKey}" title="Add to cart">
-              <img src="/Assets/Add_to_bag_icon.png" alt="Add">
+              <img src="./Assets/Add_to_bag_icon.png" alt="Add">
             </button>
             <button class="item-card-wishlist" data-filename="${variant.filename}" title="Remove from wishlist">
-              <img src="/Assets/Wishlistbutton_active.png" alt="Wishlist">
+              <img src="./Assets/Wishlistbutton_active.png" alt="Wishlist">
             </button>
             <div class="item-card-image">
-              <img src="${variant.image}" alt="${item.name}" loading="lazy" onerror="this.src='/Assets/logo_header.png'">
+              <img src="${variant.image}" alt="${item.name}" loading="lazy" onerror="this.src='./Assets/logo_header.png'">
             </div>
             <div class="item-card-name" title="${item.name}">${item.name}</div>
             <div class="item-card-colors">${swatchesHtml}</div>
@@ -955,7 +955,7 @@ const App = {
             <div style="width: 40px;"></div>
           </div>
           <div class="empty-state">
-            <img src="/Assets/bag.png" alt="Empty cart" class="empty-state-icon">
+            <img src="./Assets/bag.png" alt="Empty cart" class="empty-state-icon">
             <div class="empty-state-title">Your cart is empty</div>
             <div class="empty-state-text">Add items to generate your order command</div>
           </div>
@@ -966,7 +966,7 @@ const App = {
       const itemsHtml = cart.map(item => `
         <div class="cart-item" data-filename="${item.filename}">
           <div class="cart-item-image">
-            <img src="${item.image}" alt="${item.name}" onerror="this.src='/Assets/logo_header.png'">
+            <img src="${item.image}" alt="${item.name}" onerror="this.src='./Assets/logo_header.png'">
           </div>
           <div class="cart-item-info">
             <div class="cart-item-name">${item.name}</div>
@@ -1110,7 +1110,7 @@ const App = {
       const isSelected = index === this.selectedVariantIndex;
       return `
         <div class="variant-item ${isSelected ? 'selected' : ''}" data-index="${index}">
-          <img src="${variant.image}" alt="${variant.variation}" loading="lazy" onerror="this.src='/Assets/logo_header.png'">
+          <img src="${variant.image}" alt="${variant.variation}" loading="lazy" onerror="this.src='./Assets/logo_header.png'">
         </div>
       `;
     }).join('');
@@ -1157,14 +1157,14 @@ const App = {
           </button>
           <h1 class="detail-title">${item.name}</h1>
           <button id="detail-wishlist-btn" class="detail-wishlist-btn" data-filename="${selectedVariant.filename}">
-            <img src="/Assets/${isWishlisted ? 'Wishlistbutton_active' : 'Wishlistbutton_unactive'}.png" alt="Wishlist">
+            <img src="./Assets/${isWishlisted ? 'Wishlistbutton_active' : 'Wishlistbutton_unactive'}.png" alt="Wishlist">
           </button>
         </div>
 
         <!-- Main Image -->
         <div class="detail-image-container">
           <div class="detail-image">
-            <img id="detail-main-image" src="${selectedVariant.image}" alt="${item.name}" onerror="this.src='/Assets/logo_header.png'">
+            <img id="detail-main-image" src="${selectedVariant.image}" alt="${item.name}" onerror="this.src='./Assets/logo_header.png'">
           </div>
         </div>
 
@@ -1220,14 +1220,14 @@ const App = {
 
       if (isWishlisted) {
         Storage.removeFromWishlist(filename);
-        wishlistBtn.querySelector('img').src = '/Assets/Wishlistbutton_unactive.png';
+        wishlistBtn.querySelector('img').src = './Assets/Wishlistbutton_unactive.png';
         this.showToast('Removed from wishlist');
       } else {
         Storage.addToWishlist({
           name: this.currentItem.name,
           filename: filename
         });
-        wishlistBtn.querySelector('img').src = '/Assets/Wishlistbutton_active.png';
+        wishlistBtn.querySelector('img').src = './Assets/Wishlistbutton_active.png';
         this.showToast('Added to wishlist');
       }
     });

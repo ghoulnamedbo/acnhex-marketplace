@@ -12,7 +12,7 @@ const Data = {
     if (this.loaded) return this.items;
 
     try {
-      const response = await fetch('/database.json');
+      const response = await fetch('./database.json');
       this.raw = await response.json();
       this.categories = Object.keys(this.raw);
       this.processItems();
