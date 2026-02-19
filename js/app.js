@@ -168,7 +168,6 @@ async function renderCatalog() {
 function renderItemCard(item, idx) {
   const bg = data.getItemBg(idx);
   const vi = item.variantIdx ?? 0;
-  const inCart = state.cart.some(c => c.id === item.id && c.variantIdx === vi);
   const inWishlist = isInWishlist(item.id, vi);
   const cartFull = getCartTotal() >= 40;
   return `<div class="item-card" data-item="${esc(item.id)}" data-vi="${vi}">
@@ -182,8 +181,8 @@ function renderItemCard(item, idx) {
         <span class="item-variant">${esc(item.v1)}</span>
         <span class="hex-badge">${esc(item.hex)}</span>
       </div>
-      <button class="add-cart-btn ${inCart ? 'added' : ''}" data-add-cart="${esc(item.id)}" ${inCart || cartFull ? 'disabled' : ''}>
-        ${inCart ? `${ICONS.check} Added` : `${ICONS.plus} Add to Cart`}
+      <button class="add-cart-btn" data-add-cart="${esc(item.id)}" ${cartFull ? 'disabled' : ''}>
+        ${ICONS.plus} Add to Cart
       </button>
     </div>
   </div>`;
@@ -199,7 +198,6 @@ async function renderDetail() {
   const vi = state.selectedVariantIdx;
   const variant = item.variants[vi] || item.variants[0];
   const bg = data.getItemBg(0);
-  const inCart = state.cart.some(c => c.id === item.id && c.variantIdx === vi);
   const inWishlist = isInWishlist(item.id, vi);
   const cartFull = getCartTotal() >= 40;
 
@@ -259,8 +257,8 @@ async function renderDetail() {
       <button class="cta-btn-secondary" data-wishlist-toggle="${esc(item.id)}" data-wishlist-vi="${vi}">
         ${inWishlist ? '💚 Remove from Wishlist' : '💚 Add to Wishlist'}
       </button>
-      <button class="cta-btn ${inCart ? 'added' : ''}" id="detail-add-cart" ${inCart || cartFull ? 'disabled' : ''}>
-        ${inCart ? `${ICONS.check} Already in Cart` : `🛒 Add to Cart`}
+      <button class="cta-btn" id="detail-add-cart" ${cartFull ? 'disabled' : ''}>
+        🛒 Add to Cart
       </button>
     </div>
   </div>`;
@@ -271,9 +269,7 @@ function renderCart() {
   const cart = state.cart;
   const prefix = state.prefix;
   const total = getCartTotal();
-  // Expand cart entries by qty for bot command
-  const expandedHexes = cart.flatMap(c => Array((c.qty || 1)).fill(c.hex));
-  const command = expandedHexes.length > 0 ? `${prefix}order ${expandedHexes.join(', ')}` : '';
+  const hexes = cart.map(c => c.hex);
 
   return `<div class="page">
     <div class="page-header">
@@ -291,24 +287,24 @@ function renderCart() {
         <p class="empty-text">Browse the catalog to add items</p>
       </div>` : `
       <div style="padding:0 24px;display:flex;flex-direction:column;gap:12px">
-        ${cart.map(item => `
+        ${cart.map((item, idx) => `
           <div class="cart-item">
             <div class="cart-thumb" style="background:${data.getItemBg(0)}">
               ${item.img ? `<img src="${esc(item.img)}" onerror="this.outerHTML='📦'" alt="">` : '📦'}
             </div>
             <div class="cart-item-info">
-              <p class="cart-item-name">${esc(item.name)}${(item.qty || 1) > 1 ? ` <span style="color:var(--pines);font-weight:700">×${item.qty}</span>` : ''}</p>
+              <p class="cart-item-name">${esc(item.name)}</p>
               <p class="cart-item-meta">${esc(item.variant)} · <span style="color:var(--pines)">${esc(item.hex)}</span></p>
             </div>
-            <button class="remove-btn" data-remove="${esc(item.id)}|${item.variantIdx}">${ICONS.trash}</button>
+            <button class="remove-btn" data-remove-idx="${idx}">${ICONS.trash}</button>
           </div>`).join('')}
       </div>
 
       <div style="padding:28px 24px 0">
         <h4 class="label-upper" style="margin-bottom:12px">Bot Command</h4>
         <div class="code-block">
-          <span class="code-keyword">${esc(prefix)}order</span> ${expandedHexes.map((hex, i) =>
-            `<span class="code-value">${esc(hex)}</span>${i < expandedHexes.length - 1 ? '<span class="code-sep">, </span>' : ''}`
+          <span class="code-keyword">${esc(prefix)}order</span> ${hexes.map((hex, i) =>
+            `<span class="code-value">${esc(hex)}</span>${i < hexes.length - 1 ? '<span class="code-sep">, </span>' : ''}`
           ).join('')}
           <button class="copy-btn" id="copy-cmd">${ICONS.copy} Copy</button>
         </div>
@@ -350,7 +346,6 @@ async function renderWishlist() {
       <div style="padding:0 24px;display:flex;flex-direction:column;gap:12px">
         ${wishlistEntries.map((item, idx) => {
           const vi = item._vi || 0;
-          const inCart = state.cart.some(c => c.id === item.id && c.variantIdx === vi);
           return `<div class="wishlist-item" data-item="${esc(item.id)}" data-vi="${vi}">
             <div class="wishlist-thumb" style="background:${data.getItemBg(idx)}">
               ${item.img ? `<img src="${esc(item.img)}" onerror="this.outerHTML='📦'" alt="">` : '📦'}
@@ -360,8 +355,8 @@ async function renderWishlist() {
               <p style="font-size:10px;color:var(--text-secondary)">${esc(item.v1)} · ${esc(item.hex)}</p>
             </div>
             <div class="wishlist-actions">
-              <button class="wishlist-add-btn ${inCart ? 'added' : ''}" data-add-cart="${esc(item.id)}" ${inCart ? 'disabled' : ''}>
-                ${inCart ? ICONS.check : ICONS.plus}
+              <button class="wishlist-add-btn" data-add-cart="${esc(item.id)}">
+                ${ICONS.plus}
               </button>
               <button class="remove-btn" data-remove-wishlist="${esc(item.id)}" data-remove-wishlist-vi="${vi}">${ICONS.trash}</button>
             </div>
@@ -622,7 +617,6 @@ function updateDetailVariant() {
   if (!item) return;
   const vi = state.selectedVariantIdx;
   const variant = item.variants[vi] || item.variants[0];
-  const inCart = state.cart.some(c => c.id === item.id && c.variantIdx === vi);
   const inWishlist = isInWishlist(item.id, vi);
   const cartFull = getCartTotal() >= 40;
 
@@ -666,8 +660,8 @@ function updateDetailVariant() {
       <button class="cta-btn-secondary" data-wishlist-toggle="${esc(item.id)}" data-wishlist-vi="${vi}">
         ${inWishlist ? '💚 Remove from Wishlist' : '💚 Add to Wishlist'}
       </button>
-      <button class="cta-btn ${inCart ? 'added' : ''}" id="detail-add-cart" ${inCart || cartFull ? 'disabled' : ''}>
-        ${inCart ? `${ICONS.check} Already in Cart` : `🛒 Add to Cart`}
+      <button class="cta-btn" id="detail-add-cart" ${cartFull ? 'disabled' : ''}>
+        🛒 Add to Cart
       </button>`;
     // Re-attach CTA events
     const detailAddCart = document.getElementById('detail-add-cart');
@@ -936,11 +930,11 @@ function attachEvents() {
     });
   });
 
-  // Cart remove
-  app.querySelectorAll('[data-remove]').forEach(btn => {
+  // Cart remove by index
+  app.querySelectorAll('[data-remove-idx]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const [id, vi] = btn.dataset.remove.split('|');
-      state.cart = state.cart.filter(c => !(c.id === id && String(c.variantIdx) === vi));
+      const idx = parseInt(btn.dataset.removeIdx);
+      state.cart.splice(idx, 1);
       storage.setCart(state.cart);
       render();
     });
@@ -958,8 +952,7 @@ function attachEvents() {
   // Copy command
   const copyBtn = document.getElementById('copy-cmd');
   if (copyBtn) copyBtn.addEventListener('click', () => {
-    const expandedHexes = state.cart.flatMap(c => Array((c.qty || 1)).fill(c.hex));
-    const command = `${state.prefix}order ${expandedHexes.join(', ')}`;
+    const command = `${state.prefix}order ${state.cart.map(c => c.hex).join(', ')}`;
     navigator.clipboard.writeText(command).then(() => {
       copyBtn.innerHTML = `${ICONS.check} Copied!`;
       setTimeout(() => { copyBtn.innerHTML = `${ICONS.copy} Copy`; }, 2000);
@@ -1046,12 +1039,11 @@ async function toggleWishlist(itemId, variantIdx = 0) {
     state.wishlist.push({ id: itemId, variantIdx });
   }
   storage.setWishlist(state.wishlist);
-  console.log('Wishlist saved:', JSON.stringify(state.wishlist));
   await render();
 }
 
 function getCartTotal() {
-  return state.cart.reduce((sum, c) => sum + (c.qty || 1), 0);
+  return state.cart.length;
 }
 
 function addToCartFromIndex(itemId, variantIdx = 0) {
@@ -1088,67 +1080,10 @@ function addToCartFromIndex(itemId, variantIdx = 0) {
 }
 
 function addToCart(entry) {
-  const existing = state.cart.find(c => c.id === entry.id && c.variantIdx === entry.variantIdx);
-  if (existing) {
-    if (getCartTotal() >= 40) return;
-    existing.qty = (existing.qty || 1) + 1;
-  } else {
-    if (getCartTotal() >= 40) return;
-    entry.qty = 1;
-    state.cart.push(entry);
-  }
+  if (state.cart.length >= 40) return;
+  state.cart.push(entry);
   storage.setCart(state.cart);
-  showCartPopup(existing || state.cart[state.cart.length - 1]);
-}
-
-let cartPopupTimeout = null;
-function showCartPopup(cartItem) {
-  let popup = document.getElementById('cart-popup');
-  if (!popup) {
-    popup = document.createElement('div');
-    popup.id = 'cart-popup';
-    popup.className = 'cart-popup';
-    document.body.appendChild(popup);
-  }
-  const total = getCartTotal();
-  popup.innerHTML = `
-    <div class="cart-popup-content">
-      <p class="cart-popup-name">${esc(cartItem.name)} — ${esc(cartItem.variant)}</p>
-      <div class="cart-popup-controls">
-        <button class="cart-popup-btn" id="cart-popup-minus">−</button>
-        <span class="cart-popup-qty" id="cart-popup-qty">${cartItem.qty || 1}</span>
-        <button class="cart-popup-btn" id="cart-popup-plus" ${total >= 40 ? 'disabled' : ''}>+</button>
-      </div>
-      <p class="cart-popup-total">${total}/40 items</p>
-    </div>`;
-  popup.classList.add('show');
-
-  // Attach popup events
-  const minus = document.getElementById('cart-popup-minus');
-  const plus = document.getElementById('cart-popup-plus');
-  minus?.addEventListener('click', () => {
-    if ((cartItem.qty || 1) <= 1) {
-      state.cart = state.cart.filter(c => !(c.id === cartItem.id && c.variantIdx === cartItem.variantIdx));
-      storage.setCart(state.cart);
-      popup.classList.remove('show');
-      render();
-      return;
-    }
-    cartItem.qty = (cartItem.qty || 1) - 1;
-    storage.setCart(state.cart);
-    showCartPopup(cartItem);
-  });
-  plus?.addEventListener('click', () => {
-    if (getCartTotal() >= 40) return;
-    cartItem.qty = (cartItem.qty || 1) + 1;
-    storage.setCart(state.cart);
-    showCartPopup(cartItem);
-  });
-
-  clearTimeout(cartPopupTimeout);
-  cartPopupTimeout = setTimeout(() => {
-    popup.classList.remove('show');
-  }, 3000);
+  render();
 }
 
 async function loadItemDetail(itemId) {
