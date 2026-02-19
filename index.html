@@ -2,113 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#8B9A6D">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#6a823e">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="ACNHEX">
-  <meta name="description" content="Animal Crossing: New Horizons item marketplace for Discord order bots">
-
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="./manifest.json">
-
-  <!-- Favicon & Apple Touch Icon -->
-  <link rel="icon" href="./Assets/logo_header.png">
-  <link rel="apple-touch-icon" href="./Assets/logo_header.png">
-
-  <!-- Google Fonts - Inter Tight -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-
-  <!-- Styles -->
-  <link rel="stylesheet" href="./css/styles.css">
-
-  <title>ACNHEX Marketplace</title>
+  <meta name="description" content="ACNHEX Market — Browse ACNH items and generate Discord order bot commands">
+  <title>ACNHEX Market</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍃</text></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%236a823e' width='100' height='100' rx='20'/><text x='50' y='65' text-anchor='middle' font-size='60'>🍃</text></svg>">
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-  <!-- ============ HEADER ============ -->
-  <header class="header">
-    <img src="./Assets/logo_header.png" alt="ACNHEX" class="header-logo">
-    <button id="cart-btn" class="header-cart" aria-label="Open cart">
-      <img src="./Assets/bag.png" alt="Cart">
-      <span id="cart-badge" class="cart-badge" style="display: none;">0</span>
-    </button>
-  </header>
-
-  <!-- ============ MAIN CONTENT ============ -->
-  <main id="main-content">
-    <div class="loading">
-      <div class="loading-spinner"></div>
-    </div>
-  </main>
-
-  <!-- ============ BOTTOM NAVIGATION ============ -->
-  <nav class="bottom-nav">
-    <button class="nav-item" data-page="wishlist" aria-label="Wishlist">
-      <img src="./Assets/Bottom_dock_wishlist_active.png" alt="Wishlist">
-    </button>
-    <button class="nav-item active" data-page="home" aria-label="Home">
-      <img src="./Assets/Bottom_dock_home_active.png" alt="Home">
-    </button>
-    <button class="nav-item" data-page="settings" aria-label="Settings">
-      <img src="./Assets/Bottom_dock_settings_active.png" alt="Settings">
-    </button>
-  </nav>
-
-  <!-- ============ PREFIX MODAL ============ -->
-  <div id="prefix-modal" class="modal">
-    <div class="modal-content">
-      <h2 class="modal-title">Welcome to ACNHEX!</h2>
-      <p class="modal-text">
-        To get started, enter your Discord order bot prefix.
-        You can find this in the "order bot help" channel of your Discord server.
-      </p>
-      <input
-        type="text"
-        id="prefix-input"
-        class="input-field"
-        placeholder="e.g., *order"
-        autocomplete="off"
-        autocapitalize="off"
-      >
-      <button id="prefix-submit" class="btn btn-primary mt-16">
-        Save & Continue
-      </button>
-    </div>
-  </div>
-
-  <!-- ============ CART MODAL ============ -->
-  <div id="cart-modal" class="modal modal-fullscreen">
-    <div class="modal-content">
-      <div id="cart-content">
-        <!-- Cart content rendered by JS -->
-      </div>
-    </div>
-  </div>
-
-  <!-- ============ ITEM DETAIL MODAL ============ -->
-  <div id="item-modal" class="modal modal-fullscreen">
-    <div class="modal-content">
-      <div id="item-content">
-        <!-- Item detail content rendered by JS -->
-      </div>
-    </div>
-  </div>
-
-  <!-- ============ FILTER MODAL ============ -->
-  <div id="filter-modal" class="modal">
-    <div class="modal-content">
-      <div id="filter-content">
-        <!-- Filter content rendered by JS -->
-      </div>
-    </div>
-  </div>
-
-  <!-- ============ TOAST NOTIFICATION ============ -->
-  <div id="toast" class="toast"></div>
-
-  <!-- ============ SCRIPTS ============ -->
-  <script type="module" src="./js/app.js"></script>
+  <div id="app"></div>
+  <script type="module" src="js/app.js"></script>
+  <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
 </body>
 </html>

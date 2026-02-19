@@ -1,19 +1,23 @@
 {
-  "name": "ACNHEX Marketplace",
+  "name": "ACNHEX Market",
   "short_name": "ACNHEX",
-  "description": "Animal Crossing: New Horizons item marketplace for Discord order bots",
-  "start_url": "./",
+  "description": "Browse ACNH items and generate Discord order bot commands",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#F5F0E6",
-  "theme_color": "#8B9A6D",
-  "orientation": "portrait",
+  "background_color": "#f6eee9",
+  "theme_color": "#6a823e",
   "icons": [
     {
-      "src": "./Assets/logo_header.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "src": "./icons/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
-  ],
-  "categories": ["shopping", "games", "utilities"]
+  ]
 }

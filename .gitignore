@@ -1,12 +1,10 @@
-# Lock files
-*~lock~
-
-# Reference images (not needed for deployment)
-acnhex_reference.jpg
-
-# Claude Code settings
-.claude/
-
-# OS files
+node_modules/
 .DS_Store
 Thumbs.db
+*.env
+database.json
+acnhex-market-design-spec.json
+ACNHEX-MARKET-BIBLE.md
+wireframe-v3.jsx
+.claude/
+tools/

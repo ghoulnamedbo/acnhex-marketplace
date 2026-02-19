@@ -1,186 +1,249 @@
-/**
- * Data module - loads and processes the item database
- */
+// Data loading and search
+let catalogIndex = null; // { categories, items }
+const categoryCache = {}; // display-slug -> items array
 
-const Data = {
-  raw: null,
-  items: [],
-  categories: [],
-  loaded: false,
+const BG_COLORS = ['#efd4dd', '#E8DFCF', '#D6DFC8', '#F2D9E0'];
 
-  async load() {
-    if (this.loaded) return this.items;
+export function getItemBg(index) {
+  return BG_COLORS[index % BG_COLORS.length];
+}
 
-    try {
-      const response = await fetch('./database.json');
-      this.raw = await response.json();
-      this.categories = Object.keys(this.raw);
-      this.processItems();
-      this.loaded = true;
-      console.log(`Loaded ${this.items.length} items across ${this.categories.length} categories`);
-      return this.items;
-    } catch (error) {
-      console.error('Failed to load database:', error);
-      throw error;
-    }
-  },
+export async function loadCatalog() {
+  if (catalogIndex) return catalogIndex;
+  const resp = await fetch('data/catalog-index.json');
+  catalogIndex = await resp.json();
+  return catalogIndex;
+}
 
-  processItems() {
-    // Flatten all categories into a single array with category info
-    // Group variants together under a single base item
-    const itemMap = new Map();
+export function getCategories() {
+  return catalogIndex?.categories || [];
+}
 
-    for (const category of this.categories) {
-      const categoryItems = this.raw[category];
-
-      for (const item of categoryItems) {
-        // Create a base key from name (to group variants)
-        const baseKey = `${category}::${item.Name}`;
-
-        // Get image URL (different fields for different categories)
-        const image = item['Closet Image'] || item['Image'] || item['Album Image'] || '';
-
-        // Get the full hex ID with variation if available
-        const hexIdFull = item['Hex ID w/variation'] || item['Hex ID'];
-
-        const variantData = {
-          variation: item.Variation || 'NA',
-          filename: item.Filename,
-          image: image,
-          hexId: item['Hex ID'],
-          hexIdFull: hexIdFull,
-          color1: item['Color 1'] || '',
-          color2: item['Color 2'] || ''
-        };
-
-        if (itemMap.has(baseKey)) {
-          // Add variant to existing item
-          itemMap.get(baseKey).variants.push(variantData);
-        } else {
-          // Create new base item
-          itemMap.set(baseKey, {
-            name: item.Name,
-            category: category,
-            baseHexId: item['Hex ID'],
-            catalog: item.Catalog || '',
-            style1: item['Style 1'] || '',
-            style2: item['Style 2'] || '',
-            labelThemes: item['Label Themes'] || '',
-            hhaConcept1: item['HHA Concept 1'] || '',
-            hhaConcept2: item['HHA Concept 2'] || '',
-            hhaSeries: item['HHA Series'] || '',
-            hhaSet: item['HHA Set'] || '',
-            size: item.Size || '',
-            tag: item.Tag || '',
-            diy: item.DIY || '',
-            variants: [variantData]
-          });
-        }
-      }
-    }
-
-    this.items = Array.from(itemMap.values());
-  },
-
-  // Get unique values for filters
-  getUniqueValues(field) {
-    const values = new Set();
-
-    for (const item of this.items) {
-      let value = item[field];
-      if (value && value !== '' && value !== 'NA' && value !== 'None') {
-        // Handle semicolon-separated values (like Label Themes)
-        if (typeof value === 'string' && value.includes(';')) {
-          value.split(';').forEach(v => values.add(v.trim()));
-        } else {
-          values.add(value);
-        }
-      }
-    }
-
-    return Array.from(values).sort();
-  },
-
-  // Get all unique colors from variants
-  getUniqueColors() {
-    const colors = new Set();
-
-    for (const item of this.items) {
-      for (const variant of item.variants) {
-        if (variant.color1 && variant.color1 !== '') colors.add(variant.color1);
-        if (variant.color2 && variant.color2 !== '') colors.add(variant.color2);
-      }
-    }
-
-    return Array.from(colors).sort();
-  },
-
-  // Search items by name
-  searchByName(query) {
-    const lowerQuery = query.toLowerCase();
-    return this.items.filter(item =>
-      item.name.toLowerCase().includes(lowerQuery)
-    );
-  },
-
-  // Filter items
-  filterItems(filters) {
-    return this.items.filter(item => {
-      // Category filter
-      if (filters.category && filters.category !== 'all') {
-        if (item.category !== filters.category) return false;
-      }
-
-      // Catalog filter (catalogable)
-      if (filters.catalog) {
-        if (item.catalog !== filters.catalog) return false;
-      }
-
-      // Style filter
-      if (filters.style) {
-        if (item.style1 !== filters.style && item.style2 !== filters.style) return false;
-      }
-
-      // Set filter (HHA Set)
-      if (filters.set) {
-        if (item.hhaSet !== filters.set) return false;
-      }
-
-      // Color filter - check if any variant has the color
-      if (filters.color) {
-        const hasColor = item.variants.some(v =>
-          v.color1 === filters.color || v.color2 === filters.color
-        );
-        if (!hasColor) return false;
-      }
-
-      // Search query
-      if (filters.search) {
-        const lowerQuery = filters.search.toLowerCase();
-        if (!item.name.toLowerCase().includes(lowerQuery)) return false;
-      }
-
-      return true;
-    });
-  },
-
-  // Get item by base name and category
-  getItem(category, name) {
-    return this.items.find(item =>
-      item.category === category && item.name === name
-    );
-  },
-
-  // Get item by filename (for wishlist/cart lookups)
-  getItemByFilename(filename) {
-    for (const item of this.items) {
-      const variant = item.variants.find(v => v.filename === filename);
-      if (variant) {
-        return { item, variant };
-      }
-    }
-    return null;
+export function getItemsByCategory(category, offset = 0, limit = 50) {
+  if (!catalogIndex) return { items: [], total: 0 };
+  let items = catalogIndex.items;
+  if (category && category !== 'All') {
+    items = items.filter(i => i.c === category);
   }
-};
+  return {
+    items: items.slice(offset, offset + limit),
+    total: items.length,
+  };
+}
 
-export default Data;
+export function searchItems(query, offset = 0, limit = 50) {
+  if (!catalogIndex || !query) return { items: [], total: 0 };
+  const q = query.toLowerCase().trim();
+  const items = catalogIndex.items.filter(i =>
+    i.n.toLowerCase().includes(q) || i.t.includes(q)
+  );
+  return {
+    items: items.slice(offset, offset + limit),
+    total: items.length,
+  };
+}
+
+export function getRandomItems(count = 20) {
+  if (!catalogIndex) return [];
+  const all = catalogIndex.items;
+  const shuffled = [];
+  const used = new Set();
+  while (shuffled.length < count && shuffled.length < all.length) {
+    const i = Math.floor(Math.random() * all.length);
+    if (!used.has(i)) {
+      used.add(i);
+      shuffled.push(all[i]);
+    }
+  }
+  return shuffled;
+}
+
+function slugify(s) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
+export async function getItemDetail(itemId) {
+  // Find item in index to know its category
+  if (!catalogIndex) await loadCatalog();
+  const indexItem = catalogIndex.items.find(i => i.id === itemId);
+  if (!indexItem) return null;
+
+  const catSlug = slugify(indexItem.c);
+  if (!categoryCache[catSlug]) {
+    const resp = await fetch(`data/categories/${catSlug}.json`);
+    categoryCache[catSlug] = await resp.json();
+  }
+
+  return categoryCache[catSlug].find(i => i.id === itemId) || null;
+}
+
+export function getIndexItem(itemId) {
+  return catalogIndex?.items.find(i => i.id === itemId) || null;
+}
+
+export function getTotalCount() {
+  return catalogIndex?.items.length || 0;
+}
+
+// ─── Expanded Variants (one card per variant) ───
+const expandedCache = {}; // category slug -> expanded array
+
+async function loadCategoryData(category) {
+  const catSlug = slugify(category);
+  if (!categoryCache[catSlug]) {
+    const resp = await fetch(`data/categories/${catSlug}.json`);
+    categoryCache[catSlug] = await resp.json();
+  }
+  return categoryCache[catSlug];
+}
+
+function expandCategoryItems(categoryItems) {
+  const expanded = [];
+  for (const item of categoryItems) {
+    for (let vi = 0; vi < item.variants.length; vi++) {
+      const v = item.variants[vi];
+      expanded.push({
+        id: item.id,
+        variantIdx: vi,
+        n: item.name,
+        v1: v.name,
+        hex: v.hexVariated || v.hex || item.hexBase,
+        img: v.image || item.image,
+        c: item.category,
+        t: (item.tags || []).join('|').toLowerCase(),
+      });
+    }
+  }
+  return expanded;
+}
+
+export async function getExpandedByCategory(category, offset = 0, limit = 50) {
+  if (!catalogIndex) return { items: [], total: 0, loading: false };
+  const catSlug = slugify(category);
+
+  if (!expandedCache[catSlug]) {
+    const catData = await loadCategoryData(category);
+    expandedCache[catSlug] = expandCategoryItems(catData);
+  }
+
+  const items = expandedCache[catSlug];
+  return {
+    items: items.slice(offset, offset + limit),
+    total: items.length,
+  };
+}
+
+export async function getExpandedAll(offset = 0, limit = 50) {
+  if (!catalogIndex) return { items: [], total: 0 };
+
+  // Load all categories that aren't cached yet
+  const cats = catalogIndex.categories;
+  const toLoad = cats.filter(c => !expandedCache[slugify(c.name)]);
+  await Promise.all(toLoad.map(async (c) => {
+    const catData = await loadCategoryData(c.name);
+    expandedCache[slugify(c.name)] = expandCategoryItems(catData);
+  }));
+
+  // Merge all expanded
+  if (!expandedCache._all) {
+    const all = [];
+    for (const c of cats) {
+      all.push(...(expandedCache[slugify(c.name)] || []));
+    }
+    expandedCache._all = all;
+  }
+
+  return {
+    items: expandedCache._all.slice(offset, offset + limit),
+    total: expandedCache._all.length,
+  };
+}
+
+export async function searchExpandedItems(query, offset = 0, limit = 50) {
+  if (!catalogIndex) return { items: [], total: 0 };
+
+  // Ensure all categories are loaded
+  await getExpandedAll(0, 1);
+
+  const all = expandedCache._all || [];
+  if (!query) return { items: [], total: 0 };
+
+  const q = query.toLowerCase().trim();
+  const filtered = all.filter(i =>
+    i.n.toLowerCase().includes(q) || i.t.includes(q)
+  );
+  return {
+    items: filtered.slice(offset, offset + limit),
+    total: filtered.length,
+  };
+}
+
+// ─── Tag Extraction ───
+let tagGroupsCache = null;
+
+export function getAvailableTags() {
+  if (tagGroupsCache) return tagGroupsCache;
+  if (!catalogIndex) return {};
+
+  const colorSet = new Set(['aqua','beige','black','blue','brown','colorful','gray','green','orange','pink','purple','red','white','yellow']);
+  const styleSet = new Set(['active','cool','cute','elegant','gorgeous','simple']);
+  const catalogSet = new Set(['for sale','not for sale','not in catalog']);
+
+  const colors = new Set();
+  const styles = new Set();
+  const catalogStatus = new Set();
+  const other = new Set();
+
+  for (const item of catalogIndex.items) {
+    for (const tag of item.t.split('|')) {
+      const t = tag.trim().toLowerCase();
+      if (!t) continue;
+      if (colorSet.has(t)) colors.add(t);
+      else if (styleSet.has(t)) styles.add(t);
+      else if (catalogSet.has(t)) catalogStatus.add(t);
+      else other.add(t);
+    }
+  }
+
+  tagGroupsCache = {
+    Colors: [...colors].sort(),
+    Styles: [...styles].sort(),
+    Catalog: [...catalogStatus].sort(),
+    Other: [...other].sort(),
+  };
+  return tagGroupsCache;
+}
+
+export async function searchExpandedWithTags(query, tags = [], offset = 0, limit = 50) {
+  if (!catalogIndex) return { items: [], total: 0 };
+  await getExpandedAll(0, 1);
+  const all = expandedCache._all || [];
+
+  const q = query ? query.toLowerCase().trim() : '';
+  const filtered = all.filter(i => {
+    if (q && !(i.n.toLowerCase().includes(q) || i.t.includes(q))) return false;
+    for (const tag of tags) {
+      if (!i.t.includes(tag.toLowerCase())) return false;
+    }
+    return q || tags.length > 0;
+  });
+  return {
+    items: filtered.slice(offset, offset + limit),
+    total: filtered.length,
+  };
+}
+
+export async function getRandomExpandedItems(count = 20) {
+  await getExpandedAll(0, 1);
+  const all = expandedCache._all || [];
+  const shuffled = [];
+  const used = new Set();
+  while (shuffled.length < count && shuffled.length < all.length) {
+    const i = Math.floor(Math.random() * all.length);
+    if (!used.has(i)) {
+      used.add(i);
+      shuffled.push(all[i]);
+    }
+  }
+  return shuffled;
+}
