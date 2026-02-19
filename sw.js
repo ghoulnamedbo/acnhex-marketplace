@@ -1,4 +1,4 @@
-const CACHE_NAME = 'acnhex-v4';
+const CACHE_NAME = 'acnhex-v5';
 const ASSETS = [
   './',
   './index.html',

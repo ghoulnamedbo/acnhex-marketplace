@@ -1039,14 +1039,15 @@ function attachEvents() {
 }
 
 // ─── Actions ───
-function toggleWishlist(itemId, variantIdx = 0) {
+async function toggleWishlist(itemId, variantIdx = 0) {
   if (isInWishlist(itemId, variantIdx)) {
     state.wishlist = state.wishlist.filter(w => !(w.id === itemId && w.variantIdx === variantIdx));
   } else {
     state.wishlist.push({ id: itemId, variantIdx });
   }
   storage.setWishlist(state.wishlist);
-  render();
+  console.log('Wishlist saved:', JSON.stringify(state.wishlist));
+  await render();
 }
 
 function getCartTotal() {
