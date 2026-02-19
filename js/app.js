@@ -317,17 +317,23 @@ function renderCart() {
 }
 
 // ─── Wishlist Page ───
-function renderWishlist() {
-  const wishlistEntries = state.wishlist.map(w => {
-    const item = data.getIndexItem(w.id);
-    if (!item) return null;
-    // Try to get variant-specific data from expanded items
-    const displayed = [...(state.expandedItems || []), ...((state.searchResults && state.searchResults.items) || [])];
-    const expanded = displayed.find(i => i.id === w.id && (i.variantIdx ?? 0) === w.variantIdx);
-    if (expanded) return { ...expanded, _vi: w.variantIdx };
-    // Fallback to index item (variant 0 data)
-    return { ...item, _vi: w.variantIdx };
-  }).filter(Boolean);
+async function renderWishlist() {
+  // Load full detail data for each wishlist entry to get correct variant info
+  const wishlistEntries = [];
+  for (const w of state.wishlist) {
+    const detail = await data.getItemDetail(w.id);
+    if (!detail) continue;
+    const vi = w.variantIdx || 0;
+    const variant = detail.variants[vi] || detail.variants[0];
+    wishlistEntries.push({
+      id: detail.id,
+      n: detail.name,
+      v1: variant.name,
+      hex: variant.hexVariated || variant.hex || detail.hexBase,
+      img: variant.image || detail.image,
+      _vi: vi,
+    });
+  }
 
   return `<div class="page">
     <div class="page-header" style="padding-bottom:20px">
@@ -698,7 +704,7 @@ async function render() {
     case 'catalog': content = await renderCatalog(); break;
     case 'detail': content = await renderDetail(); break;
     case 'cart': content = renderCart(); break;
-    case 'wishlist': content = renderWishlist(); break;
+    case 'wishlist': content = await renderWishlist(); break;
     case 'settings': content = renderSettings(); break;
     case 'info': content = renderInfo(); break;
   }
