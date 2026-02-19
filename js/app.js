@@ -43,9 +43,24 @@ const state = {
   expandedItems: null,
   expandedTotal: 0,
   expandedLoading: false,
+  scrollY: 0,
 };
 
 const app = document.getElementById('app');
+
+// ─── Wishlist Helpers ───
+function isInWishlist(id, variantIdx = 0) {
+  return state.wishlist.some(w => w.id === id && w.variantIdx === variantIdx);
+}
+
+function migrateWishlist() {
+  // Convert old plain ID strings to { id, variantIdx } objects
+  if (state.wishlist.length > 0 && typeof state.wishlist[0] === 'string') {
+    state.wishlist = state.wishlist.map(id => ({ id, variantIdx: 0 }));
+    storage.setWishlist(state.wishlist);
+  }
+}
+migrateWishlist();
 
 function esc(str) {
   const d = document.createElement('div');
@@ -154,12 +169,12 @@ function renderItemCard(item, idx) {
   const bg = data.getItemBg(idx);
   const vi = item.variantIdx ?? 0;
   const inCart = state.cart.some(c => c.id === item.id && c.variantIdx === vi);
-  const inWishlist = state.wishlist.includes(item.id);
-  const cartFull = state.cart.length >= 40;
+  const inWishlist = isInWishlist(item.id, vi);
+  const cartFull = getCartTotal() >= 40;
   return `<div class="item-card" data-item="${esc(item.id)}" data-vi="${vi}">
     <div class="item-thumb" style="background:${bg}">
       ${item.img ? `<img src="${esc(item.img)}" loading="lazy" onerror="this.outerHTML='<span class=emoji-fallback>📦</span>'" alt="">` : '<span class="emoji-fallback">📦</span>'}
-      <button class="heart-btn" data-heart="${esc(item.id)}">${ICONS.heart(inWishlist)}</button>
+      <button class="heart-btn" data-heart="${esc(item.id)}" data-heart-vi="${vi}">${ICONS.heart(inWishlist)}</button>
     </div>
     <div class="item-info">
       <p class="item-name">${esc(item.n)}</p>
@@ -185,8 +200,8 @@ async function renderDetail() {
   const variant = item.variants[vi] || item.variants[0];
   const bg = data.getItemBg(0);
   const inCart = state.cart.some(c => c.id === item.id && c.variantIdx === vi);
-  const inWishlist = state.wishlist.includes(item.id);
-  const cartFull = state.cart.length >= 40;
+  const inWishlist = isInWishlist(item.id, vi);
+  const cartFull = getCartTotal() >= 40;
 
   const detailFields = [
     ['Hex ID', item.hexBase],
@@ -203,9 +218,9 @@ async function renderDetail() {
 
   return `<div class="page">
     <div class="detail-hero" style="background:${bg}">
-      ${variant.image ? `<img src="${esc(variant.image)}" onerror="this.outerHTML='<span class=emoji-fallback>📦</span>'" alt="">` : '<span class="emoji-fallback">📦</span>'}
+      ${variant.image ? `<img id="detail-hero-img" src="${esc(variant.image)}" onerror="this.outerHTML='<span class=emoji-fallback>📦</span>'" alt="">` : '<span class="emoji-fallback">📦</span>'}
       <button class="glass-btn left" id="detail-back">${ICONS.chevronLeft}</button>
-      <button class="glass-btn right" data-heart="${esc(item.id)}">${ICONS.heartLg(inWishlist)}</button>
+      <button class="glass-btn right" data-heart="${esc(item.id)}" data-heart-vi="${vi}">${ICONS.heartLg(inWishlist)}</button>
     </div>
 
     <div class="detail-title" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
@@ -217,17 +232,21 @@ async function renderDetail() {
     </div>
 
     ${item.variants.length > 1 ? `
-    <div class="variant-carousel hide-scrollbar">
-      ${item.variants.map((v, i) => `
-        <button class="variant-pill ${i === vi ? 'active' : ''}" data-variant="${i}">${esc(v.name)}</button>
-      `).join('')}
+    <div class="variant-carousel-wrapper" id="variant-wrapper">
+      <button class="variant-arrow left" id="variant-arrow-left"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="variant-carousel hide-scrollbar" id="variant-scroll">
+        ${item.variants.map((v, i) => `
+          <button class="variant-pill ${i === vi ? 'active' : ''}" data-variant="${i}">${esc(v.name)}</button>
+        `).join('')}
+      </div>
+      <button class="variant-arrow right" id="variant-arrow-right"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></button>
     </div>` : ''}
 
     <div class="tag-pills">
       ${(item.tags || []).slice(0, 8).map(t => `<span class="tag-pill">${esc(t)}</span>`).join('')}
     </div>
 
-    <div class="details-card">
+    <div class="details-card" id="detail-fields">
       <h4 class="label-upper" style="margin-bottom:16px">Details</h4>
       ${detailFields.map(([label, val], i) => `
         <div class="detail-row">
@@ -236,8 +255,8 @@ async function renderDetail() {
         </div>`).join('')}
     </div>
 
-    <div class="sticky-cta">
-      <button class="cta-btn-secondary" data-wishlist-toggle="${esc(item.id)}">
+    <div class="sticky-cta" id="detail-cta">
+      <button class="cta-btn-secondary" data-wishlist-toggle="${esc(item.id)}" data-wishlist-vi="${vi}">
         ${inWishlist ? '💚 Remove from Wishlist' : '💚 Add to Wishlist'}
       </button>
       <button class="cta-btn ${inCart ? 'added' : ''}" id="detail-add-cart" ${inCart || cartFull ? 'disabled' : ''}>
@@ -251,14 +270,17 @@ async function renderDetail() {
 function renderCart() {
   const cart = state.cart;
   const prefix = state.prefix;
-  const command = cart.length > 0 ? `${prefix}order ${cart.map(c => c.hex).join(', ')}` : '';
+  const total = getCartTotal();
+  // Expand cart entries by qty for bot command
+  const expandedHexes = cart.flatMap(c => Array((c.qty || 1)).fill(c.hex));
+  const command = expandedHexes.length > 0 ? `${prefix}order ${expandedHexes.join(', ')}` : '';
 
   return `<div class="page">
     <div class="page-header">
       <h1 class="heading-xl" style="margin-bottom:4px">Your Cart</h1>
-      <p class="text-secondary" style="margin-bottom:16px">${cart.length} / 40 items · ${40 - cart.length} slots remaining</p>
+      <p class="text-secondary" style="margin-bottom:16px">${total} / 40 items · ${40 - total} slots remaining</p>
       <div class="progress-bar">
-        <div class="progress-fill ${cart.length > 35 ? 'danger' : ''}" style="width:${(cart.length / 40) * 100}%"></div>
+        <div class="progress-fill ${total > 35 ? 'danger' : ''}" style="width:${(total / 40) * 100}%"></div>
       </div>
     </div>
 
@@ -275,7 +297,7 @@ function renderCart() {
               ${item.img ? `<img src="${esc(item.img)}" onerror="this.outerHTML='📦'" alt="">` : '📦'}
             </div>
             <div class="cart-item-info">
-              <p class="cart-item-name">${esc(item.name)}</p>
+              <p class="cart-item-name">${esc(item.name)}${(item.qty || 1) > 1 ? ` <span style="color:var(--pines);font-weight:700">×${item.qty}</span>` : ''}</p>
               <p class="cart-item-meta">${esc(item.variant)} · <span style="color:var(--pines)">${esc(item.hex)}</span></p>
             </div>
             <button class="remove-btn" data-remove="${esc(item.id)}|${item.variantIdx}">${ICONS.trash}</button>
@@ -285,8 +307,8 @@ function renderCart() {
       <div style="padding:28px 24px 0">
         <h4 class="label-upper" style="margin-bottom:12px">Bot Command</h4>
         <div class="code-block">
-          <span class="code-keyword">${esc(prefix)}order</span> ${cart.map((item, i) =>
-            `<span class="code-value">${esc(item.hex)}</span>${i < cart.length - 1 ? '<span class="code-sep">, </span>' : ''}`
+          <span class="code-keyword">${esc(prefix)}order</span> ${expandedHexes.map((hex, i) =>
+            `<span class="code-value">${esc(hex)}</span>${i < expandedHexes.length - 1 ? '<span class="code-sep">, </span>' : ''}`
           ).join('')}
           <button class="copy-btn" id="copy-cmd">${ICONS.copy} Copy</button>
         </div>
@@ -296,24 +318,34 @@ function renderCart() {
 
 // ─── Wishlist Page ───
 function renderWishlist() {
-  const wishlistItems = state.wishlist.map(id => data.getIndexItem(id)).filter(Boolean);
+  const wishlistEntries = state.wishlist.map(w => {
+    const item = data.getIndexItem(w.id);
+    if (!item) return null;
+    // Try to get variant-specific data from expanded items
+    const displayed = [...(state.expandedItems || []), ...((state.searchResults && state.searchResults.items) || [])];
+    const expanded = displayed.find(i => i.id === w.id && (i.variantIdx ?? 0) === w.variantIdx);
+    if (expanded) return { ...expanded, _vi: w.variantIdx };
+    // Fallback to index item (variant 0 data)
+    return { ...item, _vi: w.variantIdx };
+  }).filter(Boolean);
 
   return `<div class="page">
     <div class="page-header" style="padding-bottom:20px">
       <h1 class="heading-xl" style="margin-bottom:4px">Wishlist</h1>
-      <p class="text-secondary">${wishlistItems.length} saved item${wishlistItems.length !== 1 ? 's' : ''}</p>
+      <p class="text-secondary">${wishlistEntries.length} saved item${wishlistEntries.length !== 1 ? 's' : ''}</p>
     </div>
 
-    ${wishlistItems.length === 0 ? `
+    ${wishlistEntries.length === 0 ? `
       <div class="empty-state">
         <p class="empty-emoji">💚</p>
         <p class="empty-title">No saved items yet</p>
         <p class="empty-text">Tap the heart on items you love</p>
       </div>` : `
       <div style="padding:0 24px;display:flex;flex-direction:column;gap:12px">
-        ${wishlistItems.map((item, idx) => {
-          const inCart = state.cart.some(c => c.id === item.id);
-          return `<div class="wishlist-item" data-item="${esc(item.id)}">
+        ${wishlistEntries.map((item, idx) => {
+          const vi = item._vi || 0;
+          const inCart = state.cart.some(c => c.id === item.id && c.variantIdx === vi);
+          return `<div class="wishlist-item" data-item="${esc(item.id)}" data-vi="${vi}">
             <div class="wishlist-thumb" style="background:${data.getItemBg(idx)}">
               ${item.img ? `<img src="${esc(item.img)}" onerror="this.outerHTML='📦'" alt="">` : '📦'}
             </div>
@@ -325,7 +357,7 @@ function renderWishlist() {
               <button class="wishlist-add-btn ${inCart ? 'added' : ''}" data-add-cart="${esc(item.id)}" ${inCart ? 'disabled' : ''}>
                 ${inCart ? ICONS.check : ICONS.plus}
               </button>
-              <button class="remove-btn" data-remove-wishlist="${esc(item.id)}">${ICONS.trash}</button>
+              <button class="remove-btn" data-remove-wishlist="${esc(item.id)}" data-remove-wishlist-vi="${vi}">${ICONS.trash}</button>
             </div>
           </div>`;
         }).join('')}
@@ -399,7 +431,7 @@ function renderInfo() {
           <div class="credit-icon" style="background:var(--dolce-pink)">📱</div>
           <div>
             <p style="font-size:13px;font-weight:700;margin-bottom:4px;color:var(--text-primary)">Version Info</p>
-            <p style="font-size:11px;color:var(--text-secondary);line-height:1.5">ACNHEX Market contains all items through the <strong>3.0 update</strong> of Animal Crossing: New Horizons.</p>
+            <p style="font-size:11px;color:var(--text-secondary);line-height:1.5">ACNHEX Market contains all items through the <strong>2.0.8 update</strong> of Animal Crossing: New Horizons.</p>
           </div>
         </div>
       </div>
@@ -490,17 +522,26 @@ function renderSearch() {
           <button class="active-filter-pill" data-remove-filter="${esc(t)}">${esc(t)} ✕</button>
         `).join('')}
       </div>` : ''}
-    ${hasQuery ? `
-      <p class="text-secondary" style="margin-bottom:16px">${results.total} result${results.total !== 1 ? 's' : ''}${state.searchQuery ? ` for "${esc(state.searchQuery)}"` : ''}${hasFilters ? ` (${state.searchFilterTags.length} filter${state.searchFilterTags.length !== 1 ? 's' : ''})` : ''}</p>
+    <div id="search-results">${renderSearchResultsHTML()}</div>
+  </div>`;
+}
+
+// ─── Search Results HTML ───
+function renderSearchResultsHTML() {
+  const results = state.searchResults || { items: [], total: 0 };
+  const hasFilters = state.searchFilterTags.length > 0;
+  const hasQuery = state.searchQuery || hasFilters;
+  if (hasQuery) {
+    return `<p class="text-secondary" style="margin-bottom:16px">${results.total} result${results.total !== 1 ? 's' : ''}${state.searchQuery ? ` for "${esc(state.searchQuery)}"` : ''}${hasFilters ? ` (${state.searchFilterTags.length} filter${state.searchFilterTags.length !== 1 ? 's' : ''})` : ''}</p>
       <div class="item-grid">
         ${results.items.map((item, idx) => renderItemCard(item, idx)).join('')}
-      </div>` : `
-      <div class="empty-state">
-        <p class="empty-emoji">🔍</p>
-        <p class="empty-title">Search by name or tags</p>
-        <p class="empty-text">Try "chair", "blue", "elegant", or "DIY"</p>
-      </div>`}
-  </div>`;
+      </div>`;
+  }
+  return `<div class="empty-state">
+      <p class="empty-emoji">🔍</p>
+      <p class="empty-title">Search by name or tags</p>
+      <p class="empty-text">Try "chair", "blue", "elegant", or "DIY"</p>
+    </div>`;
 }
 
 // ─── Search Helper ───
@@ -510,7 +551,13 @@ async function runSearch() {
   } else {
     state.searchResults = null;
   }
-  render();
+  const container = document.getElementById('search-results');
+  if (container) {
+    container.innerHTML = renderSearchResultsHTML();
+    attachSearchResultEvents();
+  } else {
+    render();
+  }
 }
 
 // ─── Load Expanded Catalog ───
@@ -528,6 +575,120 @@ async function loadExpandedCatalog() {
   state.loadedCount = result.items.length;
   state.expandedLoading = false;
   render();
+}
+
+// ─── Attach search result events (item cards inside search) ───
+function attachSearchResultEvents() {
+  const container = document.getElementById('search-results');
+  if (!container) return;
+  container.querySelectorAll('[data-item]').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('[data-heart]') || e.target.closest('[data-add-cart]')) return;
+      state.selectedItemId = card.dataset.item;
+      state.selectedVariantIdx = parseInt(card.dataset.vi) || 0;
+      state.searchOpen = false;
+      state.searchQuery = '';
+      state.searchResults = null;
+      state.page = 'detail';
+      loadItemDetail(card.dataset.item);
+    });
+  });
+  container.querySelectorAll('[data-heart]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const vi = parseInt(btn.dataset.heartVi) || 0;
+      toggleWishlist(btn.dataset.heart, vi);
+    });
+  });
+  container.querySelectorAll('[data-add-cart]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const card = btn.closest('[data-item]');
+      const vi = card ? parseInt(card.dataset.vi) || 0 : 0;
+      addToCartFromIndex(btn.dataset.addCart, vi);
+    });
+  });
+}
+
+// ─── Surgical Detail Variant Update ───
+function updateDetailVariant() {
+  const item = state.itemDetail;
+  if (!item) return;
+  const vi = state.selectedVariantIdx;
+  const variant = item.variants[vi] || item.variants[0];
+  const inCart = state.cart.some(c => c.id === item.id && c.variantIdx === vi);
+  const inWishlist = isInWishlist(item.id, vi);
+  const cartFull = getCartTotal() >= 40;
+
+  // Update hero image
+  const heroImg = document.getElementById('detail-hero-img');
+  if (heroImg && variant.image) heroImg.src = variant.image;
+
+  // Update variant pill active states
+  app.querySelectorAll('[data-variant]').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.variant) === vi);
+  });
+
+  // Update detail fields
+  const detailFields = [
+    ['Hex ID', item.hexBase],
+    ['Hex ID (Variated)', variant.hexVariated || variant.hex || item.hexBase],
+    ['Size', item.size],
+    ['Catalog', item.catalog],
+    ['HHA Concepts', [item.hhaConcept1, item.hhaConcept2].filter(Boolean).join(', ')],
+    ['HHA Series', item.hhaSeries],
+    ['HHA Set', item.hhaSet],
+    ['Styles', (item.tags || []).filter(t => ['active','cool','cute','elegant','gorgeous','simple'].includes(t)).join(', ')],
+    ['Colors', [variant.color1, variant.color2].filter(Boolean).join(', ')],
+    ['DIY', item.diy],
+  ].filter(([, v]) => v && v !== 'NA');
+
+  const fieldsEl = document.getElementById('detail-fields');
+  if (fieldsEl) {
+    fieldsEl.innerHTML = `<h4 class="label-upper" style="margin-bottom:16px">Details</h4>
+      ${detailFields.map(([label, val]) => `
+        <div class="detail-row">
+          <span class="detail-label">${esc(label)}</span>
+          <span class="detail-value">${esc(String(val))}</span>
+        </div>`).join('')}`;
+  }
+
+  // Update CTA buttons
+  const ctaEl = document.getElementById('detail-cta');
+  if (ctaEl) {
+    ctaEl.innerHTML = `
+      <button class="cta-btn-secondary" data-wishlist-toggle="${esc(item.id)}" data-wishlist-vi="${vi}">
+        ${inWishlist ? '💚 Remove from Wishlist' : '💚 Add to Wishlist'}
+      </button>
+      <button class="cta-btn ${inCart ? 'added' : ''}" id="detail-add-cart" ${inCart || cartFull ? 'disabled' : ''}>
+        ${inCart ? `${ICONS.check} Already in Cart` : `🛒 Add to Cart`}
+      </button>`;
+    // Re-attach CTA events
+    const detailAddCart = document.getElementById('detail-add-cart');
+    if (detailAddCart) detailAddCart.addEventListener('click', () => {
+      addToCart({
+        id: item.id,
+        name: item.name,
+        variant: variant.name,
+        variantIdx: vi,
+        hex: variant.hexVariated || variant.hex || item.hexBase,
+        img: variant.image || item.image,
+      });
+    });
+    ctaEl.querySelectorAll('[data-wishlist-toggle]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const wvi = parseInt(btn.dataset.wishlistVi) || 0;
+        toggleWishlist(btn.dataset.wishlistToggle, wvi);
+      });
+    });
+  }
+
+  // Update heart button in hero
+  const heartBtn = app.querySelector('.detail-hero [data-heart]');
+  if (heartBtn) {
+    heartBtn.dataset.heartVi = vi;
+    heartBtn.innerHTML = ICONS.heartLg(inWishlist);
+  }
 }
 
 // ─── Render ───
@@ -602,6 +763,7 @@ function attachEvents() {
       if (e.target.closest('[data-heart]') || e.target.closest('[data-add-cart]') ||
           e.target.closest('.remove-btn') || e.target.closest('.wishlist-add-btn') ||
           e.target.closest('[data-remove-wishlist]')) return;
+      state.scrollY = window.scrollY;
       state.selectedItemId = card.dataset.item;
       state.selectedVariantIdx = parseInt(card.dataset.vi) || 0;
       state.searchOpen = false;
@@ -616,7 +778,8 @@ function attachEvents() {
   app.querySelectorAll('[data-heart]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      toggleWishlist(btn.dataset.heart);
+      const vi = parseInt(btn.dataset.heartVi) || 0;
+      toggleWishlist(btn.dataset.heart, vi);
     });
   });
 
@@ -665,10 +828,6 @@ function attachEvents() {
       searchDebounce = setTimeout(async () => {
         state.searchQuery = e.target.value;
         await runSearch();
-        setTimeout(() => {
-          const inp = document.getElementById('search-input');
-          if (inp) { inp.focus(); inp.selectionStart = inp.selectionEnd = inp.value.length; }
-        }, 10);
       }, 300);
     });
   }
@@ -677,8 +836,19 @@ function attachEvents() {
   const filterToggle = document.getElementById('filter-toggle');
   if (filterToggle) filterToggle.addEventListener('click', () => {
     state.searchFilterOpen = !state.searchFilterOpen;
-    render();
-    setTimeout(() => document.getElementById('search-input')?.focus(), 50);
+    // Re-render search overlay without full page render to keep keyboard open
+    const overlay = document.getElementById('search-overlay');
+    if (overlay) {
+      const savedQuery = document.getElementById('search-input')?.value || '';
+      state.searchQuery = savedQuery;
+      render();
+      setTimeout(() => {
+        const inp = document.getElementById('search-input');
+        if (inp) { inp.focus(); inp.selectionStart = inp.selectionEnd = inp.value.length; }
+      }, 10);
+    } else {
+      render();
+    }
   });
 
   // Filter tag buttons
@@ -715,15 +885,25 @@ function attachEvents() {
     state.page = 'catalog';
     state.itemDetail = null;
     render();
+    window.scrollTo(0, state.scrollY);
   });
 
-  // Variant pills
+  // Variant pills — surgical update instead of full render
   app.querySelectorAll('[data-variant]').forEach(btn => {
     btn.addEventListener('click', () => {
       state.selectedVariantIdx = parseInt(btn.dataset.variant);
-      render();
+      updateDetailVariant();
     });
   });
+
+  // Variant carousel arrows
+  const variantScroll = document.getElementById('variant-scroll');
+  const variantArrowL = document.getElementById('variant-arrow-left');
+  const variantArrowR = document.getElementById('variant-arrow-right');
+  if (variantScroll) {
+    if (variantArrowL) variantArrowL.addEventListener('click', () => variantScroll.scrollBy({ left: -120, behavior: 'smooth' }));
+    if (variantArrowR) variantArrowR.addEventListener('click', () => variantScroll.scrollBy({ left: 120, behavior: 'smooth' }));
+  }
 
   // Detail add to cart
   const detailAddCart = document.getElementById('detail-add-cart');
@@ -744,7 +924,10 @@ function attachEvents() {
 
   // Wishlist toggle from detail
   app.querySelectorAll('[data-wishlist-toggle]').forEach(btn => {
-    btn.addEventListener('click', () => toggleWishlist(btn.dataset.wishlistToggle));
+    btn.addEventListener('click', () => {
+      const vi = parseInt(btn.dataset.wishlistVi) || 0;
+      toggleWishlist(btn.dataset.wishlistToggle, vi);
+    });
   });
 
   // Cart remove
@@ -761,14 +944,16 @@ function attachEvents() {
   app.querySelectorAll('[data-remove-wishlist]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      toggleWishlist(btn.dataset.removeWishlist);
+      const vi = parseInt(btn.dataset.removeWishlistVi) || 0;
+      toggleWishlist(btn.dataset.removeWishlist, vi);
     });
   });
 
   // Copy command
   const copyBtn = document.getElementById('copy-cmd');
   if (copyBtn) copyBtn.addEventListener('click', () => {
-    const command = `${state.prefix}order ${state.cart.map(c => c.hex).join(', ')}`;
+    const expandedHexes = state.cart.flatMap(c => Array((c.qty || 1)).fill(c.hex));
+    const command = `${state.prefix}order ${expandedHexes.join(', ')}`;
     navigator.clipboard.writeText(command).then(() => {
       copyBtn.innerHTML = `${ICONS.check} Copied!`;
       setTimeout(() => { copyBtn.innerHTML = `${ICONS.copy} Copy`; }, 2000);
@@ -848,18 +1033,22 @@ function attachEvents() {
 }
 
 // ─── Actions ───
-function toggleWishlist(itemId) {
-  if (state.wishlist.includes(itemId)) {
-    state.wishlist = state.wishlist.filter(id => id !== itemId);
+function toggleWishlist(itemId, variantIdx = 0) {
+  if (isInWishlist(itemId, variantIdx)) {
+    state.wishlist = state.wishlist.filter(w => !(w.id === itemId && w.variantIdx === variantIdx));
   } else {
-    state.wishlist.push(itemId);
+    state.wishlist.push({ id: itemId, variantIdx });
   }
   storage.setWishlist(state.wishlist);
   render();
 }
 
+function getCartTotal() {
+  return state.cart.reduce((sum, c) => sum + (c.qty || 1), 0);
+}
+
 function addToCartFromIndex(itemId, variantIdx = 0) {
-  if (state.cart.length >= 40) return;
+  if (getCartTotal() >= 40) return;
   // Try to find expanded item info from currently displayed items
   const displayed = [
     ...(state.expandedItems || []),
@@ -868,7 +1057,6 @@ function addToCartFromIndex(itemId, variantIdx = 0) {
   ];
   const expandedItem = displayed.find(i => i.id === itemId && (i.variantIdx ?? 0) === variantIdx);
   if (expandedItem) {
-    if (state.cart.some(c => c.id === itemId && c.variantIdx === variantIdx)) return;
     addToCart({
       id: expandedItem.id,
       name: expandedItem.n,
@@ -882,7 +1070,6 @@ function addToCartFromIndex(itemId, variantIdx = 0) {
   // Fallback to index item
   const item = data.getIndexItem(itemId);
   if (!item) return;
-  if (state.cart.some(c => c.id === itemId && c.variantIdx === 0)) return;
   addToCart({
     id: item.id,
     name: item.n,
@@ -894,11 +1081,67 @@ function addToCartFromIndex(itemId, variantIdx = 0) {
 }
 
 function addToCart(entry) {
-  if (state.cart.length >= 40) return;
-  if (state.cart.some(c => c.id === entry.id && c.variantIdx === entry.variantIdx)) return;
-  state.cart.push(entry);
+  const existing = state.cart.find(c => c.id === entry.id && c.variantIdx === entry.variantIdx);
+  if (existing) {
+    if (getCartTotal() >= 40) return;
+    existing.qty = (existing.qty || 1) + 1;
+  } else {
+    if (getCartTotal() >= 40) return;
+    entry.qty = 1;
+    state.cart.push(entry);
+  }
   storage.setCart(state.cart);
-  render();
+  showCartPopup(existing || state.cart[state.cart.length - 1]);
+}
+
+let cartPopupTimeout = null;
+function showCartPopup(cartItem) {
+  let popup = document.getElementById('cart-popup');
+  if (!popup) {
+    popup = document.createElement('div');
+    popup.id = 'cart-popup';
+    popup.className = 'cart-popup';
+    document.body.appendChild(popup);
+  }
+  const total = getCartTotal();
+  popup.innerHTML = `
+    <div class="cart-popup-content">
+      <p class="cart-popup-name">${esc(cartItem.name)} — ${esc(cartItem.variant)}</p>
+      <div class="cart-popup-controls">
+        <button class="cart-popup-btn" id="cart-popup-minus">−</button>
+        <span class="cart-popup-qty" id="cart-popup-qty">${cartItem.qty || 1}</span>
+        <button class="cart-popup-btn" id="cart-popup-plus" ${total >= 40 ? 'disabled' : ''}>+</button>
+      </div>
+      <p class="cart-popup-total">${total}/40 items</p>
+    </div>`;
+  popup.classList.add('show');
+
+  // Attach popup events
+  const minus = document.getElementById('cart-popup-minus');
+  const plus = document.getElementById('cart-popup-plus');
+  minus?.addEventListener('click', () => {
+    if ((cartItem.qty || 1) <= 1) {
+      state.cart = state.cart.filter(c => !(c.id === cartItem.id && c.variantIdx === cartItem.variantIdx));
+      storage.setCart(state.cart);
+      popup.classList.remove('show');
+      render();
+      return;
+    }
+    cartItem.qty = (cartItem.qty || 1) - 1;
+    storage.setCart(state.cart);
+    showCartPopup(cartItem);
+  });
+  plus?.addEventListener('click', () => {
+    if (getCartTotal() >= 40) return;
+    cartItem.qty = (cartItem.qty || 1) + 1;
+    storage.setCart(state.cart);
+    showCartPopup(cartItem);
+  });
+
+  clearTimeout(cartPopupTimeout);
+  cartPopupTimeout = setTimeout(() => {
+    popup.classList.remove('show');
+  }, 3000);
 }
 
 async function loadItemDetail(itemId) {

@@ -97,11 +97,18 @@ async function loadCategoryData(category) {
   return categoryCache[catSlug];
 }
 
+const COLOR_TAGS = new Set(['aqua','beige','black','blue','brown','colorful','gray','green','orange','pink','purple','red','white','yellow']);
+
 function expandCategoryItems(categoryItems) {
   const expanded = [];
   for (const item of categoryItems) {
+    // Separate non-color tags from parent item
+    const nonColorTags = (item.tags || []).filter(t => !COLOR_TAGS.has(t.toLowerCase()));
     for (let vi = 0; vi < item.variants.length; vi++) {
       const v = item.variants[vi];
+      // Build per-variant tags: non-color parent tags + this variant's colors only
+      const variantColors = [v.color1, v.color2].filter(Boolean);
+      const variantTags = [...nonColorTags, ...variantColors].join('|').toLowerCase();
       expanded.push({
         id: item.id,
         variantIdx: vi,
@@ -110,7 +117,7 @@ function expandCategoryItems(categoryItems) {
         hex: v.hexVariated || v.hex || item.hexBase,
         img: v.image || item.image,
         c: item.category,
-        t: (item.tags || []).join('|').toLowerCase(),
+        t: variantTags,
       });
     }
   }
