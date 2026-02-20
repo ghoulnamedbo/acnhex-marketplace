@@ -28,13 +28,18 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
+  const url = new URL(e.request.url);
+  // Strip query strings for cache matching so ?v=8 hits the cached asset
+  url.search = '';
+  const cleanRequest = new Request(url.toString(), e.request);
+
   e.respondWith(
-    caches.match(e.request).then(cached => {
+    caches.match(cleanRequest).then(cached => {
       if (cached) return cached;
       return fetch(e.request).then(resp => {
         if (resp.ok && e.request.url.includes('/data/')) {
           const clone = resp.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+          caches.open(CACHE_NAME).then(cache => cache.put(cleanRequest, clone));
         }
         return resp;
       });
