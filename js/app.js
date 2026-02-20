@@ -319,13 +319,11 @@ function renderCart() {
 // ─── Wishlist Page ───
 async function renderWishlist() {
   // Load full detail data for each wishlist entry to get correct variant info
-  console.log('[Wishlist] rendering, state:', JSON.stringify(state.wishlist));
   const wishlistEntries = [];
   for (const w of state.wishlist) {
     const detail = await data.getItemDetail(w.id);
     if (!detail) continue;
     const vi = w.variantIdx || 0;
-    console.log('[Wishlist] item', w.id, 'vi=', vi, 'variant=', detail.variants[vi]?.name);
     const variant = detail.variants[vi] || detail.variants[0];
     wishlistEntries.push({
       id: detail.id,
@@ -540,22 +538,26 @@ function renderSearch() {
     </div>
     ${state.searchFilterOpen ? `
     <div class="filter-panel" id="filter-panel">
-      ${Object.entries(tagGroups).map(([group, tags]) => `
-        <div class="filter-group">
+      ${Object.entries(tagGroups).map(([group, tags]) => {
+        const prefix = group === 'Color 1 (Primary)' ? 'c1:' : group === 'Color 2 (Secondary)' ? 'c2:' : '';
+        return `<div class="filter-group">
           <h4 class="filter-group-label">${esc(group)}</h4>
           <div class="filter-tags">
-            ${tags.map(t => `
-              <button class="filter-tag ${state.searchFilterTags.includes(t) ? 'active' : ''}" data-filter-tag="${esc(t)}">${esc(t)}</button>
-            `).join('')}
+            ${tags.map(t => {
+              const tagVal = prefix + t;
+              return `<button class="filter-tag ${state.searchFilterTags.includes(tagVal) ? 'active' : ''}" data-filter-tag="${esc(tagVal)}">${esc(t)}</button>`;
+            }).join('')}
           </div>
-        </div>`).join('')}
+        </div>`;
+      }).join('')}
       ${hasFilters ? `<button class="filter-clear-btn" id="filter-clear">Clear all filters</button>` : ''}
     </div>` : ''}
     ${hasFilters ? `
       <div class="active-filters hide-scrollbar">
-        ${state.searchFilterTags.map(t => `
-          <button class="active-filter-pill" data-remove-filter="${esc(t)}">${esc(t)} ✕</button>
-        `).join('')}
+        ${state.searchFilterTags.map(t => {
+          const label = t.startsWith('c1:') ? `${t.slice(3)} (1)` : t.startsWith('c2:') ? `${t.slice(3)} (2)` : t;
+          return `<button class="active-filter-pill" data-remove-filter="${esc(t)}">${esc(label)} ✕</button>`;
+        }).join('')}
       </div>` : ''}
     <div id="search-results">${renderSearchResultsHTML()}</div>
   </div>`;
@@ -594,9 +596,50 @@ async function runSearch() {
     container.innerHTML = renderSearchResultsHTML();
     attachSearchResultEvents();
     attachSearchScrollObserver();
+    // Re-render active filter pills
+    updateFilterPills();
   } else {
     render();
   }
+}
+
+function updateFilterPills() {
+  const hasFilters = state.searchFilterTags.length > 0;
+  // Update filter pills
+  let pillsContainer = document.querySelector('.active-filters');
+  if (hasFilters) {
+    const pillsHTML = `<div class="active-filters hide-scrollbar">
+      ${state.searchFilterTags.map(t => {
+        const label = t.startsWith('c1:') ? `${t.slice(3)} (1)` : t.startsWith('c2:') ? `${t.slice(3)} (2)` : t;
+        return `<button class="active-filter-pill" data-remove-filter="${esc(t)}">${esc(label)} ✕</button>`;
+      }).join('')}
+    </div>`;
+    if (pillsContainer) {
+      pillsContainer.outerHTML = pillsHTML;
+    } else {
+      const searchResults = document.getElementById('search-results');
+      if (searchResults) searchResults.insertAdjacentHTML('beforebegin', pillsHTML);
+    }
+  } else if (pillsContainer) {
+    pillsContainer.remove();
+  }
+  // Re-attach pill event handlers
+  document.querySelectorAll('[data-remove-filter]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      state.searchFilterTags = state.searchFilterTags.filter(t => t !== btn.dataset.removeFilter);
+      await runSearch();
+    });
+  });
+  // Update filter toggle button badge
+  const filterToggle = document.getElementById('filter-toggle');
+  if (filterToggle) {
+    filterToggle.innerHTML = `${ICONS.filter}${hasFilters ? `<span class="filter-badge">${state.searchFilterTags.length}</span>` : ''}`;
+    filterToggle.classList.toggle('active', hasFilters);
+  }
+  // Update filter panel tag active states
+  document.querySelectorAll('[data-filter-tag]').forEach(btn => {
+    btn.classList.toggle('active', state.searchFilterTags.includes(btn.dataset.filterTag));
+  });
 }
 
 async function loadMoreSearchResults() {
@@ -1045,7 +1088,6 @@ function attachEvents() {
         hex: btn.dataset.wlHex,
         img: btn.dataset.wlImg,
       };
-      console.log('[WL→Cart]', JSON.stringify(entry));
       addToCart(entry);
     });
   });
@@ -1164,13 +1206,11 @@ function attachEvents() {
 
 // ─── Actions ───
 async function toggleWishlist(itemId, variantIdx = 0) {
-  console.log('[Wishlist] toggle', itemId, 'vi=', variantIdx);
   if (isInWishlist(itemId, variantIdx)) {
     state.wishlist = state.wishlist.filter(w => !(w.id === itemId && w.variantIdx === variantIdx));
   } else {
     state.wishlist.push({ id: itemId, variantIdx });
   }
-  console.log('[Wishlist] saved:', JSON.stringify(state.wishlist));
   storage.setWishlist(state.wishlist);
   await render();
 }

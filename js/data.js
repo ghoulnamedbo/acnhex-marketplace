@@ -118,6 +118,8 @@ function expandCategoryItems(categoryItems) {
         img: v.image || item.image,
         c: item.category,
         t: variantTags,
+        c1: (v.color1 || '').toLowerCase(),
+        c2: (v.color2 || '').toLowerCase(),
       });
     }
   }
@@ -212,8 +214,10 @@ export function getAvailableTags() {
     }
   }
 
+  const sortedColors = [...colors].sort();
   tagGroupsCache = {
-    Colors: [...colors].sort(),
+    'Color 1 (Primary)': sortedColors,
+    'Color 2 (Secondary)': sortedColors,
     Styles: [...styles].sort(),
     Catalog: [...catalogStatus].sort(),
     Other: [...other].sort(),
@@ -230,7 +234,13 @@ export async function searchExpandedWithTags(query, tags = [], offset = 0, limit
   const filtered = all.filter(i => {
     if (q && !(i.n.toLowerCase().includes(q) || i.t.includes(q))) return false;
     for (const tag of tags) {
-      if (!i.t.includes(tag.toLowerCase())) return false;
+      if (tag.startsWith('c1:')) {
+        if (i.c1 !== tag.slice(3).toLowerCase()) return false;
+      } else if (tag.startsWith('c2:')) {
+        if (i.c2 !== tag.slice(3).toLowerCase()) return false;
+      } else {
+        if (!i.t.includes(tag.toLowerCase())) return false;
+      }
     }
     return q || tags.length > 0;
   });
