@@ -28,6 +28,7 @@ const state = {
   wishlist: storage.getWishlist(),
   prefix: storage.getPrefix(),
   seenIntro: storage.getSeenIntro(),
+  loadMode: storage.getLoadMode(),
   activeCategory: 'All',
   selectedItemId: null,
   selectedVariantIdx: 0,
@@ -161,7 +162,8 @@ async function renderCatalog() {
       ${items.map((item, idx) => renderItemCard(item, idx)).join('')}
     </div>
 
-    ${!isRandom && items.length < total ? `<button class="load-more-btn" id="load-more">Load More</button>` : ''}
+    ${!isRandom && items.length < total && state.loadMode === 'batch' ? `<button class="load-more-btn" id="load-more">Load More</button>` : ''}
+    ${!isRandom && items.length < total && state.loadMode === 'scroll' ? `<div id="scroll-sentinel" style="height:1px"></div>` : ''}
   </div>`;
 }
 
@@ -401,6 +403,20 @@ function renderSettings() {
         </div>
       </div>
 
+      <div class="settings-card">
+        <h4 class="label-upper" style="margin-bottom:14px">Item Loading</h4>
+        <div class="load-mode-options">
+          <button class="load-mode-btn ${state.loadMode === 'batch' ? 'active' : ''}" data-settings-load="batch">
+            <span class="load-mode-icon">📦</span>
+            <span class="load-mode-label">Item Batches</span>
+          </button>
+          <button class="load-mode-btn ${state.loadMode === 'scroll' ? 'active' : ''}" data-settings-load="scroll">
+            <span class="load-mode-icon">🔄</span>
+            <span class="load-mode-label">Continuous Scroll</span>
+          </button>
+        </div>
+      </div>
+
       <div class="settings-card" style="border:1px solid var(--dolce-pink)">
         <h4 class="label-upper" style="margin-bottom:14px;color:var(--danger)">Danger Zone</h4>
         <button class="clear-btn" id="clear-data">Clear All Data</button>
@@ -484,6 +500,20 @@ function renderModal() {
         <span class="code-value">0x1B2C</span>
       </div>
 
+      <h4 class="label-upper" style="margin-bottom:10px;margin-top:20px">How should items load?</h4>
+      <div class="load-mode-options">
+        <button class="load-mode-btn ${state.loadMode === 'batch' ? 'active' : ''}" data-modal-load="batch">
+          <span class="load-mode-icon">📦</span>
+          <span class="load-mode-label">Item Batches</span>
+          <span class="load-mode-desc">Load 50 items at a time</span>
+        </button>
+        <button class="load-mode-btn ${state.loadMode === 'scroll' ? 'active' : ''}" data-modal-load="scroll">
+          <span class="load-mode-icon">🔄</span>
+          <span class="load-mode-label">Continuous Scroll</span>
+          <span class="load-mode-desc">Items load as you scroll</span>
+        </button>
+      </div>
+
       <button class="modal-confirm-btn" id="modal-confirm">Let's go! 🛒</button>
     </div>
   </div>`;
@@ -538,7 +568,8 @@ function renderSearchResultsHTML() {
     return `<p class="text-secondary" style="margin-bottom:16px">${results.total} result${results.total !== 1 ? 's' : ''}${state.searchQuery ? ` for "${esc(state.searchQuery)}"` : ''}${hasFilters ? ` (${state.searchFilterTags.length} filter${state.searchFilterTags.length !== 1 ? 's' : ''})` : ''}</p>
       <div class="item-grid">
         ${results.items.map((item, idx) => renderItemCard(item, idx)).join('')}
-      </div>`;
+      </div>
+      ${results.items.length < results.total ? '<div id="search-scroll-sentinel" style="height:1px"></div>' : ''}`;
   }
   return `<div class="empty-state">
       <p class="empty-emoji">🔍</p>
@@ -548,6 +579,8 @@ function renderSearchResultsHTML() {
 }
 
 // ─── Search Helper ───
+let searchScrollLoading = false;
+
 async function runSearch() {
   if (state.searchQuery || state.searchFilterTags.length > 0) {
     state.searchResults = await data.searchExpandedWithTags(state.searchQuery, state.searchFilterTags, 0, 50);
@@ -558,9 +591,42 @@ async function runSearch() {
   if (container) {
     container.innerHTML = renderSearchResultsHTML();
     attachSearchResultEvents();
+    attachSearchScrollObserver();
   } else {
     render();
   }
+}
+
+async function loadMoreSearchResults() {
+  if (searchScrollLoading || !state.searchResults) return;
+  if (state.searchResults.items.length >= state.searchResults.total) return;
+  searchScrollLoading = true;
+  const more = await data.searchExpandedWithTags(
+    state.searchQuery, state.searchFilterTags,
+    state.searchResults.items.length, 50
+  );
+  state.searchResults.items = [...state.searchResults.items, ...more.items];
+  state.searchResults.total = more.total;
+  searchScrollLoading = false;
+  const container = document.getElementById('search-results');
+  if (container) {
+    container.innerHTML = renderSearchResultsHTML();
+    attachSearchResultEvents();
+    attachSearchScrollObserver();
+  }
+}
+
+function attachSearchScrollObserver() {
+  const sentinel = document.getElementById('search-scroll-sentinel');
+  if (!sentinel) return;
+  const scrollRoot = sentinel.closest('.search-overlay');
+  const observer = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting) {
+      observer.disconnect();
+      loadMoreSearchResults();
+    }
+  }, { root: scrollRoot, rootMargin: '200px' });
+  observer.observe(sentinel);
 }
 
 // ─── Load Expanded Catalog ───
@@ -795,9 +861,20 @@ function attachEvents() {
     });
   });
 
-  // Load more
+  // Load more (batch mode)
   const loadMore = document.getElementById('load-more');
   if (loadMore) loadMore.addEventListener('click', () => { loadExpandedCatalog(); });
+
+  // Infinite scroll (scroll mode)
+  const scrollSentinel = document.getElementById('scroll-sentinel');
+  if (scrollSentinel) {
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && !state.expandedLoading) {
+        loadExpandedCatalog();
+      }
+    }, { rootMargin: '200px' });
+    observer.observe(scrollSentinel);
+  }
 
   // Random items
   const randomBtn = document.getElementById('random-btn');
@@ -999,6 +1076,17 @@ function attachEvents() {
     });
   });
 
+  // Settings load mode
+  app.querySelectorAll('[data-settings-load]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.loadMode = btn.dataset.settingsLoad;
+      storage.setLoadMode(state.loadMode);
+      app.querySelectorAll('[data-settings-load]').forEach(b => {
+        b.classList.toggle('active', b.dataset.settingsLoad === state.loadMode);
+      });
+    });
+  });
+
   // Clear data
   const clearBtn = document.getElementById('clear-data');
   if (clearBtn) clearBtn.addEventListener('click', () => {
@@ -1018,7 +1106,17 @@ function attachEvents() {
     state.seenIntro = true;
     storage.setSeenIntro(true);
     storage.setPrefix(state.prefix);
+    storage.setLoadMode(state.loadMode);
     render();
+  });
+
+  app.querySelectorAll('[data-modal-load]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.loadMode = btn.dataset.modalLoad;
+      app.querySelectorAll('[data-modal-load]').forEach(b => {
+        b.classList.toggle('active', b.dataset.modalLoad === state.loadMode);
+      });
+    });
   });
 
   const modalPrefix = document.getElementById('modal-prefix');
