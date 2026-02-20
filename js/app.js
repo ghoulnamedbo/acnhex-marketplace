@@ -883,10 +883,10 @@ function attachEvents() {
 
   // Detail page
   const detailBack = document.getElementById('detail-back');
-  if (detailBack) detailBack.addEventListener('click', () => {
+  if (detailBack) detailBack.addEventListener('click', async () => {
     state.page = 'catalog';
     state.itemDetail = null;
-    render();
+    await render();
     window.scrollTo(0, state.scrollY);
   });
 
