@@ -315,11 +315,13 @@ function renderCart() {
 // ─── Wishlist Page ───
 async function renderWishlist() {
   // Load full detail data for each wishlist entry to get correct variant info
+  console.log('[Wishlist] rendering, state:', JSON.stringify(state.wishlist));
   const wishlistEntries = [];
   for (const w of state.wishlist) {
     const detail = await data.getItemDetail(w.id);
     if (!detail) continue;
     const vi = w.variantIdx || 0;
+    console.log('[Wishlist] item', w.id, 'vi=', vi, 'variant=', detail.variants[vi]?.name);
     const variant = detail.variants[vi] || detail.variants[0];
     wishlistEntries.push({
       id: detail.id,
@@ -944,14 +946,16 @@ function attachEvents() {
   app.querySelectorAll('[data-wl-add]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      addToCart({
+      const entry = {
         id: btn.dataset.wlId,
         name: btn.dataset.wlName,
         variant: btn.dataset.wlVariant,
         variantIdx: parseInt(btn.dataset.wlVi) || 0,
         hex: btn.dataset.wlHex,
         img: btn.dataset.wlImg,
-      });
+      };
+      console.log('[WL→Cart]', JSON.stringify(entry));
+      addToCart(entry);
     });
   });
 
@@ -1048,11 +1052,13 @@ function attachEvents() {
 
 // ─── Actions ───
 async function toggleWishlist(itemId, variantIdx = 0) {
+  console.log('[Wishlist] toggle', itemId, 'vi=', variantIdx);
   if (isInWishlist(itemId, variantIdx)) {
     state.wishlist = state.wishlist.filter(w => !(w.id === itemId && w.variantIdx === variantIdx));
   } else {
     state.wishlist.push({ id: itemId, variantIdx });
   }
+  console.log('[Wishlist] saved:', JSON.stringify(state.wishlist));
   storage.setWishlist(state.wishlist);
   await render();
 }
