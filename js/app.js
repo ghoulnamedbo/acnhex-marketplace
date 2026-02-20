@@ -218,9 +218,16 @@ function renderItemCard(item, idx) {
         <span class="item-variant">${esc(item.v1)}</span>
         <span class="hex-badge">${esc(item.hex)}</span>
       </div>
-      <button class="add-cart-btn" data-add-cart="${esc(item.id)}" ${cartFull ? 'disabled' : ''}>
-        ${ICONS.plus} Add to Cart
-      </button>
+      <div class="qty-row">
+        <div class="qty-control">
+          <button class="qty-btn" data-qty-minus="${esc(item.id)}-${vi}">−</button>
+          <span class="qty-value" id="qty-${esc(item.id)}-${vi}">0</span>
+          <button class="qty-btn" data-qty-plus="${esc(item.id)}-${vi}">+</button>
+        </div>
+        <button class="add-cart-btn" data-add-cart="${esc(item.id)}" ${cartFull ? 'disabled' : ''}>
+          ${ICONS.plus} Add to Cart
+        </button>
+      </div>
     </div>
   </div>`;
 }
@@ -291,12 +298,26 @@ async function renderDetail() {
     </div>
 
     <div class="sticky-cta" id="detail-cta">
-      <button class="cta-btn-secondary" data-wishlist-toggle="${esc(item.id)}" data-wishlist-vi="${vi}">
-        ${inWishlist ? '💚 Remove from Wishlist' : '💚 Add to Wishlist'}
-      </button>
-      <button class="cta-btn" id="detail-add-cart" ${cartFull ? 'disabled' : ''}>
-        🛒 Add to Cart
-      </button>
+      <div class="detail-qty-row">
+        <div class="qty-control">
+          <button class="qty-btn" data-detail-qty-minus="list">−</button>
+          <span class="qty-value" id="detail-qty-list">0</span>
+          <button class="qty-btn" data-detail-qty-plus="list">+</button>
+        </div>
+        <button class="cta-btn-secondary" data-wishlist-toggle="${esc(item.id)}" data-wishlist-vi="${vi}">
+          ${inWishlist ? '💚 Remove from List' : '💚 Add to List'}
+        </button>
+      </div>
+      <div class="detail-qty-row">
+        <div class="qty-control">
+          <button class="qty-btn" data-detail-qty-minus="cart">−</button>
+          <span class="qty-value" id="detail-qty-cart">0</span>
+          <button class="qty-btn" data-detail-qty-plus="cart">+</button>
+        </div>
+        <button class="cta-btn" id="detail-add-cart" ${cartFull ? 'disabled' : ''}>
+          🛒 Add to Cart
+        </button>
+      </div>
     </div>
   </div>`;
 }
@@ -786,7 +807,7 @@ function attachSearchResultEvents() {
   if (!container) return;
   container.querySelectorAll('[data-item]').forEach(card => {
     card.addEventListener('click', (e) => {
-      if (e.target.closest('[data-heart]') || e.target.closest('[data-add-cart]')) return;
+      if (e.target.closest('[data-heart]') || e.target.closest('[data-add-cart]') || e.target.closest('.qty-btn')) return;
       state.selectedItemId = card.dataset.item;
       state.selectedVariantIdx = parseInt(card.dataset.vi) || 0;
       state.searchOpen = false;
@@ -803,12 +824,42 @@ function attachSearchResultEvents() {
       toggleWishlist(btn.dataset.heart, vi);
     });
   });
+  // Qty +/- in search results
+  container.querySelectorAll('[data-qty-plus]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const span = document.getElementById('qty-' + btn.dataset.qtyPlus);
+      if (span) {
+        const cur = parseInt(span.textContent) || 0;
+        if (cur < 40 - getCartTotal()) span.textContent = cur + 1;
+      }
+    });
+  });
+  container.querySelectorAll('[data-qty-minus]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const span = document.getElementById('qty-' + btn.dataset.qtyMinus);
+      if (span) {
+        const cur = parseInt(span.textContent) || 0;
+        if (cur > 0) span.textContent = cur - 1;
+      }
+    });
+  });
   container.querySelectorAll('[data-add-cart]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const card = btn.closest('[data-item]');
       const vi = card ? parseInt(card.dataset.vi) || 0 : 0;
-      addToCartFromIndex(btn.dataset.addCart, vi);
+      const span = document.getElementById('qty-' + btn.dataset.addCart + '-' + vi);
+      const qty = span ? parseInt(span.textContent) || 0 : 0;
+      if (qty < 1) {
+        addToCartFromIndex(btn.dataset.addCart, vi);
+      } else {
+        for (let i = 0; i < qty; i++) {
+          addToCartFromIndex(btn.dataset.addCart, vi);
+        }
+        if (span) span.textContent = '0';
+      }
     });
   });
 }
@@ -859,28 +910,60 @@ function updateDetailVariant() {
   const ctaEl = document.getElementById('detail-cta');
   if (ctaEl) {
     ctaEl.innerHTML = `
-      <button class="cta-btn-secondary" data-wishlist-toggle="${esc(item.id)}" data-wishlist-vi="${vi}">
-        ${inWishlist ? '💚 Remove from Wishlist' : '💚 Add to Wishlist'}
-      </button>
-      <button class="cta-btn" id="detail-add-cart" ${cartFull ? 'disabled' : ''}>
-        🛒 Add to Cart
-      </button>`;
+      <div class="detail-qty-row">
+        <div class="qty-control">
+          <button class="qty-btn" data-detail-qty-minus="list">−</button>
+          <span class="qty-value" id="detail-qty-list">0</span>
+          <button class="qty-btn" data-detail-qty-plus="list">+</button>
+        </div>
+        <button class="cta-btn-secondary" data-wishlist-toggle="${esc(item.id)}" data-wishlist-vi="${vi}">
+          ${inWishlist ? '💚 Remove from List' : '💚 Add to List'}
+        </button>
+      </div>
+      <div class="detail-qty-row">
+        <div class="qty-control">
+          <button class="qty-btn" data-detail-qty-minus="cart">−</button>
+          <span class="qty-value" id="detail-qty-cart">0</span>
+          <button class="qty-btn" data-detail-qty-plus="cart">+</button>
+        </div>
+        <button class="cta-btn" id="detail-add-cart" ${cartFull ? 'disabled' : ''}>
+          🛒 Add to Cart
+        </button>
+      </div>`;
     // Re-attach CTA events
+    attachDetailQtyEvents();
     const detailAddCart = document.getElementById('detail-add-cart');
     if (detailAddCart) detailAddCart.addEventListener('click', () => {
-      addToCart({
-        id: item.id,
-        name: item.name,
-        variant: variant.name,
-        variantIdx: vi,
-        hex: variant.hexVariated || variant.hex || item.hexBase,
-        img: variant.image || item.image,
-      });
+      const qty = parseInt(document.getElementById('detail-qty-cart')?.textContent) || 0;
+      if (qty < 1) return;
+      for (let i = 0; i < qty; i++) {
+        addToCart({
+          id: item.id,
+          name: item.name,
+          variant: variant.name,
+          variantIdx: vi,
+          hex: variant.hexVariated || variant.hex || item.hexBase,
+          img: variant.image || item.image,
+        });
+      }
+      const span = document.getElementById('detail-qty-cart');
+      if (span) span.textContent = '0';
     });
     ctaEl.querySelectorAll('[data-wishlist-toggle]').forEach(btn => {
       btn.addEventListener('click', () => {
         const wvi = parseInt(btn.dataset.wishlistVi) || 0;
-        toggleWishlist(btn.dataset.wishlistToggle, wvi);
+        const qty = parseInt(document.getElementById('detail-qty-list')?.textContent) || 0;
+        if (qty < 1) {
+          toggleWishlist(btn.dataset.wishlistToggle, wvi);
+        } else {
+          const loved = state.wishlists.lists.find(l => l.id === '__loved__');
+          for (let i = 0; i < qty; i++) {
+            loved.items.push({ id: btn.dataset.wishlistToggle, variantIdx: wvi });
+          }
+          storage.setWishlists(state.wishlists);
+          showWishlistToast(btn.dataset.wishlistToggle, wvi, 'Loved Items');
+          render();
+        }
       });
     });
   }
@@ -891,6 +974,33 @@ function updateDetailVariant() {
     heartBtn.dataset.heartVi = vi;
     heartBtn.innerHTML = ICONS.heartLg(inWishlist);
   }
+}
+
+// ─── Detail Qty Events Helper ───
+function attachDetailQtyEvents() {
+  document.querySelectorAll('[data-detail-qty-plus]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const type = btn.dataset.detailQtyPlus;
+      const span = document.getElementById('detail-qty-' + type);
+      if (span) {
+        const cur = parseInt(span.textContent) || 0;
+        const max = type === 'cart' ? 40 - getCartTotal() : 40;
+        if (cur < max) span.textContent = cur + 1;
+      }
+    });
+  });
+  document.querySelectorAll('[data-detail-qty-minus]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const type = btn.dataset.detailQtyMinus;
+      const span = document.getElementById('detail-qty-' + type);
+      if (span) {
+        const cur = parseInt(span.textContent) || 0;
+        if (cur > 0) span.textContent = cur - 1;
+      }
+    });
+  });
 }
 
 // ─── Wishlist Toast ───
@@ -998,7 +1108,7 @@ function attachEvents() {
     card.addEventListener('click', (e) => {
       if (e.target.closest('[data-heart]') || e.target.closest('[data-add-cart]') ||
           e.target.closest('.remove-btn') || e.target.closest('.wishlist-add-btn') ||
-          e.target.closest('[data-remove-wishlist]')) return;
+          e.target.closest('[data-remove-wishlist]') || e.target.closest('.qty-btn')) return;
       state.scrollY = window.scrollY;
       state.selectedItemId = card.dataset.item;
       state.selectedVariantIdx = parseInt(card.dataset.vi) || 0;
@@ -1019,13 +1129,45 @@ function attachEvents() {
     });
   });
 
-  // Add to cart buttons
+  // Qty +/- buttons in item cards
+  app.querySelectorAll('[data-qty-plus]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const span = document.getElementById('qty-' + btn.dataset.qtyPlus);
+      if (span) {
+        const cur = parseInt(span.textContent) || 0;
+        const remaining = 40 - getCartTotal();
+        if (cur < remaining) span.textContent = cur + 1;
+      }
+    });
+  });
+  app.querySelectorAll('[data-qty-minus]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const span = document.getElementById('qty-' + btn.dataset.qtyMinus);
+      if (span) {
+        const cur = parseInt(span.textContent) || 0;
+        if (cur > 0) span.textContent = cur - 1;
+      }
+    });
+  });
+
+  // Add to cart buttons (with qty)
   app.querySelectorAll('[data-add-cart]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const card = btn.closest('[data-item]');
       const vi = card ? parseInt(card.dataset.vi) || 0 : 0;
-      addToCartFromIndex(btn.dataset.addCart, vi);
+      const span = document.getElementById('qty-' + btn.dataset.addCart + '-' + vi);
+      const qty = span ? parseInt(span.textContent) || 0 : 0;
+      if (qty < 1) {
+        addToCartFromIndex(btn.dataset.addCart, vi);
+      } else {
+        for (let i = 0; i < qty; i++) {
+          addToCartFromIndex(btn.dataset.addCart, vi);
+        }
+        if (span) span.textContent = '0';
+      }
     });
   });
 
@@ -1155,28 +1297,50 @@ function attachEvents() {
     if (variantArrowR) variantArrowR.addEventListener('click', () => variantScroll.scrollBy({ left: 120, behavior: 'smooth' }));
   }
 
-  // Detail add to cart
+  // Detail qty +/- buttons
+  attachDetailQtyEvents();
+
+  // Detail add to cart (with qty)
   const detailAddCart = document.getElementById('detail-add-cart');
   if (detailAddCart) detailAddCart.addEventListener('click', () => {
     if (state.itemDetail) {
       const vi = state.selectedVariantIdx;
       const variant = state.itemDetail.variants[vi] || state.itemDetail.variants[0];
-      addToCart({
-        id: state.itemDetail.id,
-        name: state.itemDetail.name,
-        variant: variant.name,
-        variantIdx: vi,
-        hex: variant.hexVariated || variant.hex || state.itemDetail.hexBase,
-        img: variant.image || state.itemDetail.image,
-      });
+      const qty = parseInt(document.getElementById('detail-qty-cart')?.textContent) || 0;
+      const count = qty < 1 ? 1 : qty;
+      for (let i = 0; i < count; i++) {
+        addToCart({
+          id: state.itemDetail.id,
+          name: state.itemDetail.name,
+          variant: variant.name,
+          variantIdx: vi,
+          hex: variant.hexVariated || variant.hex || state.itemDetail.hexBase,
+          img: variant.image || state.itemDetail.image,
+        });
+      }
+      const span = document.getElementById('detail-qty-cart');
+      if (span) span.textContent = '0';
     }
   });
 
-  // Wishlist toggle from detail
+  // Wishlist toggle from detail (with qty)
   app.querySelectorAll('[data-wishlist-toggle]').forEach(btn => {
     btn.addEventListener('click', () => {
       const vi = parseInt(btn.dataset.wishlistVi) || 0;
-      toggleWishlist(btn.dataset.wishlistToggle, vi);
+      const qty = parseInt(document.getElementById('detail-qty-list')?.textContent) || 0;
+      if (qty < 1) {
+        toggleWishlist(btn.dataset.wishlistToggle, vi);
+      } else {
+        const loved = state.wishlists.lists.find(l => l.id === '__loved__');
+        for (let i = 0; i < qty; i++) {
+          loved.items.push({ id: btn.dataset.wishlistToggle, variantIdx: vi });
+        }
+        storage.setWishlists(state.wishlists);
+        showWishlistToast(btn.dataset.wishlistToggle, vi, 'Loved Items');
+        const span = document.getElementById('detail-qty-list');
+        if (span) span.textContent = '0';
+        render();
+      }
     });
   });
 

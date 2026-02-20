@@ -582,6 +582,28 @@ body { min-height: 100vh; min-height: 100dvh; }
 .install-card h4 { font-size: 13px; font-weight: 700; color: var(--palm-leaf); margin-bottom: 8px; }
 .install-card p { font-size: 11px; color: var(--text-secondary); line-height: 1.6; }
 
+/* ─── Qty Controls ─── */
+.qty-row { display: flex; gap: 6px; align-items: center; }
+.qty-control {
+  display: flex; align-items: center;
+  border: 1.5px solid var(--border); border-radius: 10px;
+  overflow: hidden; flex-shrink: 0;
+}
+.qty-btn {
+  width: 28px; height: 28px; border: none; background: var(--bg);
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  font-family: var(--font); color: var(--text-primary);
+  display: flex; align-items: center; justify-content: center;
+}
+.qty-btn:active { background: var(--border); }
+.qty-value {
+  width: 22px; text-align: center; font-size: 12px; font-weight: 700;
+  font-family: var(--font); color: var(--text-primary);
+}
+.detail-qty-row { display: flex; gap: 10px; align-items: center; }
+.detail-qty-row .cta-btn,
+.detail-qty-row .cta-btn-secondary { flex: 1; }
+
 /* ─── Wishlist Toast ─── */
 .wishlist-toast {
   position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
