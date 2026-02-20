@@ -997,11 +997,12 @@ function renderListPicker() {
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
         ${state.wishlists.lists.map(list => {
           const inThis = list.items.some(w => w.id === item.id && w.variantIdx === item.variantIdx);
-          const full = list.cap !== null && list.items.length >= list.cap && !inThis;
+          const full = list.cap !== null && list.items.length >= list.cap;
           const lovedDisabled = item.excludeLoved && list.id === '__loved__';
-          return `<button class="list-pick-btn ${inThis ? 'active' : ''} ${lovedDisabled ? 'greyed' : ''}" data-pick-list="${esc(list.id)}" ${full || lovedDisabled ? 'disabled' : ''}>
+          const isLoved = list.id === '__loved__';
+          return `<button class="list-pick-btn ${isLoved && inThis ? 'active' : ''} ${lovedDisabled ? 'greyed' : ''}" data-pick-list="${esc(list.id)}" ${full || lovedDisabled ? 'disabled' : ''}>
             <span>${esc(list.name)}</span>
-            <span style="font-size:10px;color:var(--text-light)">${list.items.length}${list.cap ? '/' + list.cap : ''}</span>
+            <span style="font-size:10px;color:var(--text-light)">${list.items.length}${list.cap ? '/' + list.cap : ''}${!isLoved && inThis ? ' · has item' : ''}</span>
           </button>`;
         }).join('')}
       </div>
@@ -1424,13 +1425,17 @@ function attachEvents() {
       if (!item) return;
       const list = state.wishlists.lists.find(l => l.id === listId);
       if (!list) return;
-      const idx = list.items.findIndex(w => w.id === item.id && w.variantIdx === item.variantIdx);
-      if (idx >= 0) {
-        list.items.splice(idx, 1);
+      if (list.id === '__loved__') {
+        // Loved Items: toggle (single instance only)
+        const idx = list.items.findIndex(w => w.id === item.id && w.variantIdx === item.variantIdx);
+        if (idx >= 0) {
+          list.items.splice(idx, 1);
+        } else if (!list.items.some(w => w.id === item.id && w.variantIdx === item.variantIdx)) {
+          list.items.push({ id: item.id, variantIdx: item.variantIdx });
+        }
       } else {
+        // Other lists: always add (allow duplicates)
         if (list.cap !== null && list.items.length >= list.cap) return;
-        // Loved Items: only one instance per item
-        if (list.id === '__loved__' && list.items.some(w => w.id === item.id && w.variantIdx === item.variantIdx)) return;
         list.items.push({ id: item.id, variantIdx: item.variantIdx });
       }
       storage.setWishlists(state.wishlists);
