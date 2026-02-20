@@ -355,7 +355,7 @@ async function renderWishlist() {
               <p style="font-size:10px;color:var(--text-secondary)">${esc(item.v1)} · ${esc(item.hex)}</p>
             </div>
             <div class="wishlist-actions">
-              <button class="wishlist-add-btn" data-add-cart="${esc(item.id)}">
+              <button class="wishlist-add-btn" data-wl-add data-wl-id="${esc(item.id)}" data-wl-vi="${vi}" data-wl-name="${esc(item.n)}" data-wl-variant="${esc(item.v1)}" data-wl-hex="${esc(item.hex)}" data-wl-img="${esc(item.img || '')}">
                 ${ICONS.plus}
               </button>
               <button class="remove-btn" data-remove-wishlist="${esc(item.id)}" data-remove-wishlist-vi="${vi}">${ICONS.trash}</button>
@@ -937,6 +937,21 @@ function attachEvents() {
       state.cart.splice(idx, 1);
       storage.setCart(state.cart);
       render();
+    });
+  });
+
+  // Wishlist add-to-cart (uses embedded data attributes for correct variant)
+  app.querySelectorAll('[data-wl-add]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      addToCart({
+        id: btn.dataset.wlId,
+        name: btn.dataset.wlName,
+        variant: btn.dataset.wlVariant,
+        variantIdx: parseInt(btn.dataset.wlVi) || 0,
+        hex: btn.dataset.wlHex,
+        img: btn.dataset.wlImg,
+      });
     });
   });
 
