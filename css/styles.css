@@ -632,6 +632,7 @@ body { min-height: 100vh; min-height: 100dvh; }
   background: var(--tag-bg); border-color: var(--pines); color: var(--pines);
 }
 .list-pick-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.list-pick-btn.greyed { background: var(--border); color: var(--text-light); border-color: var(--border); }
 
 /* ─── Loading ─── */
 .loading { text-align: center; padding: 60px 24px; }

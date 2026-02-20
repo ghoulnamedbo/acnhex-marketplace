@@ -298,16 +298,9 @@ async function renderDetail() {
     </div>
 
     <div class="sticky-cta" id="detail-cta">
-      <div class="detail-qty-row">
-        <div class="qty-control">
-          <button class="qty-btn" data-detail-qty-minus="list">−</button>
-          <span class="qty-value" id="detail-qty-list">0</span>
-          <button class="qty-btn" data-detail-qty-plus="list">+</button>
-        </div>
-        <button class="cta-btn-secondary" data-wishlist-toggle="${esc(item.id)}" data-wishlist-vi="${vi}">
-          ${inWishlist ? '💚 Remove from List' : '💚 Add to List'}
-        </button>
-      </div>
+      <button class="cta-btn-secondary" id="detail-add-to-list" data-list-item="${esc(item.id)}" data-list-vi="${vi}">
+        📋 Add to List
+      </button>
       <div class="detail-qty-row">
         <div class="qty-control">
           <button class="qty-btn" data-detail-qty-minus="cart">−</button>
@@ -910,16 +903,9 @@ function updateDetailVariant() {
   const ctaEl = document.getElementById('detail-cta');
   if (ctaEl) {
     ctaEl.innerHTML = `
-      <div class="detail-qty-row">
-        <div class="qty-control">
-          <button class="qty-btn" data-detail-qty-minus="list">−</button>
-          <span class="qty-value" id="detail-qty-list">0</span>
-          <button class="qty-btn" data-detail-qty-plus="list">+</button>
-        </div>
-        <button class="cta-btn-secondary" data-wishlist-toggle="${esc(item.id)}" data-wishlist-vi="${vi}">
-          ${inWishlist ? '💚 Remove from List' : '💚 Add to List'}
-        </button>
-      </div>
+      <button class="cta-btn-secondary" id="detail-add-to-list" data-list-item="${esc(item.id)}" data-list-vi="${vi}">
+        📋 Add to List
+      </button>
       <div class="detail-qty-row">
         <div class="qty-control">
           <button class="qty-btn" data-detail-qty-minus="cart">−</button>
@@ -935,8 +921,8 @@ function updateDetailVariant() {
     const detailAddCart = document.getElementById('detail-add-cart');
     if (detailAddCart) detailAddCart.addEventListener('click', () => {
       const qty = parseInt(document.getElementById('detail-qty-cart')?.textContent) || 0;
-      if (qty < 1) return;
-      for (let i = 0; i < qty; i++) {
+      const count = qty < 1 ? 1 : qty;
+      for (let i = 0; i < count; i++) {
         addToCart({
           id: item.id,
           name: item.name,
@@ -949,22 +935,10 @@ function updateDetailVariant() {
       const span = document.getElementById('detail-qty-cart');
       if (span) span.textContent = '0';
     });
-    ctaEl.querySelectorAll('[data-wishlist-toggle]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const wvi = parseInt(btn.dataset.wishlistVi) || 0;
-        const qty = parseInt(document.getElementById('detail-qty-list')?.textContent) || 0;
-        if (qty < 1) {
-          toggleWishlist(btn.dataset.wishlistToggle, wvi);
-        } else {
-          const loved = state.wishlists.lists.find(l => l.id === '__loved__');
-          for (let i = 0; i < qty; i++) {
-            loved.items.push({ id: btn.dataset.wishlistToggle, variantIdx: wvi });
-          }
-          storage.setWishlists(state.wishlists);
-          showWishlistToast(btn.dataset.wishlistToggle, wvi, 'Loved Items');
-          render();
-        }
-      });
+    const detailListBtn = document.getElementById('detail-add-to-list');
+    if (detailListBtn) detailListBtn.addEventListener('click', () => {
+      state.listPickerItem = { id: item.id, variantIdx: vi, excludeLoved: true };
+      render();
     });
   }
 
@@ -1024,7 +998,8 @@ function renderListPicker() {
         ${state.wishlists.lists.map(list => {
           const inThis = list.items.some(w => w.id === item.id && w.variantIdx === item.variantIdx);
           const full = list.cap !== null && list.items.length >= list.cap && !inThis;
-          return `<button class="list-pick-btn ${inThis ? 'active' : ''}" data-pick-list="${esc(list.id)}" ${full ? 'disabled' : ''}>
+          const lovedDisabled = item.excludeLoved && list.id === '__loved__';
+          return `<button class="list-pick-btn ${inThis ? 'active' : ''} ${lovedDisabled ? 'greyed' : ''}" data-pick-list="${esc(list.id)}" ${full || lovedDisabled ? 'disabled' : ''}>
             <span>${esc(list.name)}</span>
             <span style="font-size:10px;color:var(--text-light)">${list.items.length}${list.cap ? '/' + list.cap : ''}</span>
           </button>`;
@@ -1323,25 +1298,13 @@ function attachEvents() {
     }
   });
 
-  // Wishlist toggle from detail (with qty)
-  app.querySelectorAll('[data-wishlist-toggle]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const vi = parseInt(btn.dataset.wishlistVi) || 0;
-      const qty = parseInt(document.getElementById('detail-qty-list')?.textContent) || 0;
-      if (qty < 1) {
-        toggleWishlist(btn.dataset.wishlistToggle, vi);
-      } else {
-        const loved = state.wishlists.lists.find(l => l.id === '__loved__');
-        for (let i = 0; i < qty; i++) {
-          loved.items.push({ id: btn.dataset.wishlistToggle, variantIdx: vi });
-        }
-        storage.setWishlists(state.wishlists);
-        showWishlistToast(btn.dataset.wishlistToggle, vi, 'Loved Items');
-        const span = document.getElementById('detail-qty-list');
-        if (span) span.textContent = '0';
-        render();
-      }
-    });
+  // Detail "Add to List" button — always opens list picker (excludes Loved Items)
+  const detailListBtn = document.getElementById('detail-add-to-list');
+  if (detailListBtn) detailListBtn.addEventListener('click', () => {
+    const itemId = detailListBtn.dataset.listItem;
+    const vi = parseInt(detailListBtn.dataset.listVi) || 0;
+    state.listPickerItem = { id: itemId, variantIdx: vi, excludeLoved: true };
+    render();
   });
 
   // Cart remove by index
@@ -1466,6 +1429,8 @@ function attachEvents() {
         list.items.splice(idx, 1);
       } else {
         if (list.cap !== null && list.items.length >= list.cap) return;
+        // Loved Items: only one instance per item
+        if (list.id === '__loved__' && list.items.some(w => w.id === item.id && w.variantIdx === item.variantIdx)) return;
         list.items.push({ id: item.id, variantIdx: item.variantIdx });
       }
       storage.setWishlists(state.wishlists);
@@ -1619,9 +1584,11 @@ async function toggleWishlist(itemId, variantIdx = 0) {
     storage.setWishlists(state.wishlists);
     await render();
   } else {
-    // Add to Loved Items by default
+    // Add to Loved Items by default (single instance only)
     const loved = state.wishlists.lists.find(l => l.id === '__loved__');
-    loved.items.push({ id: itemId, variantIdx });
+    if (!loved.items.some(w => w.id === itemId && w.variantIdx === variantIdx)) {
+      loved.items.push({ id: itemId, variantIdx });
+    }
     storage.setWishlists(state.wishlists);
     showWishlistToast(itemId, variantIdx, 'Loved Items');
     await render();
