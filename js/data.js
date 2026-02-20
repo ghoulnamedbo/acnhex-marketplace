@@ -240,17 +240,20 @@ export async function searchExpandedWithTags(query, tags = [], offset = 0, limit
   };
 }
 
-export async function getRandomExpandedItems(count = 20) {
+export async function getRandomExpandedItems(count = 20, exclude = new Set()) {
   await getExpandedAll(0, 1);
   const all = expandedCache._all || [];
   const shuffled = [];
-  const used = new Set();
-  while (shuffled.length < count && shuffled.length < all.length) {
+  while (shuffled.length < count && (shuffled.length + exclude.size) < all.length) {
     const i = Math.floor(Math.random() * all.length);
-    if (!used.has(i)) {
-      used.add(i);
+    if (!exclude.has(i)) {
+      exclude.add(i);
       shuffled.push(all[i]);
     }
   }
   return shuffled;
+}
+
+export function getExpandedTotal() {
+  return expandedCache._all ? expandedCache._all.length : 0;
 }

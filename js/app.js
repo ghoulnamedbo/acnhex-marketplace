@@ -41,6 +41,7 @@ const state = {
   loadedCount: 0,
   isRandom: false,
   randomItems: [],
+  randomUsedIndices: new Set(),
   expandedItems: null,
   expandedTotal: 0,
   expandedLoading: false,
@@ -101,7 +102,7 @@ async function renderCatalog() {
 
   if (isRandom) {
     items = state.randomItems;
-    total = items.length;
+    total = data.getExpandedTotal();
   } else if (state.expandedItems) {
     items = state.expandedItems;
     total = state.expandedTotal;
@@ -162,8 +163,9 @@ async function renderCatalog() {
       ${items.map((item, idx) => renderItemCard(item, idx)).join('')}
     </div>
 
-    ${!isRandom && items.length < total && state.loadMode === 'batch' ? `<button class="load-more-btn" id="load-more">Load More</button>` : ''}
-    ${!isRandom && items.length < total && state.loadMode === 'scroll' ? `<div id="scroll-sentinel" style="height:1px"></div>` : ''}
+    ${items.length < total && !isRandom && state.loadMode === 'batch' ? `<button class="load-more-btn" id="load-more">Load More</button>` : ''}
+    ${items.length < total && !isRandom && state.loadMode === 'scroll' ? `<div id="scroll-sentinel" style="height:1px"></div>` : ''}
+    ${isRandom && items.length < total ? `<div id="scroll-sentinel" style="height:1px"></div>` : ''}
   </div>`;
 }
 
@@ -646,6 +648,15 @@ async function loadExpandedCatalog() {
   render();
 }
 
+async function loadMoreRandom() {
+  if (state.expandedLoading) return;
+  state.expandedLoading = true;
+  const more = await data.getRandomExpandedItems(50, state.randomUsedIndices);
+  state.randomItems = [...state.randomItems, ...more];
+  state.expandedLoading = false;
+  render();
+}
+
 // ─── Attach search result events (item cards inside search) ───
 function attachSearchResultEvents() {
   const container = document.getElementById('search-results');
@@ -863,14 +874,16 @@ function attachEvents() {
 
   // Load more (batch mode)
   const loadMore = document.getElementById('load-more');
-  if (loadMore) loadMore.addEventListener('click', () => { loadExpandedCatalog(); });
+  if (loadMore) loadMore.addEventListener('click', () => {
+    state.isRandom ? loadMoreRandom() : loadExpandedCatalog();
+  });
 
-  // Infinite scroll (scroll mode)
+  // Infinite scroll (scroll mode + always for random)
   const scrollSentinel = document.getElementById('scroll-sentinel');
   if (scrollSentinel) {
     const observer = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting && !state.expandedLoading) {
-        loadExpandedCatalog();
+        state.isRandom ? loadMoreRandom() : loadExpandedCatalog();
       }
     }, { rootMargin: '200px' });
     observer.observe(scrollSentinel);
@@ -880,7 +893,8 @@ function attachEvents() {
   const randomBtn = document.getElementById('random-btn');
   if (randomBtn) randomBtn.addEventListener('click', async () => {
     state.isRandom = true;
-    state.randomItems = await data.getRandomExpandedItems(20);
+    state.randomUsedIndices = new Set();
+    state.randomItems = await data.getRandomExpandedItems(50, state.randomUsedIndices);
     render();
   });
 
