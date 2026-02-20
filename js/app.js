@@ -456,7 +456,7 @@ async function renderWishlistDetail() {
               <button class="wishlist-add-btn" data-wl-add data-wl-id="${esc(item.id)}" data-wl-vi="${vi}" data-wl-name="${esc(item.n)}" data-wl-variant="${esc(item.v1)}" data-wl-hex="${esc(item.hex)}" data-wl-img="${esc(item.img || '')}">
                 ${ICONS.plus}
               </button>
-              <button class="remove-btn" data-remove-from-list="${esc(item.id)}" data-remove-list-vi="${vi}">${ICONS.trash}</button>
+              <button class="remove-btn" data-remove-list-idx="${idx}">${ICONS.trash}</button>
             </div>
           </div>`;
         }).join('')}
@@ -1084,7 +1084,7 @@ function attachEvents() {
     card.addEventListener('click', (e) => {
       if (e.target.closest('[data-heart]') || e.target.closest('[data-add-cart]') ||
           e.target.closest('.remove-btn') || e.target.closest('.wishlist-add-btn') ||
-          e.target.closest('[data-remove-wishlist]') || e.target.closest('.qty-btn')) return;
+          e.target.closest('[data-remove-list-idx]') || e.target.closest('.qty-btn')) return;
       state.scrollY = window.scrollY;
       state.selectedItemId = card.dataset.item;
       state.selectedVariantIdx = parseInt(card.dataset.vi) || 0;
@@ -1334,15 +1334,14 @@ function attachEvents() {
     });
   });
 
-  // Remove from specific list (in list detail view)
-  app.querySelectorAll('[data-remove-from-list]').forEach(btn => {
+  // Remove from specific list by index (in list detail view)
+  app.querySelectorAll('[data-remove-list-idx]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const id = btn.dataset.removeFromList;
-      const vi = parseInt(btn.dataset.removeListVi) || 0;
+      const idx = parseInt(btn.dataset.removeListIdx);
       const list = state.wishlists.lists.find(l => l.id === state.viewingListId);
-      if (list) {
-        list.items = list.items.filter(w => !(w.id === id && w.variantIdx === vi));
+      if (list && idx >= 0 && idx < list.items.length) {
+        list.items.splice(idx, 1);
         storage.setWishlists(state.wishlists);
         render();
       }

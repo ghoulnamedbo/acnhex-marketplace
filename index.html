@@ -11,18 +11,18 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍃</text></svg>">
   <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%236a823e' width='100' height='100' rx='20'/><text x='50' y='65' text-anchor='middle' font-size='60'>🍃</text></svg>">
-  <link rel="stylesheet" href="css/styles.css?v=16">
+  <link rel="stylesheet" href="css/styles.css?v=17">
 </head>
 <body>
   <div id="app"></div>
-  <script type="module" src="js/app.js?v=16"></script>
+  <script type="module" src="js/app.js?v=17"></script>
   <script>
   if ('serviceWorker' in navigator) {
     // Force clear old service workers and caches, then re-register
     navigator.serviceWorker.getRegistrations().then(regs => {
       Promise.all(regs.map(r => r.unregister())).then(() => {
         caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => {
-          navigator.serviceWorker.register('sw.js?v=16');
+          navigator.serviceWorker.register('sw.js?v=17');
         });
       });
     });
