@@ -25,7 +25,10 @@ const ICONS = {
 const state = {
   page: 'catalog',
   cart: storage.getCart(),
-  wishlist: storage.getWishlist(),
+  wishlists: null,
+  viewingListId: null,
+  wishlistToast: null,
+  listPickerItem: null,
   prefix: storage.getPrefix(),
   seenIntro: storage.getSeenIntro(),
   loadMode: storage.getLoadMode(),
@@ -50,19 +53,49 @@ const state = {
 
 const app = document.getElementById('app');
 
-// ─── Wishlist Helpers ───
+// ─── Wishlists Init & Helpers ───
+function initWishlists() {
+  let wl = storage.getWishlists();
+  if (!wl) {
+    // Migrate from old flat wishlist
+    let oldList = storage.getWishlist();
+    // Handle old plain string format
+    if (oldList.length > 0 && typeof oldList[0] === 'string') {
+      oldList = oldList.map(id => ({ id, variantIdx: 0 }));
+    }
+    wl = { lists: [{ id: '__loved__', name: 'Loved Items', cap: null, items: oldList }] };
+    storage.setWishlists(wl);
+  }
+  state.wishlists = wl;
+}
+initWishlists();
+
 function isInWishlist(id, variantIdx = 0) {
-  return state.wishlist.some(w => w.id === id && w.variantIdx === variantIdx);
+  return state.wishlists.lists.some(list =>
+    list.items.some(w => w.id === id && w.variantIdx === variantIdx)
+  );
 }
 
-function migrateWishlist() {
-  // Convert old plain ID strings to { id, variantIdx } objects
-  if (state.wishlist.length > 0 && typeof state.wishlist[0] === 'string') {
-    state.wishlist = state.wishlist.map(id => ({ id, variantIdx: 0 }));
-    storage.setWishlist(state.wishlist);
-  }
+function findItemList(id, variantIdx = 0) {
+  return state.wishlists.lists.find(list =>
+    list.items.some(w => w.id === id && w.variantIdx === variantIdx)
+  );
 }
-migrateWishlist();
+
+let toastTimer = null;
+function showWishlistToast(itemId, variantIdx, listName) {
+  clearTimeout(toastTimer);
+  state.wishlistToast = { itemId, variantIdx, listName };
+  toastTimer = setTimeout(() => {
+    state.wishlistToast = null;
+    const el = document.getElementById('wl-toast');
+    if (el) el.remove();
+  }, 3000);
+}
+
+function getTotalWishlistItems() {
+  return state.wishlists.lists.reduce((sum, l) => sum + l.items.length, 0);
+}
 
 function esc(str) {
   const d = document.createElement('div');
@@ -74,7 +107,7 @@ function esc(str) {
 function renderNav() {
   const tabs = [
     { id: 'catalog', label: 'Browse', icon: ICONS.home },
-    { id: 'wishlist', label: 'Wishlist', icon: ICONS.wishlistNav },
+    { id: 'wishlist', label: 'Wishlist', icon: ICONS.wishlistNav, badge: getTotalWishlistItems() || 0 },
     { id: 'cart', label: 'Cart', icon: ICONS.cart, badge: state.cart.length },
     { id: 'settings', label: 'Settings', icon: ICONS.settings },
     { id: 'info', label: 'Info', icon: ICONS.info },
@@ -317,15 +350,57 @@ function renderCart() {
 }
 
 // ─── Wishlist Page ───
+let lastRenderedListHexes = [];
+
 async function renderWishlist() {
-  // Load full detail data for each wishlist entry to get correct variant info
-  const wishlistEntries = [];
-  for (const w of state.wishlist) {
+  if (state.viewingListId) return renderWishlistDetail();
+
+  const lists = state.wishlists.lists;
+  const totalItems = getTotalWishlistItems();
+
+  return `<div class="page">
+    <div class="page-header" style="padding-bottom:20px">
+      <h1 class="heading-xl" style="margin-bottom:4px">Wishlist</h1>
+      <p class="text-secondary">${lists.length} list${lists.length !== 1 ? 's' : ''} · ${totalItems} item${totalItems !== 1 ? 's' : ''}</p>
+    </div>
+
+    ${lists.length === 0 ? `
+      <div class="empty-state">
+        <p class="empty-emoji">💚</p>
+        <p class="empty-title">No lists yet</p>
+        <p class="empty-text">Tap the heart on items you love</p>
+      </div>` : `
+      <div style="padding:0 24px;display:flex;flex-direction:column;gap:12px">
+        ${lists.map(list => `
+          <div class="wishlist-item" data-view-list="${esc(list.id)}" style="cursor:pointer">
+            <div class="wishlist-thumb" style="background:${data.getItemBg(0)}">
+              <span class="emoji-fallback">${list.id === '__loved__' ? '💚' : '📋'}</span>
+            </div>
+            <div style="flex:1;min-width:0">
+              <p style="font-size:13px;font-weight:700;margin-bottom:4px;color:var(--text-primary)">${esc(list.name)}</p>
+              <p style="font-size:10px;color:var(--text-secondary)">${list.items.length}${list.cap ? ' / ' + list.cap : ''} items</p>
+            </div>
+            ${list.id !== '__loved__' ? `<button class="remove-btn" data-delete-list="${esc(list.id)}">${ICONS.trash}</button>` : ''}
+          </div>`).join('')}
+      </div>`}
+
+    <div style="padding:20px 24px">
+      <button class="cta-btn-secondary" id="create-new-list" style="width:100%">+ Create New List</button>
+    </div>
+  </div>`;
+}
+
+async function renderWishlistDetail() {
+  const list = state.wishlists.lists.find(l => l.id === state.viewingListId);
+  if (!list) { state.viewingListId = null; return renderWishlist(); }
+
+  const entries = [];
+  for (const w of list.items) {
     const detail = await data.getItemDetail(w.id);
     if (!detail) continue;
     const vi = w.variantIdx || 0;
     const variant = detail.variants[vi] || detail.variants[0];
-    wishlistEntries.push({
+    entries.push({
       id: detail.id,
       n: detail.name,
       v1: variant.name,
@@ -334,21 +409,26 @@ async function renderWishlist() {
       _vi: vi,
     });
   }
+  lastRenderedListHexes = entries.map(e => e.hex);
 
   return `<div class="page">
-    <div class="page-header" style="padding-bottom:20px">
-      <h1 class="heading-xl" style="margin-bottom:4px">Wishlist</h1>
-      <p class="text-secondary">${wishlistEntries.length} saved item${wishlistEntries.length !== 1 ? 's' : ''}</p>
+    <div class="page-header" style="display:flex;align-items:center;gap:12px;padding-bottom:20px">
+      <button class="glass-btn" id="list-back" style="flex-shrink:0">${ICONS.chevronLeft}</button>
+      <div style="flex:1;min-width:0">
+        <h1 class="heading-xl" style="margin-bottom:4px">${esc(list.name)}</h1>
+        <p class="text-secondary">${entries.length}${list.cap ? ' / ' + list.cap : ''} items</p>
+      </div>
+      ${entries.length > 0 ? `<button class="copy-btn" id="copy-list-order" style="flex-shrink:0">${ICONS.copy} Copy Order</button>` : ''}
     </div>
 
-    ${wishlistEntries.length === 0 ? `
+    ${entries.length === 0 ? `
       <div class="empty-state">
-        <p class="empty-emoji">💚</p>
-        <p class="empty-title">No saved items yet</p>
-        <p class="empty-text">Tap the heart on items you love</p>
+        <p class="empty-emoji">📋</p>
+        <p class="empty-title">List is empty</p>
+        <p class="empty-text">Tap the heart on items to add them</p>
       </div>` : `
       <div style="padding:0 24px;display:flex;flex-direction:column;gap:12px">
-        ${wishlistEntries.map((item, idx) => {
+        ${entries.map((item, idx) => {
           const vi = item._vi || 0;
           return `<div class="wishlist-item" data-item="${esc(item.id)}" data-vi="${vi}">
             <div class="wishlist-thumb" style="background:${data.getItemBg(idx)}">
@@ -362,7 +442,7 @@ async function renderWishlist() {
               <button class="wishlist-add-btn" data-wl-add data-wl-id="${esc(item.id)}" data-wl-vi="${vi}" data-wl-name="${esc(item.n)}" data-wl-variant="${esc(item.v1)}" data-wl-hex="${esc(item.hex)}" data-wl-img="${esc(item.img || '')}">
                 ${ICONS.plus}
               </button>
-              <button class="remove-btn" data-remove-wishlist="${esc(item.id)}" data-remove-wishlist-vi="${vi}">${ICONS.trash}</button>
+              <button class="remove-btn" data-remove-from-list="${esc(item.id)}" data-remove-list-vi="${vi}">${ICONS.trash}</button>
             </div>
           </div>`;
         }).join('')}
@@ -813,6 +893,39 @@ function updateDetailVariant() {
   }
 }
 
+// ─── Wishlist Toast ───
+function renderWishlistToast() {
+  if (!state.wishlistToast) return '';
+  const t = state.wishlistToast;
+  return `<div class="wishlist-toast" id="wl-toast">
+    <span>Saved to <strong>${esc(t.listName)}</strong></span>
+    <button class="toast-change-btn" id="toast-change">Change</button>
+  </div>`;
+}
+
+// ─── List Picker Modal ───
+function renderListPicker() {
+  if (!state.listPickerItem) return '';
+  const item = state.listPickerItem;
+  return `<div class="modal-overlay" id="list-picker-overlay">
+    <div class="modal-card">
+      <h2 style="font-size:16px;font-weight:700;margin-bottom:16px;color:var(--palm-leaf)">Save to List</h2>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+        ${state.wishlists.lists.map(list => {
+          const inThis = list.items.some(w => w.id === item.id && w.variantIdx === item.variantIdx);
+          const full = list.cap !== null && list.items.length >= list.cap && !inThis;
+          return `<button class="list-pick-btn ${inThis ? 'active' : ''}" data-pick-list="${esc(list.id)}" ${full ? 'disabled' : ''}>
+            <span>${esc(list.name)}</span>
+            <span style="font-size:10px;color:var(--text-light)">${list.items.length}${list.cap ? '/' + list.cap : ''}</span>
+          </button>`;
+        }).join('')}
+      </div>
+      <button class="cta-btn-secondary" id="create-list-from-picker" style="margin-bottom:12px;width:100%">+ New List</button>
+      <button class="search-close-btn" id="close-list-picker" style="width:100%">Done</button>
+    </div>
+  </div>`;
+}
+
 // ─── Render ───
 async function render() {
   let content = '';
@@ -824,7 +937,7 @@ async function render() {
     case 'settings': content = renderSettings(); break;
     case 'info': content = renderInfo(); break;
   }
-  app.innerHTML = content + renderNav() + renderModal() + renderSearch();
+  app.innerHTML = content + renderNav() + renderModal() + renderSearch() + renderWishlistToast() + renderListPicker();
   attachEvents();
 }
 
@@ -841,6 +954,7 @@ function attachEvents() {
       state.isRandom = false;
       state.expandedItems = null;
       state.expandedTotal = 0;
+      if (btn.dataset.nav === 'wishlist') state.viewingListId = null;
       render();
       if (btn.dataset.nav === 'catalog') loadExpandedCatalog();
     });
@@ -1092,13 +1206,139 @@ function attachEvents() {
     });
   });
 
-  // Wishlist remove
-  app.querySelectorAll('[data-remove-wishlist]').forEach(btn => {
+  // Remove from specific list (in list detail view)
+  app.querySelectorAll('[data-remove-from-list]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const vi = parseInt(btn.dataset.removeWishlistVi) || 0;
-      toggleWishlist(btn.dataset.removeWishlist, vi);
+      const id = btn.dataset.removeFromList;
+      const vi = parseInt(btn.dataset.removeListVi) || 0;
+      const list = state.wishlists.lists.find(l => l.id === state.viewingListId);
+      if (list) {
+        list.items = list.items.filter(w => !(w.id === id && w.variantIdx === vi));
+        storage.setWishlists(state.wishlists);
+        render();
+      }
     });
+  });
+
+  // View list detail
+  app.querySelectorAll('[data-view-list]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      if (e.target.closest('[data-delete-list]')) return;
+      state.viewingListId = btn.dataset.viewList;
+      render();
+    });
+  });
+
+  // List back button
+  const listBack = document.getElementById('list-back');
+  if (listBack) listBack.addEventListener('click', () => {
+    state.viewingListId = null;
+    render();
+  });
+
+  // Create new list
+  const createList = document.getElementById('create-new-list');
+  if (createList) createList.addEventListener('click', () => {
+    const name = prompt('List name:');
+    if (name && name.trim()) {
+      state.wishlists.lists.push({
+        id: Date.now().toString(36),
+        name: name.trim(),
+        cap: 40,
+        items: [],
+      });
+      storage.setWishlists(state.wishlists);
+      render();
+    }
+  });
+
+  // Delete list
+  app.querySelectorAll('[data-delete-list]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const listId = btn.dataset.deleteList;
+      const list = state.wishlists.lists.find(l => l.id === listId);
+      if (list && confirm(`Delete "${list.name}"? Items will be removed from this list only.`)) {
+        state.wishlists.lists = state.wishlists.lists.filter(l => l.id !== listId);
+        storage.setWishlists(state.wishlists);
+        render();
+      }
+    });
+  });
+
+  // Copy list order
+  const copyListBtn = document.getElementById('copy-list-order');
+  if (copyListBtn) copyListBtn.addEventListener('click', () => {
+    const command = `${state.prefix}order ${lastRenderedListHexes.join(', ')}`;
+    navigator.clipboard.writeText(command).then(() => {
+      copyListBtn.innerHTML = `${ICONS.check} Copied!`;
+      setTimeout(() => { copyListBtn.innerHTML = `${ICONS.copy} Copy Order`; }, 2000);
+    });
+  });
+
+  // Toast "Change" button
+  const toastChange = document.getElementById('toast-change');
+  if (toastChange) toastChange.addEventListener('click', () => {
+    const t = state.wishlistToast;
+    if (t) {
+      state.listPickerItem = { id: t.itemId, variantIdx: t.variantIdx };
+      clearTimeout(toastTimer);
+      state.wishlistToast = null;
+      render();
+    }
+  });
+
+  // List picker — pick a list
+  app.querySelectorAll('[data-pick-list]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const listId = btn.dataset.pickList;
+      const item = state.listPickerItem;
+      if (!item) return;
+      const list = state.wishlists.lists.find(l => l.id === listId);
+      if (!list) return;
+      const idx = list.items.findIndex(w => w.id === item.id && w.variantIdx === item.variantIdx);
+      if (idx >= 0) {
+        list.items.splice(idx, 1);
+      } else {
+        if (list.cap !== null && list.items.length >= list.cap) return;
+        list.items.push({ id: item.id, variantIdx: item.variantIdx });
+      }
+      storage.setWishlists(state.wishlists);
+      render();
+    });
+  });
+
+  // List picker — create list
+  const createFromPicker = document.getElementById('create-list-from-picker');
+  if (createFromPicker) createFromPicker.addEventListener('click', () => {
+    const name = prompt('List name:');
+    if (name && name.trim()) {
+      const newList = {
+        id: Date.now().toString(36),
+        name: name.trim(),
+        cap: 40,
+        items: [],
+      };
+      state.wishlists.lists.push(newList);
+      storage.setWishlists(state.wishlists);
+      render();
+    }
+  });
+
+  // Close list picker
+  const closeListPicker = document.getElementById('close-list-picker');
+  if (closeListPicker) closeListPicker.addEventListener('click', () => {
+    state.listPickerItem = null;
+    render();
+  });
+  // Also close on overlay click
+  const pickerOverlay = document.getElementById('list-picker-overlay');
+  if (pickerOverlay) pickerOverlay.addEventListener('click', (e) => {
+    if (e.target === pickerOverlay) {
+      state.listPickerItem = null;
+      render();
+    }
   });
 
   // Copy command
@@ -1149,7 +1389,8 @@ function attachEvents() {
     if (confirm('This will clear your cart, wishlist, and prefix. Are you sure?')) {
       storage.clearAll();
       state.cart = [];
-      state.wishlist = [];
+      state.wishlists = { lists: [{ id: '__loved__', name: 'Loved Items', cap: null, items: [] }] };
+      state.viewingListId = null;
       state.prefix = '!';
       state.seenIntro = false;
       render();
@@ -1207,12 +1448,20 @@ function attachEvents() {
 // ─── Actions ───
 async function toggleWishlist(itemId, variantIdx = 0) {
   if (isInWishlist(itemId, variantIdx)) {
-    state.wishlist = state.wishlist.filter(w => !(w.id === itemId && w.variantIdx === variantIdx));
+    // Remove from ALL lists
+    state.wishlists.lists.forEach(list => {
+      list.items = list.items.filter(w => !(w.id === itemId && w.variantIdx === variantIdx));
+    });
+    storage.setWishlists(state.wishlists);
+    await render();
   } else {
-    state.wishlist.push({ id: itemId, variantIdx });
+    // Add to Loved Items by default
+    const loved = state.wishlists.lists.find(l => l.id === '__loved__');
+    loved.items.push({ id: itemId, variantIdx });
+    storage.setWishlists(state.wishlists);
+    showWishlistToast(itemId, variantIdx, 'Loved Items');
+    await render();
   }
-  storage.setWishlist(state.wishlist);
-  await render();
 }
 
 function getCartTotal() {

@@ -5,6 +5,7 @@ const KEYS = {
   prefix: 'acnhex_prefix',
   seenIntro: 'acnhex_seen_intro',
   loadMode: 'acnhex_load_mode',
+  wishlists: 'acnhex_wishlists',
 };
 
 function get(key, fallback) {
@@ -32,6 +33,9 @@ export function setSeenIntro(v) { set(KEYS.seenIntro, v); }
 
 export function getLoadMode() { return get(KEYS.loadMode, 'batch'); }
 export function setLoadMode(m) { set(KEYS.loadMode, m); }
+
+export function getWishlists() { return get(KEYS.wishlists, null); }
+export function setWishlists(data) { set(KEYS.wishlists, data); }
 
 export function clearAll() {
   Object.values(KEYS).forEach(k => localStorage.removeItem(k));
