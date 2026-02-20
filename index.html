@@ -16,6 +16,17 @@
 <body>
   <div id="app"></div>
   <script type="module" src="js/app.js?v=8"></script>
-  <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js?v=8');</script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    // Force clear old service workers and caches, then re-register
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      Promise.all(regs.map(r => r.unregister())).then(() => {
+        caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => {
+          navigator.serviceWorker.register('sw.js?v=8');
+        });
+      });
+    });
+  }
+  </script>
 </body>
 </html>
