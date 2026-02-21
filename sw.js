@@ -1,4 +1,4 @@
-const CACHE_NAME = 'acnhex-v17';
+const CACHE_NAME = 'acnhex-v18';
 const ASSETS = [
   './',
   './index.html',
@@ -6,7 +6,10 @@ const ASSETS = [
   './js/app.js',
   './js/data.js',
   './js/storage.js',
+  './js/reviews.js',
   './data/catalog-index.json',
+  './data/villagers.json',
+  './data/review-templates.json',
   './manifest.json',
   './icons/icon.svg',
 ];
