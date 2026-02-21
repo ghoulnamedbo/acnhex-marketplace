@@ -45,8 +45,21 @@ function getTemplate(category, personality, subtype, starRating) {
   return templates[Math.floor(Math.random() * templates.length)];
 }
 
+function escRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function detectPlural(name) {
+  const singularExceptions = ['bass','dress','grass','glass','canvas','compass','cactus','cosmos','octopus','atlas','chess','mess','across','process','harness','mattress','headdress'];
+  const lower = name.toLowerCase();
+  const lastWord = lower.split(/\s+/).pop();
+  if (singularExceptions.includes(lastWord)) return false;
+  if (lastWord.endsWith('ss') || lastWord.endsWith('us') || lastWord.endsWith('is')) return false;
+  return lastWord.endsWith('s');
+}
+
 function fillTemplate(template, villager, itemName, category) {
-  return template
+  let result = template
     .replace(/\[Item Name\]/g, itemName)
     .replace(/\[Catchphrase\]/g, villager.catchphrase)
     .replace(/\[Hobby\]/g, villager.hobby || '')
@@ -56,6 +69,17 @@ function fillTemplate(template, villager, itemName, category) {
     .replace(/\[Flooring\]/g, villager.flooring || '')
     .replace(/\[Category\]/g, category)
     .replace(/\[Villager\]/g, villager.name);
+
+  // Grammar correction for plural item names
+  if (detectPlural(itemName)) {
+    const esc = escRegex(itemName);
+    result = result
+      .replace(new RegExp(`\\bthis ${esc}\\b`, 'gi'), (m) => (m[0] === 'T' ? 'These' : 'these') + m.slice(4))
+      .replace(new RegExp(`\\b${esc} is\\b`, 'gi'), `${itemName} are`)
+      .replace(new RegExp(`\\b${esc} was\\b`, 'gi'), `${itemName} were`)
+      .replace(new RegExp(`\\b${esc} has\\b`, 'gi'), `${itemName} have`);
+  }
+  return result;
 }
 
 function reviewDate(birthday) {

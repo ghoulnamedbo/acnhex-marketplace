@@ -50,6 +50,8 @@ const state = {
   expandedTotal: 0,
   expandedLoading: false,
   scrollY: 0,
+  previousPage: null,
+  savedSearch: null,
 };
 
 const app = document.getElementById('app');
@@ -158,13 +160,6 @@ async function renderCatalog() {
         <h1 class="heading-xl">ACNHEX Market</h1>
       </div>
       <button class="header-btn" id="search-open">${ICONS.search}</button>
-    </div>
-
-    <div class="hero-banner" id="random-btn">
-      <span class="leaf-bg">🍃</span>
-      <p style="font-size:11px;color:rgba(255,255,255,0.75);margin-bottom:6px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase">Browse & Order</p>
-      <h2 style="font-size:18px;font-weight:700;color:#fff;margin-bottom:16px;line-height:1.35">Explore Random Items 🎲</h2>
-      <button class="hero-btn">Surprise Me! ${ICONS.arrowRight}</button>
     </div>
 
     <div style="padding:0 24px">
@@ -807,6 +802,15 @@ function attachSearchResultEvents() {
       if (e.target.closest('[data-heart]') || e.target.closest('[data-add-cart]') || e.target.closest('.qty-btn')) return;
       state.selectedItemId = card.dataset.item;
       state.selectedVariantIdx = parseInt(card.dataset.vi) || 0;
+      // Save search state before leaving so back button can restore it
+      state.savedSearch = {
+        query: state.searchQuery,
+        results: state.searchResults,
+        filterTags: [...state.searchFilterTags],
+        filterOpen: state.searchFilterOpen,
+        overlayScrollY: document.getElementById('search-overlay')?.scrollTop || 0
+      };
+      state.previousPage = 'search';
       state.searchOpen = false;
       state.searchQuery = '';
       state.searchResults = null;
@@ -1027,7 +1031,7 @@ async function render() {
     case 'settings': content = renderSettings(); break;
     case 'info': content = renderInfo(); break;
   }
-  app.innerHTML = content + renderNav() + renderModal() + renderSearch() + renderWishlistToast() + renderListPicker();
+  app.innerHTML = `<div id="ptr-indicator" class="ptr-indicator"></div>` + content + renderNav() + renderModal() + renderSearch() + renderWishlistToast() + renderListPicker();
   attachEvents();
 }
 
@@ -1037,16 +1041,22 @@ let searchDebounce = null;
 function attachEvents() {
   // Nav tabs
   app.querySelectorAll('[data-nav]').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       state.page = btn.dataset.nav;
       state.searchOpen = false;
       state.loadedCount = 0;
-      state.isRandom = false;
       state.expandedItems = null;
       state.expandedTotal = 0;
       if (btn.dataset.nav === 'wishlist') state.viewingListId = null;
+      if (btn.dataset.nav === 'catalog') {
+        // Default to random picks when returning to catalog
+        state.isRandom = true;
+        state.randomUsedIndices = new Set();
+        state.randomItems = await data.getRandomExpandedItems(50, state.randomUsedIndices);
+      } else {
+        state.isRandom = false;
+      }
       render();
-      if (btn.dataset.nav === 'catalog') loadExpandedCatalog();
     });
   });
 
@@ -1058,7 +1068,11 @@ function attachEvents() {
       state.isRandom = false;
       state.expandedItems = null;
       state.expandedTotal = 0;
+      const catScrollEl = document.getElementById('cat-scroll');
+      const savedCatScroll = catScrollEl ? catScrollEl.scrollLeft : 0;
       render();
+      const newCatScroll = document.getElementById('cat-scroll');
+      if (newCatScroll) newCatScroll.scrollLeft = savedCatScroll;
       loadExpandedCatalog();
     });
   });
@@ -1092,6 +1106,7 @@ function attachEvents() {
       state.scrollY = window.scrollY;
       state.selectedItemId = card.dataset.item;
       state.selectedVariantIdx = parseInt(card.dataset.vi) || 0;
+      state.previousPage = 'catalog';
       state.searchOpen = false;
       state.searchQuery = '';
       state.searchResults = null;
@@ -1254,10 +1269,30 @@ function attachEvents() {
   // Detail page
   const detailBack = document.getElementById('detail-back');
   if (detailBack) detailBack.addEventListener('click', async () => {
-    state.page = 'catalog';
-    state.itemDetail = null;
-    await render();
-    window.scrollTo(0, state.scrollY);
+    if (state.previousPage === 'search' && state.savedSearch) {
+      // Restore search state
+      state.page = 'catalog';
+      state.itemDetail = null;
+      state.searchOpen = true;
+      state.searchQuery = state.savedSearch.query;
+      state.searchResults = state.savedSearch.results;
+      state.searchFilterTags = state.savedSearch.filterTags;
+      state.searchFilterOpen = state.savedSearch.filterOpen;
+      const savedOverlayScroll = state.savedSearch.overlayScrollY;
+      state.savedSearch = null;
+      state.previousPage = null;
+      await render();
+      attachSearchResultEvents();
+      attachSearchScrollObserver();
+      const overlay = document.getElementById('search-overlay');
+      if (overlay) overlay.scrollTop = savedOverlayScroll;
+    } else {
+      state.page = 'catalog';
+      state.itemDetail = null;
+      state.previousPage = null;
+      await render();
+      window.scrollTo(0, state.scrollY);
+    }
   });
 
   // Variant pills — surgical update instead of full render
@@ -1650,16 +1685,77 @@ function addToCart(entry) {
 async function loadItemDetail(itemId) {
   state.itemDetail = null;
   render(); // Show loading
+  window.scrollTo(0, 0);
   state.itemDetail = await data.getItemDetail(itemId);
   render();
+  window.scrollTo(0, 0);
+}
+
+// ─── Pull-to-Refresh ───
+function initPullToRefresh() {
+  let startY = 0;
+  let pulling = false;
+  const threshold = 60;
+
+  document.addEventListener('touchstart', (e) => {
+    if (window.scrollY === 0 && state.page === 'catalog' && !state.searchOpen) {
+      startY = e.touches[0].clientY;
+      pulling = true;
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchmove', (e) => {
+    if (!pulling) return;
+    const pullDistance = e.touches[0].clientY - startY;
+    if (pullDistance > 0 && window.scrollY === 0) {
+      const indicator = document.getElementById('ptr-indicator');
+      if (indicator) {
+        indicator.classList.add('pulling');
+        indicator.style.setProperty('--pull-y', Math.min(pullDistance * 0.4, 80) + 'px');
+      }
+    } else {
+      pulling = false;
+      const indicator = document.getElementById('ptr-indicator');
+      if (indicator) {
+        indicator.classList.remove('pulling');
+        indicator.style.setProperty('--pull-y', '0px');
+      }
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchend', async () => {
+    if (!pulling) return;
+    pulling = false;
+    const indicator = document.getElementById('ptr-indicator');
+    if (!indicator) return;
+    const pullY = parseFloat(indicator.style.getPropertyValue('--pull-y')) || 0;
+    if (pullY >= threshold * 0.4) {
+      indicator.classList.remove('pulling');
+      indicator.classList.add('refreshing');
+      // Refresh with new random items
+      state.isRandom = true;
+      state.randomUsedIndices = new Set();
+      state.randomItems = await data.getRandomExpandedItems(50, state.randomUsedIndices);
+      indicator.classList.remove('refreshing');
+      indicator.style.setProperty('--pull-y', '0px');
+      render();
+    } else {
+      indicator.classList.remove('pulling');
+      indicator.style.setProperty('--pull-y', '0px');
+    }
+  });
 }
 
 // ─── Init ───
 async function init() {
   app.innerHTML = `<div class="loading" style="padding-top:40vh"><div class="spinner"></div><p class="text-secondary">Loading catalog...</p></div>`;
   await data.loadCatalog();
+  // Start with random picks as the default homepage view
+  state.isRandom = true;
+  state.randomUsedIndices = new Set();
+  state.randomItems = await data.getRandomExpandedItems(50, state.randomUsedIndices);
   render();
-  loadExpandedCatalog();
+  initPullToRefresh();
 }
 
 init();
