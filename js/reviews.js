@@ -58,6 +58,22 @@ function detectPlural(name) {
   return lastWord.endsWith('s');
 }
 
+// Convert a 3rd-person singular present verb to its base/plural form
+function depluralize(verb) {
+  const v = verb.toLowerCase();
+  // -ies → -y (carries → carry, loses → no, flies → fly)
+  if (v.endsWith('ies') && v.length > 3) return verb.slice(0, -3) + 'y';
+  // -ches/-shes/-xes/-zes/-ses → remove -es (catches → catch, bunches → bunch)
+  if (v.endsWith('ches') || v.endsWith('shes') || v.endsWith('xes') || v.endsWith('zes')) return verb.slice(0, -2);
+  // -ses → -s or drop -es depending on root (loses → lose, closes → close)
+  if (v.endsWith('ses') && v.length > 3) return verb.slice(0, -1);
+  // -oes → -o (goes → go)
+  if (v.endsWith('oes') && v.length > 3) return verb.slice(0, -2);
+  // generic -s ending (looks → look, wobbles → wobble, sits → sit)
+  if (v.endsWith('s') && v.length > 2) return verb.slice(0, -1);
+  return verb;
+}
+
 function fillTemplate(template, villager, itemName, category) {
   let result = template
     .replace(/\[Item Name\]/g, itemName)
@@ -70,14 +86,23 @@ function fillTemplate(template, villager, itemName, category) {
     .replace(/\[Category\]/g, category)
     .replace(/\[Villager\]/g, villager.name);
 
-  // Grammar correction for plural item names
+  // Grammar correction for plural item names (e.g. "Socks", "Insects", "Gyroids")
   if (detectPlural(itemName)) {
     const esc = escRegex(itemName);
     result = result
+      // this/these
       .replace(new RegExp(`\\bthis ${esc}\\b`, 'gi'), (m) => (m[0] === 'T' ? 'These' : 'these') + m.slice(4))
+      // is/are, was/were, has/have
       .replace(new RegExp(`\\b${esc} is\\b`, 'gi'), `${itemName} are`)
       .replace(new RegExp(`\\b${esc} was\\b`, 'gi'), `${itemName} were`)
-      .replace(new RegExp(`\\b${esc} has\\b`, 'gi'), `${itemName} have`);
+      .replace(new RegExp(`\\b${esc} has\\b`, 'gi'), `${itemName} have`)
+      // doesn't → don't
+      .replace(new RegExp(`\\b${esc} doesn't\\b`, 'gi'), `${itemName} don't`)
+      // 3rd-person singular verbs → base form (looks→look, carries→carry, etc.)
+      .replace(new RegExp(`\\b(${esc}) ([A-Za-z]+s)\\b`, 'g'), (match, name, verb) => {
+        const base = depluralize(verb);
+        return base !== verb ? `${name} ${base}` : match;
+      });
   }
   return result;
 }
