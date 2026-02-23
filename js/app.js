@@ -52,6 +52,7 @@ const state = {
   scrollY: 0,
   previousPage: null,
   savedSearch: null,
+  catScrollLeft: 0,
 };
 
 const app = document.getElementById('app');
@@ -110,7 +111,7 @@ function esc(str) {
 function renderNav() {
   const tabs = [
     { id: 'catalog', label: 'Browse', icon: ICONS.home },
-    { id: 'wishlist', label: 'Wishlist', icon: ICONS.wishlistNav, badge: getTotalWishlistItems() || 0 },
+    { id: 'wishlist', label: 'Wishlist', icon: ICONS.wishlistNav },
     { id: 'cart', label: 'Cart', icon: ICONS.cart, badge: state.cart.length },
     { id: 'settings', label: 'Settings', icon: ICONS.settings },
     { id: 'info', label: 'Info', icon: ICONS.info },
@@ -162,7 +163,7 @@ async function renderCatalog() {
       <button class="header-btn" id="search-open">${ICONS.search}</button>
     </div>
 
-    <div style="padding:0 24px">
+    <div style="padding:0 24px;margin-top:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <h3 class="heading-section">Categories</h3>
       </div>
@@ -323,7 +324,10 @@ function renderCart() {
 
   return `<div class="page">
     <div class="page-header">
-      <h1 class="heading-xl" style="margin-bottom:4px">Your Cart</h1>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <h1 class="heading-xl" style="margin-bottom:4px">Your Cart</h1>
+        ${cart.length > 0 ? `<button class="clear-cart-btn" id="clear-cart">Clear Cart</button>` : ''}
+      </div>
       <p class="text-secondary" style="margin-bottom:16px">${total} / 40 items · ${40 - total} slots remaining</p>
       <div class="progress-bar">
         <div class="progress-fill ${total > 35 ? 'danger' : ''}" style="width:${(total / 40) * 100}%"></div>
@@ -1042,21 +1046,21 @@ function attachEvents() {
   // Nav tabs
   app.querySelectorAll('[data-nav]').forEach(btn => {
     btn.addEventListener('click', async () => {
-      state.page = btn.dataset.nav;
-      state.searchOpen = false;
-      state.loadedCount = 0;
-      state.expandedItems = null;
-      state.expandedTotal = 0;
-      if (btn.dataset.nav === 'wishlist') state.viewingListId = null;
-      if (btn.dataset.nav === 'catalog') {
-        // Default to random picks when returning to catalog
-        state.isRandom = true;
-        state.randomUsedIndices = new Set();
-        state.randomItems = await data.getRandomExpandedItems(50, state.randomUsedIndices);
+      const target = btn.dataset.nav;
+      if (target === 'catalog') {
+        // Preserve existing home page state — don't reset items/category
+        state.page = 'catalog';
+        state.searchOpen = false;
+        render();
+        window.scrollTo(0, state.scrollY || 0);
       } else {
-        state.isRandom = false;
+        // Save scroll position when leaving catalog
+        if (state.page === 'catalog') state.scrollY = window.scrollY;
+        state.page = target;
+        state.searchOpen = false;
+        if (target === 'wishlist') state.viewingListId = null;
+        render();
       }
-      render();
     });
   });
 
@@ -1069,10 +1073,8 @@ function attachEvents() {
       state.expandedItems = null;
       state.expandedTotal = 0;
       const catScrollEl = document.getElementById('cat-scroll');
-      const savedCatScroll = catScrollEl ? catScrollEl.scrollLeft : 0;
+      if (catScrollEl) state.catScrollLeft = catScrollEl.scrollLeft;
       render();
-      const newCatScroll = document.getElementById('cat-scroll');
-      if (newCatScroll) newCatScroll.scrollLeft = savedCatScroll;
       loadExpandedCatalog();
     });
   });
@@ -1083,6 +1085,8 @@ function attachEvents() {
   const catArrowL = document.getElementById('cat-arrow-left');
   const catArrowR = document.getElementById('cat-arrow-right');
   if (catScroll && catWrapper) {
+    // Restore saved carousel scroll position
+    if (state.catScrollLeft) catScroll.scrollLeft = state.catScrollLeft;
     const updateCatArrows = () => {
       const atStart = catScroll.scrollLeft <= 5;
       const atEnd = catScroll.scrollLeft >= catScroll.scrollWidth - catScroll.clientWidth - 5;
@@ -1097,8 +1101,9 @@ function attachEvents() {
     if (catArrowR) catArrowR.addEventListener('click', () => catScroll.scrollBy({ left: 200, behavior: 'smooth' }));
   }
 
-  // Item cards
+  // Item cards (catalog/wishlist — NOT inside search overlay)
   app.querySelectorAll('[data-item]').forEach(card => {
+    if (card.closest('.search-overlay')) return; // handled by attachSearchResultEvents
     card.addEventListener('click', (e) => {
       if (e.target.closest('[data-heart]') || e.target.closest('[data-add-cart]') ||
           e.target.closest('.remove-btn') || e.target.closest('.wishlist-add-btn') ||
@@ -1115,8 +1120,9 @@ function attachEvents() {
     });
   });
 
-  // Heart buttons
+  // Heart buttons (skip search overlay — handled by attachSearchResultEvents)
   app.querySelectorAll('[data-heart]').forEach(btn => {
+    if (btn.closest('.search-overlay')) return;
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const vi = parseInt(btn.dataset.heartVi) || 0;
@@ -1124,8 +1130,9 @@ function attachEvents() {
     });
   });
 
-  // Qty +/- buttons in item cards
+  // Qty +/- buttons in item cards (skip search overlay)
   app.querySelectorAll('[data-qty-plus]').forEach(btn => {
+    if (btn.closest('.search-overlay')) return;
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const span = document.getElementById('qty-' + btn.dataset.qtyPlus);
@@ -1137,6 +1144,7 @@ function attachEvents() {
     });
   });
   app.querySelectorAll('[data-qty-minus]').forEach(btn => {
+    if (btn.closest('.search-overlay')) return;
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const span = document.getElementById('qty-' + btn.dataset.qtyMinus);
@@ -1147,8 +1155,9 @@ function attachEvents() {
     });
   });
 
-  // Add to cart buttons (with qty)
+  // Add to cart buttons (with qty — skip search overlay)
   app.querySelectorAll('[data-add-cart]').forEach(btn => {
+    if (btn.closest('.search-overlay')) return;
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const card = btn.closest('[data-item]');
@@ -1355,6 +1364,16 @@ function attachEvents() {
       storage.setCart(state.cart);
       render();
     });
+  });
+
+  // Clear entire cart
+  const clearCartBtn = document.getElementById('clear-cart');
+  if (clearCartBtn) clearCartBtn.addEventListener('click', () => {
+    if (confirm('Clear all items from your cart?')) {
+      state.cart = [];
+      storage.setCart(state.cart);
+      render();
+    }
   });
 
   // Wishlist add-to-cart (uses embedded data attributes for correct variant)
@@ -1698,7 +1717,7 @@ function initPullToRefresh() {
   const threshold = 60;
 
   document.addEventListener('touchstart', (e) => {
-    if (window.scrollY === 0 && state.page === 'catalog' && !state.searchOpen) {
+    if (window.scrollY <= 2 && state.page === 'catalog' && !state.searchOpen) {
       startY = e.touches[0].clientY;
       pulling = true;
     }
@@ -1707,7 +1726,7 @@ function initPullToRefresh() {
   document.addEventListener('touchmove', (e) => {
     if (!pulling) return;
     const pullDistance = e.touches[0].clientY - startY;
-    if (pullDistance > 0 && window.scrollY === 0) {
+    if (pullDistance > 0 && window.scrollY <= 2) {
       const indicator = document.getElementById('ptr-indicator');
       if (indicator) {
         indicator.classList.add('pulling');

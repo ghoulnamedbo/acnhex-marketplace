@@ -360,6 +360,11 @@ body { min-height: 100vh; min-height: 100dvh; }
   width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
   cursor: pointer; color: var(--danger); flex-shrink: 0;
 }
+.clear-cart-btn {
+  background: var(--dolce-pink); color: var(--danger); border: none;
+  border-radius: 10px; padding: 6px 14px; font-size: 11px; font-weight: 700;
+  cursor: pointer; font-family: var(--font); flex-shrink: 0;
+}
 
 /* Bot Command Block */
 .code-block {
