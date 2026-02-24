@@ -1713,11 +1713,11 @@ function attachEvents() {
 
   // Popup dismiss buttons
   app.querySelectorAll('[data-popup-dismiss]').forEach(el => {
-    el.addEventListener('click', () => {
+    el.addEventListener('click', async () => {
       if (state.activePopup) {
         ads.dismissPopup(state.activePopup);
         state.activePopup = null;
-        render();
+        await render();
         if (state.searchOpen && state.searchResults) {
           attachSearchResultEvents();
           attachSearchScrollObserver();
@@ -1899,12 +1899,12 @@ function addToCartFromIndex(itemId, variantIdx = 0) {
   });
 }
 
-function addToCart(entry) {
+async function addToCart(entry) {
   if (state.cart.length >= 40) return;
   state.cart.push(entry);
   storage.setCart(state.cart);
   state._cartBounce = true;
-  render();
+  await render();
   if (state.searchOpen && state.searchResults) {
     attachSearchResultEvents();
     attachSearchScrollObserver();
