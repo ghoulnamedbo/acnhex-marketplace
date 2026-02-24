@@ -160,7 +160,46 @@ async function renderCatalog() {
         <p class="label-upper" style="margin-bottom:4px">Welcome to</p>
         <h1 class="heading-xl">ACNHEX Market</h1>
       </div>
-      <button class="header-btn" id="search-open">${ICONS.search}</button>
+    </div>
+
+    <div class="hero-receipt-banner">
+      <div class="hero-search-row">
+        <span class="hero-search-label" id="search-open-label">Search items or tags...</span>
+        <button class="header-btn" id="search-open">${ICONS.search}</button>
+      </div>
+      <div class="hero-inner">
+        <div class="hero-receipt-col">
+          <div class="receipt">
+            <div class="receipt-header">
+              <div class="receipt-logo">Nook's Cranny</div>
+              <div class="receipt-date">Order #4092 · Today</div>
+            </div>
+            <div class="receipt-lines" id="receipt-lines">
+              <div class="receipt-line r-visible">
+                <span class="receipt-item-name">Iron Garden Bench</span>
+                <span class="receipt-item-hex">0x1A3F</span>
+              </div>
+              <div class="receipt-line r-visible">
+                <span class="receipt-item-name">Nova Light</span>
+                <span class="receipt-item-hex">0x20CC</span>
+              </div>
+              <div class="receipt-line r-visible">
+                <span class="receipt-item-name">Crescent Chair</span>
+                <span class="receipt-item-hex">0x0E71</span>
+              </div>
+            </div>
+            <hr class="receipt-divider">
+            <div class="receipt-cmd r-visible">
+              <span class="code-keyword">!order</span> <span class="code-value">0x1A3F</span><span class="code-sep">, </span><span class="code-value">0x20CC</span><span class="code-sep">, </span><span class="code-value">0x0E71</span>
+            </div>
+          </div>
+        </div>
+        <div class="hero-info-col">
+          <div class="hero-tagline">Browse. Pick. Paste the code.</div>
+          <div class="hero-subtitle">Build your dream island — grab hex codes for any item and drop them straight into the bot.</div>
+          <div class="hero-nook-badge"><span>🍃</span> Nook Inc. Certified</div>
+        </div>
+      </div>
     </div>
 
     <div style="padding:0 24px;margin-top:10px">
@@ -1175,6 +1214,12 @@ function attachEvents() {
   // Search
   const searchOpen = document.getElementById('search-open');
   if (searchOpen) searchOpen.addEventListener('click', () => {
+    state.searchOpen = true;
+    render();
+    setTimeout(() => document.getElementById('search-input')?.focus(), 50);
+  });
+  const searchOpenLabel = document.getElementById('search-open-label');
+  if (searchOpenLabel) searchOpenLabel.addEventListener('click', () => {
     state.searchOpen = true;
     render();
     setTimeout(() => document.getElementById('search-input')?.focus(), 50);
