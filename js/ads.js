@@ -579,30 +579,44 @@ function ensureGridInterstitial() {
 }
 
 // 30% chance of showing, max 1 per session (only on initial home load)
+// Decision is made once and cached so re-renders produce the same result
+let interstitialDecided = false;
+let interstitialVisible = false;
+
 function shouldShowInterstitial() {
   if (interstitialShownThisSession) return false;
-  if (Math.random() > 0.3) return false;
-  interstitialShownThisSession = true;
-  return true;
+  if (!interstitialDecided) {
+    interstitialDecided = true;
+    interstitialVisible = Math.random() <= 0.3;
+  }
+  if (interstitialVisible) {
+    interstitialShownThisSession = true;
+    return true;
+  }
+  return false;
 }
 
-// Reset the grid interstitial on page refresh
+// Reset the grid interstitial on category change / page refresh
 export function resetGridInterstitial() {
   gridInterstitialType = null;
+  interstitialDecided = false;
+  interstitialVisible = false;
+  resetBannerPool(); // fresh shuffle for new category
 }
 
 // Determines how to interleave ads into the item grid
+const BANNER_INTERVAL = 25; // fixed interval: one banner ad every 25 items
+
 export function renderItemGridWithAds(items, renderItemCardFn) {
-  // Reset banner pool each render for fresh shuffle
-  resetBannerPool();
+  // Reset pool index (not the shuffle) so re-renders produce the same banners
+  bannerPoolIdx = 0;
 
   const interType = ensureGridInterstitial();
   let html = '';
   let interstitialInserted = false;
   let bannersInserted = 0;
-  const maxBanners = window.innerWidth < 768 ? 2 : 3;
-  // Random interval between 20-30 items for banner ads
-  let nextBannerAt = 20 + Math.floor(Math.random() * 11);
+  // Scale max banners with grid size instead of a fixed cap
+  const maxBanners = Math.max(1, Math.floor(items.length / BANNER_INTERVAL));
 
   for (let idx = 0; idx < items.length; idx++) {
     html += renderItemCardFn(items[idx], idx);
@@ -613,11 +627,10 @@ export function renderItemGridWithAds(items, renderItemCardFn) {
       interstitialInserted = true;
     }
 
-    // Insert a banner ad every 20-30 items, max 2 on mobile / 3 on desktop
-    if ((idx + 1) === nextBannerAt && idx < items.length - 1 && bannersInserted < maxBanners) {
+    // Insert a banner ad every BANNER_INTERVAL items
+    if ((idx + 1) % BANNER_INTERVAL === 0 && idx < items.length - 1 && bannersInserted < maxBanners) {
       html += renderBannerAd(getNextBannerAd());
       bannersInserted++;
-      nextBannerAt += 20 + Math.floor(Math.random() * 11);
     }
   }
   return html;
