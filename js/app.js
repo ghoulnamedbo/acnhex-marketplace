@@ -1037,6 +1037,27 @@ async function render() {
   }
   app.innerHTML = `<div id="ptr-indicator" class="ptr-indicator"></div>` + content + renderNav() + renderModal() + renderSearch() + renderWishlistToast() + renderListPicker();
   attachEvents();
+
+  // Trigger cart badge pop animation after add-to-cart
+  if (state._cartBounce) {
+    state._cartBounce = false;
+    const badge = app.querySelector('.nav-badge');
+    if (badge) {
+      badge.classList.add('pop');
+      badge.addEventListener('animationend', () => badge.classList.remove('pop'), { once: true });
+    }
+  }
+
+  // Trigger heart pulse animation after wishlist toggle
+  if (state._heartPulse) {
+    const { id, vi } = state._heartPulse;
+    state._heartPulse = null;
+    const heartBtn = app.querySelector(`[data-heart="${id}"][data-heart-vi="${vi}"]`);
+    if (heartBtn) {
+      heartBtn.classList.add('pulse');
+      heartBtn.addEventListener('animationend', () => heartBtn.classList.remove('pulse'), { once: true });
+    }
+  }
 }
 
 // ─── Event Handling ───
@@ -1644,6 +1665,7 @@ async function toggleWishlist(itemId, variantIdx = 0) {
       list.items = list.items.filter(w => !(w.id === itemId && w.variantIdx === variantIdx));
     });
     storage.setWishlists(state.wishlists);
+    state._heartPulse = { id: itemId, vi: variantIdx };
     await render();
   } else {
     // Add to Loved Items by default (single instance only)
@@ -1653,6 +1675,7 @@ async function toggleWishlist(itemId, variantIdx = 0) {
     }
     storage.setWishlists(state.wishlists);
     showWishlistToast(itemId, variantIdx, 'Loved Items');
+    state._heartPulse = { id: itemId, vi: variantIdx };
     await render();
   }
 }
@@ -1698,6 +1721,7 @@ function addToCart(entry) {
   if (state.cart.length >= 40) return;
   state.cart.push(entry);
   storage.setCart(state.cart);
+  state._cartBounce = true;
   render();
 }
 
