@@ -1,6 +1,7 @@
 import * as storage from './storage.js';
 import * as data from './data.js';
 import * as reviews from './reviews.js';
+import * as ads from './ads.js';
 
 // ─── SVG Icons ───
 const ICONS = {
@@ -53,6 +54,9 @@ const state = {
   previousPage: null,
   savedSearch: null,
   catScrollLeft: 0,
+  adToastVisible: false,
+  activePopup: null,
+  adPageViews: 0,
 };
 
 const app = document.getElementById('app');
@@ -210,6 +214,8 @@ async function renderCatalog() {
       </div>
     </div>
 
+    ${ads.renderCatalogAdSection()}
+
     <div style="padding:0 24px;margin-top:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <h3 class="heading-section">Categories</h3>
@@ -231,13 +237,15 @@ async function renderCatalog() {
       </div>
     </div>
 
+    ${ads.renderNotificationSection()}
+
     <div style="padding:20px 24px 14px;display:flex;justify-content:space-between;align-items:center">
       <h3 class="heading-section">${isRandom ? 'Random Picks' : state.activeCategory === 'All' ? 'All Items' : esc(state.activeCategory)}</h3>
       <span class="text-secondary">${total} found</span>
     </div>
 
     <div class="item-grid">
-      ${items.map((item, idx) => renderItemCard(item, idx)).join('')}
+      ${ads.renderItemGridWithAds(items, renderItemCard)}
     </div>
 
     ${items.length < total && !isRandom && state.loadMode === 'batch' ? `<button class="load-more-btn" id="load-more">Load More</button>` : ''}
@@ -1047,7 +1055,7 @@ async function render() {
     case 'settings': content = renderSettings(); break;
     case 'info': content = renderInfo(); break;
   }
-  app.innerHTML = `<div id="ptr-indicator" class="ptr-indicator"></div>` + content + renderNav() + renderModal() + renderSearch() + renderWishlistToast() + renderListPicker();
+  app.innerHTML = `<div id="ptr-indicator" class="ptr-indicator"></div>` + content + renderNav() + renderModal() + renderSearch() + renderWishlistToast() + renderListPicker() + ads.renderActivePopup(state.activePopup) + ads.renderAdToast(state.adToastVisible);
   attachEvents();
 
   // Apply entrance animations only on page/category navigation
@@ -1095,6 +1103,7 @@ function attachEvents() {
   app.querySelectorAll('[data-nav]').forEach(btn => {
     btn.addEventListener('click', async () => {
       const target = btn.dataset.nav;
+      state.adPageViews++;
       if (target === 'catalog') {
         // Preserve existing home page state — don't reset items/category
         state.page = 'catalog';
@@ -1110,6 +1119,16 @@ function attachEvents() {
         if (target === 'wishlist') state.viewingListId = null;
         state._pageEnter = true;
         render();
+      }
+      // Check if a popup ad should be shown after navigation
+      if (!state.activePopup) {
+        const popupType = ads.checkPopupTrigger(state.adPageViews);
+        if (popupType) {
+          setTimeout(() => {
+            state.activePopup = popupType;
+            render();
+          }, 1000);
+        }
       }
     });
   });
@@ -1670,6 +1689,40 @@ function attachEvents() {
       });
     });
   });
+
+  // ─── Fake Ad Events ───
+  // Clicking any inline banner or notification ad shows toast
+  app.querySelectorAll('[data-fake-ad]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showAdToast();
+    });
+  });
+
+  // Popup dismiss buttons
+  app.querySelectorAll('[data-popup-dismiss]').forEach(el => {
+    el.addEventListener('click', () => {
+      if (state.activePopup) {
+        ads.dismissPopup(state.activePopup);
+        state.activePopup = null;
+        render();
+        showAdToast();
+      }
+    });
+  });
+}
+
+// ─── Ad Toast Helper ───
+let adToastTimer = null;
+function showAdToast() {
+  clearTimeout(adToastTimer);
+  state.adToastVisible = true;
+  render();
+  adToastTimer = setTimeout(() => {
+    state.adToastVisible = false;
+    const el = document.getElementById('ad-toast');
+    if (el) el.remove();
+  }, 3200);
 }
 
 // ─── Actions ───
@@ -1823,6 +1876,14 @@ async function init() {
     ls.addEventListener('transitionend', () => ls.remove(), { once: true });
     setTimeout(() => { if (ls.parentNode) ls.remove(); }, 800);
   }
+  // Show cookie popup on first visit (after a short delay for UX)
+  setTimeout(() => {
+    const popupType = ads.checkPopupTrigger(state.adPageViews);
+    if (popupType) {
+      state.activePopup = popupType;
+      render();
+    }
+  }, 2000);
 }
 
 init();

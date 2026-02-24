@@ -1580,6 +1580,684 @@ body { min-height: 100vh; min-height: 100dvh; }
   animation: lsFadeUp 0.6s ease forwards 1.4s;
 }
 
+/* ============================= */
+/*   FAKE ADS                    */
+/* ============================= */
+
+/* ── Banner Ad Base ── */
+.banner-ad {
+  width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(47, 59, 28, 0.1);
+  grid-column: 1 / -1;
+}
+
+.ad-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.15);
+  color: rgba(255, 255, 255, 0.7);
+  z-index: 2;
+}
+
+.ad-badge-dark {
+  background-color: rgba(0, 0, 0, 0.06);
+  color: rgba(0, 0, 0, 0.35);
+}
+
+.banner-inner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 20px;
+  min-height: 110px;
+}
+
+.ad-icon {
+  font-size: 46px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.ad-text h3 {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 4px;
+}
+
+.ad-text p {
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.ad-tag {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.ad-quote {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 9px;
+  font-style: italic;
+}
+
+.corner-badge {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 3px 8px;
+  border-radius: 100px;
+}
+
+/* ── Banner: Redd ── */
+.ad-redd .banner-inner { background: linear-gradient(135deg, #8B1A1A, #C0392B 50%, #A93226); }
+.ad-redd .ad-text h3 { color: #FDE8D0; }
+.ad-redd .ad-text p { color: rgba(253, 232, 208, 0.65); }
+.ad-redd .ad-tag { color: #FDE8D0; background-color: rgba(0, 0, 0, 0.2); }
+.ad-redd .ad-icon { animation: reddWobble 3s ease-in-out infinite; }
+@keyframes reddWobble { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+
+/* ── Banner: Sahara ── */
+.ad-sahara .banner-inner {
+  background-image:
+    repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(255,255,255,0.04) 8px, rgba(255,255,255,0.04) 16px),
+    linear-gradient(135deg, #D4A058, #C2954A 50%, #B8860B);
+}
+.ad-sahara .ad-text h3 { color: #FFF8EE; }
+.ad-sahara .ad-text p { color: rgba(255, 248, 238, 0.6); }
+.ad-sahara .italic-accent { font-style: italic; color: rgba(255, 248, 238, 0.85); }
+.ad-sahara .ad-icon { animation: saharaFloat 2.5s ease-in-out infinite; }
+@keyframes saharaFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+
+/* ── Banner: CJ ── */
+.ad-cj .banner-inner { background: linear-gradient(135deg, #1A6B7C, #1F8A9E 50%, #17809A); }
+.ad-cj .ad-text h3 { color: #E0F4F8; }
+.ad-cj .ad-text p { color: rgba(224, 244, 248, 0.6); }
+.ad-cj .ad-quote { color: rgba(224, 244, 248, 0.8); }
+.ad-cj .ad-icon { animation: fishSplash 2s ease-in-out infinite; }
+@keyframes fishSplash { 0%, 100% { transform: rotate(0deg) scale(1); } 25% { transform: rotate(5deg) scale(1.05); } 75% { transform: rotate(-3deg) scale(0.98); } }
+
+/* ── Banner: Kicks ── */
+.ad-kicks .banner-inner { background: linear-gradient(135deg, #4A3B6B, #6B5B8D 50%, #5A4A7D); }
+.ad-kicks .ad-text h3 { color: #E8DFF5; }
+.ad-kicks .ad-text p { color: rgba(232, 223, 245, 0.6); }
+.ad-kicks .stars { display: inline-flex; gap: 2px; margin-top: 6px; font-size: 10px; line-height: 1; }
+.ad-kicks .ad-icon { animation: kicksTap 1.5s ease-in-out infinite; }
+@keyframes kicksTap { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-3px) rotate(-5deg); } }
+
+/* ── Banner: Gracie Grace ── */
+.ad-gracie .banner-inner {
+  background: linear-gradient(135deg, #1A1A1A, #2D2D2D 50%, #1A1A1A);
+  flex-direction: column; align-items: center; text-align: center; gap: 6px;
+  min-height: 130px; padding: 28px 20px; position: relative;
+}
+.ad-gracie .banner-inner::before {
+  content: ''; position: absolute; top: 3px; left: 3px; right: 3px; bottom: 3px;
+  border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 13px; pointer-events: none;
+}
+.ad-gracie .gracie-brand { font-size: 9px; text-transform: uppercase; letter-spacing: 5px; color: #D4AF37; }
+.ad-gracie .gracie-title { font-size: 16px; font-weight: 700; color: #F5F0E0; letter-spacing: 1px; }
+.ad-gracie .gracie-tagline { font-size: 9px; color: rgba(245, 240, 224, 0.35); font-style: italic; }
+.ad-gracie .gracie-cta {
+  margin-top: 6px; font-size: 8px; text-transform: uppercase; letter-spacing: 2px;
+  color: #D4AF37; border: 1px solid rgba(212, 175, 55, 0.3); padding: 5px 16px;
+  border-radius: 100px; display: inline-block;
+}
+
+/* ── Banner: Brewster ── */
+.ad-brewster .banner-inner { background: linear-gradient(135deg, #3E2723, #5D4037 50%, #4E342E); }
+.ad-brewster .ad-text h3 { color: #D7CCC8; }
+.ad-brewster .ad-text p { color: rgba(215, 204, 200, 0.55); }
+.ad-brewster .ad-quote { color: rgba(215, 204, 200, 0.75); }
+.ad-brewster .ad-icon { animation: brewsterSteam 2.5s ease-in-out infinite; }
+@keyframes brewsterSteam { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+.steam-dots {
+  position: absolute; top: 8px; right: 16px; font-size: 12px; opacity: 0.15;
+  animation: steamRise 2s ease-out infinite;
+}
+@keyframes steamRise { 0% { transform: translateY(0); opacity: 0.15; } 100% { transform: translateY(-12px); opacity: 0; } }
+
+/* ── Banner: Leif ── */
+.ad-leif .banner-inner { background: linear-gradient(135deg, #2E7D32, #43A047 50%, #388E3C); }
+.ad-leif .ad-text h3 { color: #E8F5E9; }
+.ad-leif .ad-text p { color: rgba(232, 245, 233, 0.6); }
+.ad-leif .ad-tag { color: #E8F5E9; background-color: rgba(255, 255, 255, 0.12); }
+.ad-leif .ad-icon { animation: leifSway 3s ease-in-out infinite; }
+@keyframes leifSway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+
+/* ── Banner: Wisp ── */
+.ad-wisp .banner-inner {
+  background: linear-gradient(135deg, #1A237E, #283593 50%, #1A237E);
+  position: relative; overflow: hidden;
+}
+.ad-wisp .banner-inner::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(ellipse at 30% 50%, rgba(100, 150, 255, 0.1) 0%, transparent 60%);
+}
+.ad-wisp .ad-text h3 { color: #C5CAE9; position: relative; }
+.ad-wisp .ad-text p { color: rgba(197, 202, 233, 0.5); position: relative; }
+.ad-wisp .ad-quote { color: rgba(197, 202, 233, 0.7); position: relative; }
+.ad-wisp .ad-icon {
+  animation: wispFloat 2s ease-in-out infinite; position: relative;
+  filter: drop-shadow(0 0 8px rgba(100, 150, 255, 0.3));
+}
+@keyframes wispFloat { 0%, 100% { transform: translateY(0) scale(1); opacity: 0.9; } 50% { transform: translateY(-6px) scale(1.05); opacity: 1; } }
+.wisp-stars { position: absolute; top: 6px; right: 14px; font-size: 10px; opacity: 0.2; animation: adTwinkle 1.5s ease-in-out infinite alternate; }
+@keyframes adTwinkle { 0% { opacity: 0.1; } 100% { opacity: 0.3; } }
+
+/* ── Banner: Daisy Mae ── */
+.ad-daisy .banner-inner { background: linear-gradient(135deg, #F57F17, #FFB300 50%, #F9A825); }
+.ad-daisy .ad-text h3 { color: #5D4037; }
+.ad-daisy .ad-text p { color: rgba(93, 64, 55, 0.6); }
+.ad-daisy .ad-tag { color: #5D4037; background-color: rgba(93, 64, 55, 0.1); }
+.ad-daisy .ad-icon { animation: daisyBounce 1s ease-in-out infinite; }
+.ad-daisy .corner-badge { background-color: rgba(93, 64, 55, 0.15); color: #5D4037; }
+@keyframes daisyBounce { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-5px) rotate(-3deg); } }
+
+/* ── Banner: Blathers ── */
+.ad-blathers .banner-inner {
+  background: linear-gradient(135deg, #37474F, #455A64 50%, #37474F); position: relative;
+}
+.ad-blathers .banner-inner::before {
+  content: ''; position: absolute; top: 3px; left: 3px; right: 3px; bottom: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 13px;
+}
+.ad-blathers .ad-text h3 { color: #ECEFF1; }
+.ad-blathers .ad-text p { color: rgba(236, 239, 241, 0.5); }
+.ad-blathers .ad-quote { color: rgba(236, 239, 241, 0.65); }
+.ad-blathers .ad-icon { animation: blathersPeek 3s ease-in-out infinite; }
+@keyframes blathersPeek { 0%, 100% { transform: rotate(0deg); } 15% { transform: rotate(-5deg); } 30% { transform: rotate(0deg); } }
+
+/* ── Banner: Pascal ── */
+.ad-pascal .banner-inner { background: linear-gradient(135deg, #E91E63, #F06292 50%, #EC407A); }
+.ad-pascal .ad-text h3 { color: #FCE4EC; }
+.ad-pascal .ad-text p { color: rgba(252, 228, 236, 0.55); }
+.ad-pascal .ad-quote { color: rgba(252, 228, 236, 0.8); }
+.ad-pascal .ad-icon { animation: pascalDrift 4s ease-in-out infinite; }
+@keyframes pascalDrift { 0%, 100% { transform: translateX(0) translateY(0); } 25% { transform: translateX(3px) translateY(-2px); } 50% { transform: translateX(0) translateY(-4px); } 75% { transform: translateX(-3px) translateY(-2px); } }
+
+/* ── Banner: Label ── */
+.ad-label .banner-inner { background: linear-gradient(135deg, #FF6F00, #FF8F00 50%, #FFA000); }
+.ad-label .ad-text h3 { color: #FFF8E1; }
+.ad-label .ad-text p { color: rgba(255, 248, 225, 0.55); }
+.ad-label .ad-tag { color: #FFF8E1; background-color: rgba(255, 255, 255, 0.15); }
+.ad-label .ad-icon { animation: labelSpin 2s ease-in-out infinite; }
+@keyframes labelSpin { 0%, 100% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(5deg) scale(1.05); } }
+
+/* ── Banner: Katrina ── */
+.ad-katrina .banner-inner {
+  background: linear-gradient(135deg, #311B92, #4527A0 50%, #311B92);
+  position: relative; overflow: hidden;
+}
+.ad-katrina .banner-inner::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(circle at 20% 30%, rgba(186, 104, 200, 0.1) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(100, 100, 255, 0.08) 0%, transparent 40%);
+}
+.ad-katrina .ad-text h3 { color: #E1BEE7; position: relative; }
+.ad-katrina .ad-text p { color: rgba(225, 190, 231, 0.5); position: relative; }
+.ad-katrina .ad-quote { color: rgba(225, 190, 231, 0.75); position: relative; }
+.ad-katrina .ad-icon {
+  position: relative; animation: katrinaGlow 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px rgba(186, 104, 200, 0.3));
+}
+@keyframes katrinaGlow { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+.fortune-stars { position: absolute; bottom: 8px; right: 14px; font-size: 9px; opacity: 0.2; letter-spacing: 4px; }
+
+/* ── Banner: Flick ── */
+.ad-flick .banner-inner {
+  background: linear-gradient(135deg, #880E4F, #AD1457 50%, #C2185B);
+  position: relative;
+}
+.ad-flick .ad-text h3 { color: #FCE4EC; }
+.ad-flick .ad-text p { color: rgba(252, 228, 236, 0.55); }
+.ad-flick .ad-quote { color: rgba(252, 228, 236, 0.8); }
+.ad-flick .ad-icon { animation: flickBuzz 0.8s ease-in-out infinite; }
+@keyframes flickBuzz { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(2px); } 75% { transform: translateX(-2px); } }
+
+/* ── Banner: Celeste ── */
+.ad-celeste .banner-inner {
+  background: linear-gradient(135deg, #0D1B3E, #1A2D5E 50%, #0D1B3E);
+  position: relative; overflow: hidden;
+}
+.ad-celeste .banner-inner::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background:
+    radial-gradient(circle at 80% 20%, rgba(255, 235, 59, 0.08) 0%, transparent 30%),
+    radial-gradient(circle at 20% 80%, rgba(255, 235, 59, 0.05) 0%, transparent 30%);
+}
+.ad-celeste .ad-text h3 { color: #FFF9C4; position: relative; }
+.ad-celeste .ad-text p { color: rgba(255, 249, 196, 0.45); position: relative; }
+.ad-celeste .ad-quote { color: rgba(255, 249, 196, 0.7); position: relative; }
+.ad-celeste .ad-icon { position: relative; animation: celesteSpin 6s linear infinite; }
+@keyframes celesteSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.celeste-sparkles { position: absolute; top: 8px; right: 14px; font-size: 8px; opacity: 0.25; letter-spacing: 3px; animation: adTwinkle 2s ease-in-out infinite alternate; }
+
+/* ── Banner: Gullivarrr ── */
+.ad-gullivarrr .banner-inner {
+  background: linear-gradient(135deg, #1B5E20, #2E7D32 50%, #1B5E20);
+}
+.ad-gullivarrr .ad-text h3 { color: #FFF8E1; }
+.ad-gullivarrr .ad-text p { color: rgba(255, 248, 225, 0.5); }
+.ad-gullivarrr .ad-quote { color: rgba(255, 248, 225, 0.75); }
+.ad-gullivarrr .ad-icon { animation: gulliRock 3s ease-in-out infinite; }
+@keyframes gulliRock { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+
+/* ── Banner: Harriet ── */
+.ad-harriet .banner-inner {
+  background: linear-gradient(135deg, #F48FB1, #F06292 50%, #EC407A);
+}
+.ad-harriet .ad-text h3 { color: #FFFFFF; }
+.ad-harriet .ad-text p { color: rgba(255, 255, 255, 0.55); }
+.ad-harriet .ad-tag { color: #FFFFFF; background-color: rgba(255, 255, 255, 0.2); }
+.ad-harriet .ad-icon { animation: harrietSnip 1.5s ease-in-out infinite; }
+@keyframes harrietSnip { 0%, 100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.1) rotate(8deg); } }
+
+/* ── Banner: K.K. Slider ── */
+.ad-kk .banner-inner {
+  background: linear-gradient(135deg, #263238, #37474F 50%, #263238);
+  position: relative;
+}
+.ad-kk .banner-inner::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+}
+.ad-kk .ad-text h3 { color: #ECEFF1; }
+.ad-kk .ad-text p { color: rgba(236, 239, 241, 0.5); }
+.ad-kk .ad-quote { color: rgba(236, 239, 241, 0.7); }
+.ad-kk .ad-icon { animation: kkStrum 2s ease-in-out infinite; }
+@keyframes kkStrum { 0%, 100% { transform: rotate(0deg); } 30% { transform: rotate(-4deg); } 60% { transform: rotate(2deg); } }
+.music-notes { position: absolute; top: 6px; right: 14px; font-size: 10px; opacity: 0.15; letter-spacing: 3px; animation: notesFloat 3s ease-in-out infinite; }
+@keyframes notesFloat { 0%, 100% { transform: translateY(0); opacity: 0.15; } 50% { transform: translateY(-4px); opacity: 0.25; } }
+
+/* ── Banner: Tortimer ── */
+.ad-tortimer .banner-inner {
+  background: linear-gradient(135deg, #004D40, #00695C 50%, #004D40);
+}
+.ad-tortimer .ad-text h3 { color: #E0F2F1; }
+.ad-tortimer .ad-text p { color: rgba(224, 242, 241, 0.5); }
+.ad-tortimer .ad-quote { color: rgba(224, 242, 241, 0.7); }
+.ad-tortimer .ad-icon { animation: tortimerSlow 4s ease-in-out infinite; }
+@keyframes tortimerSlow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+
+/* ── Banner: Able Sisters ── */
+.ad-able .banner-inner {
+  background: linear-gradient(135deg, #5C6BC0, #7986CB 50%, #5C6BC0);
+  position: relative;
+}
+.ad-able .banner-inner::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(90deg, transparent, transparent 12px, rgba(255,255,255,0.03) 12px, rgba(255,255,255,0.03) 24px);
+}
+.ad-able .ad-text h3 { color: #E8EAF6; position: relative; }
+.ad-able .ad-text p { color: rgba(232, 234, 246, 0.55); position: relative; }
+.ad-able .ad-tag { color: #E8EAF6; background-color: rgba(255, 255, 255, 0.12); position: relative; }
+.ad-able .ad-icon { position: relative; animation: ableWeave 2s ease-in-out infinite; }
+@keyframes ableWeave { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(6deg); } }
+
+/* ── Banner: Resetti ── */
+.ad-resetti .banner-inner {
+  background: linear-gradient(135deg, #BF360C, #E64A19 50%, #D84315);
+  position: relative;
+}
+.ad-resetti .ad-text h3 { color: #FBE9E7; }
+.ad-resetti .ad-text p { color: rgba(251, 233, 231, 0.55); }
+.ad-resetti .ad-quote { color: rgba(251, 233, 231, 0.8); }
+.ad-resetti .ad-icon { animation: resettiShake 0.5s ease-in-out infinite; }
+@keyframes resettiShake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px) rotate(-2deg); } 75% { transform: translateX(3px) rotate(2deg); } }
+.alert-flash {
+  position: absolute; top: 10px; right: 12px;
+  font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+  padding: 3px 8px; border-radius: 100px;
+  background-color: rgba(255, 255, 255, 0.2); color: #FBE9E7;
+  animation: alertBlink 1s ease-in-out infinite;
+}
+@keyframes alertBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* ── Banner: Rover ── */
+.ad-rover .banner-inner {
+  background: linear-gradient(135deg, #00838F, #0097A7 50%, #00838F);
+}
+.ad-rover .ad-text h3 { color: #E0F7FA; }
+.ad-rover .ad-text p { color: rgba(224, 247, 250, 0.5); }
+.ad-rover .ad-quote { color: rgba(224, 247, 250, 0.75); }
+.ad-rover .ad-icon { animation: roverBounce 1.5s ease-in-out infinite; }
+@keyframes roverBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+
+/* ============================= */
+/*   FULL-WIDTH INTERSTITIALS    */
+/* ============================= */
+
+.interstitial {
+  width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 16px rgba(47, 59, 28, 0.12);
+  position: relative;
+}
+
+/* ── Tom Nook Mortgage ── */
+.ad-nook-mortgage {
+  background: linear-gradient(135deg, #3A4A1A, #6B7C2A);
+  padding: 28px 24px; text-align: center; position: relative; overflow: hidden;
+}
+.ad-nook-mortgage::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(255,255,255,0.015) 20px, rgba(255,255,255,0.015) 21px);
+}
+.mortgage-top { font-size: 9px; text-transform: uppercase; letter-spacing: 3px; color: rgba(232, 237, 204, 0.4); margin-bottom: 10px; position: relative; }
+.mortgage-icon { font-size: 36px; display: block; margin-bottom: 10px; position: relative; }
+.mortgage-title { font-size: 15px; font-weight: 700; color: #E8EDCC; margin-bottom: 6px; position: relative; }
+.mortgage-body-text { font-size: 10px; color: rgba(232, 237, 204, 0.5); line-height: 1.5; margin-bottom: 14px; position: relative; }
+.mortgage-rate { display: inline-flex; align-items: baseline; gap: 4px; margin-bottom: 14px; position: relative; }
+.mortgage-rate .rate-num { font-size: 32px; font-weight: 700; color: #E8EDCC; }
+.mortgage-rate .rate-label { font-size: 10px; color: rgba(232, 237, 204, 0.5); }
+.mortgage-cta {
+  display: inline-block; padding: 10px 28px; background-color: rgba(232, 237, 204, 0.15);
+  border: 1px solid rgba(232, 237, 204, 0.2); border-radius: 100px; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 1.5px; color: #E8EDCC; position: relative;
+}
+.mortgage-fine { margin-top: 12px; font-size: 7px; color: rgba(232, 237, 204, 0.25); position: relative; }
+
+/* ── Isabelle's Gazette ── */
+.ad-gazette {
+  background-color: #FFFDE7; padding: 24px 20px; position: relative; overflow: hidden;
+}
+.ad-gazette::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 24px, rgba(0,0,0,0.02) 24px, rgba(0,0,0,0.02) 25px);
+}
+.gazette-badge {
+  position: absolute; top: 10px; left: 10px; font-size: 8px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1.5px; padding: 2px 7px; border-radius: 4px;
+  background-color: rgba(62, 39, 35, 0.08); color: rgba(62, 39, 35, 0.4); z-index: 2;
+}
+.gazette-header { text-align: center; padding-bottom: 10px; border-bottom: 2px solid #5D4037; margin-bottom: 12px; position: relative; }
+.gazette-name { font-size: 16px; font-weight: 700; color: #3E2723; letter-spacing: 1px; }
+.gazette-date { font-size: 8px; color: rgba(62, 39, 35, 0.4); text-transform: uppercase; letter-spacing: 2px; margin-top: 2px; }
+.gazette-body { position: relative; }
+.gazette-headline { font-size: 13px; font-weight: 700; color: #3E2723; line-height: 1.35; margin-bottom: 8px; }
+.gazette-excerpt { font-size: 9px; color: rgba(62, 39, 35, 0.55); line-height: 1.6; margin-bottom: 10px; }
+.gazette-cta { font-size: 9px; font-weight: 700; color: #5D4037; text-transform: uppercase; letter-spacing: 1.5px; }
+
+/* ── Nook Shopping TV ── */
+.ad-nook-shopping {
+  background: linear-gradient(135deg, #0D47A1, #1565C0 50%, #0D47A1);
+  padding: 28px 24px; text-align: center; position: relative; overflow: hidden;
+}
+.ad-nook-shopping::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(255,255,255,0.02) 3px, rgba(255,255,255,0.02) 4px);
+  pointer-events: none;
+}
+.shopping-scanline {
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: rgba(255,255,255,0.06);
+  animation: adScanline 3s linear infinite;
+}
+@keyframes adScanline { 0% { top: 0; } 100% { top: 100%; } }
+.shopping-channel { font-size: 8px; text-transform: uppercase; letter-spacing: 3px; color: rgba(187, 222, 251, 0.4); margin-bottom: 8px; position: relative; }
+.shopping-icon { font-size: 40px; display: block; margin-bottom: 10px; position: relative; }
+.shopping-title { font-size: 15px; font-weight: 700; color: #BBDEFB; margin-bottom: 4px; position: relative; }
+.shopping-sub { font-size: 10px; color: rgba(187, 222, 251, 0.5); line-height: 1.5; margin-bottom: 16px; position: relative; }
+.shopping-price-row { display: flex; justify-content: center; gap: 16px; margin-bottom: 14px; position: relative; }
+.shopping-item { text-align: center; }
+.shopping-item .si-emoji { font-size: 24px; display: block; margin-bottom: 4px; }
+.shopping-item .si-price { font-size: 11px; font-weight: 700; color: #BBDEFB; }
+.shopping-item .si-label { font-size: 7px; color: rgba(187, 222, 251, 0.4); text-transform: uppercase; letter-spacing: 1px; }
+.shopping-cta {
+  display: inline-block; padding: 10px 28px; background-color: rgba(187, 222, 251, 0.15);
+  border: 1px solid rgba(187, 222, 251, 0.2); border-radius: 100px; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 1.5px; color: #BBDEFB; position: relative;
+}
+.shopping-fine { margin-top: 10px; font-size: 7px; color: rgba(187, 222, 251, 0.2); position: relative; }
+
+/* ── Dodo Airlines ── */
+.ad-dodo {
+  background: linear-gradient(135deg, #1565C0, #42A5F5 60%, #90CAF9);
+  padding: 28px 24px; text-align: center; position: relative; overflow: hidden;
+}
+.dodo-clouds {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background:
+    radial-gradient(ellipse at 15% 30%, rgba(255,255,255,0.08) 0%, transparent 30%),
+    radial-gradient(ellipse at 75% 60%, rgba(255,255,255,0.06) 0%, transparent 25%),
+    radial-gradient(ellipse at 50% 90%, rgba(255,255,255,0.05) 0%, transparent 35%);
+}
+.dodo-brand { font-size: 8px; text-transform: uppercase; letter-spacing: 4px; color: rgba(255,255,255,0.4); margin-bottom: 8px; position: relative; }
+.dodo-icon { font-size: 42px; display: block; margin-bottom: 8px; position: relative; animation: dodoPlan 3s ease-in-out infinite; }
+@keyframes dodoPlan { 0%, 100% { transform: translateX(0) rotate(0deg); } 50% { transform: translateX(6px) rotate(2deg); } }
+.dodo-title { font-size: 16px; font-weight: 700; color: #FFFFFF; margin-bottom: 4px; position: relative; }
+.dodo-sub { font-size: 10px; color: rgba(255,255,255,0.5); line-height: 1.5; margin-bottom: 14px; position: relative; }
+.dodo-routes { display: flex; justify-content: center; gap: 6px; margin-bottom: 14px; position: relative; }
+.dodo-route {
+  font-size: 8px; text-transform: uppercase; letter-spacing: 1px;
+  padding: 4px 10px; border-radius: 100px;
+  background-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.7);
+}
+.dodo-cta {
+  display: inline-block; padding: 10px 28px; background-color: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.25); border-radius: 100px; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 1.5px; color: #FFFFFF; position: relative;
+}
+.dodo-fine { margin-top: 10px; font-size: 7px; color: rgba(255,255,255,0.2); position: relative; }
+
+/* ============================= */
+/*   NOTIFICATION-STYLE ADS      */
+/* ============================= */
+
+.notif-ad {
+  width: 100%; background-color: #FFFFFF;
+  border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 2px 12px rgba(47, 59, 28, 0.08); position: relative; overflow: hidden;
+  cursor: pointer;
+}
+.notif-ad::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
+.notif-ad .notif-icon { font-size: 32px; flex-shrink: 0; line-height: 1; }
+.notif-ad .notif-content { flex: 1; min-width: 0; }
+.notif-ad .notif-title { font-size: 11px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+.notif-ad .notif-body { font-size: 9px; color: var(--text-secondary); line-height: 1.4; }
+.notif-ad .notif-time { font-size: 8px; color: var(--text-light); flex-shrink: 0; align-self: flex-start; margin-top: 2px; }
+.notif-ad .notif-ad-badge { position: absolute; bottom: 6px; right: 10px; font-size: 7px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-light); }
+
+.notif-nooklink::before { background-color: var(--pines); }
+.notif-hhp::before { background-color: #00897B; }
+.notif-sale::before { background-color: #E91E63; }
+.notif-kk::before { background-color: #37474F; }
+.notif-celeste::before { background-color: #1A237E; }
+.notif-turnip::before { background-color: #F57F17; }
+
+/* ── Ad Notification Section ── */
+.ad-notif-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 24px;
+  margin: 16px 0;
+}
+
+/* ── Ad Catalog Section (interstitials between sections) ── */
+.ad-catalog-section {
+  padding: 0 24px;
+  margin: 20px 0;
+}
+
+.ad-catalog-section .interstitial {
+  max-width: 100%;
+}
+
+/* ============================= */
+/*   POPUP MODALS                */
+/* ============================= */
+
+.ad-popup-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.ad-popup-dim {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(47, 59, 28, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.ad-popup-overlay .modal-box {
+  position: relative; z-index: 2; width: 310px; max-width: 100%; background-color: #FFF8F3;
+  border-radius: 20px; overflow: hidden;
+  box-shadow: 0 12px 40px rgba(47, 59, 28, 0.3);
+  animation: adModalPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes adModalPop { 0% { transform: scale(0.85); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+.ad-popup-overlay .modal-header { padding: 20px 20px 16px; text-align: center; position: relative; }
+.ad-popup-overlay .modal-header .m-emoji { font-size: 28px; display: block; margin-bottom: 6px; }
+.ad-popup-overlay .modal-header h3 { font-size: 14px; font-weight: 700; line-height: 1.3; }
+.ad-popup-overlay .modal-header .close-btn {
+  position: absolute; top: 10px; right: 12px; width: 24px; height: 24px;
+  border-radius: 50%; border: none; font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font); line-height: 1;
+  background-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5);
+}
+
+.ad-popup-overlay .modal-body { padding: 18px 20px 20px; text-align: center; }
+.ad-popup-overlay .modal-body .fine-print { font-size: 7px; color: rgba(138, 126, 120, 0.45); line-height: 1.3; }
+
+/* ── Nook Inc Premium Popup ── */
+.modal-premium { border: 2px solid var(--pines); }
+.modal-premium .modal-header { background: linear-gradient(135deg, var(--palm-leaf), var(--pines)); }
+.modal-premium .modal-header .sparkle-icon { font-size: 22px; display: block; margin-bottom: 6px; animation: adSparkleRotate 2s linear infinite; }
+@keyframes adSparkleRotate { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.15); } 100% { transform: rotate(360deg) scale(1); } }
+.modal-premium .modal-header h3 { color: #E8EDCC; }
+.modal-premium .modal-header .tier-label { font-size: 9px; text-transform: uppercase; letter-spacing: 2.5px; color: rgba(232, 237, 204, 0.5); margin-top: 2px; }
+.feature-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.feature-row { display: flex; align-items: center; gap: 10px; text-align: left; padding: 8px 12px; background-color: var(--bg); border-radius: 10px; }
+.feature-row .f-icon { font-size: 20px; flex-shrink: 0; line-height: 1; }
+.feature-row .f-text { font-size: 11px; color: var(--text-primary); line-height: 1.3; }
+.price-block { margin-bottom: 16px; }
+.price-amount { font-size: 28px; font-weight: 700; color: var(--text-primary); }
+.price-period { font-size: 10px; color: var(--text-secondary); display: block; margin-top: 2px; }
+.cta-button {
+  width: 100%; padding: 14px; background: linear-gradient(135deg, var(--pines), var(--palm-leaf));
+  border: none; border-radius: 12px; font-family: var(--font); font-size: 13px;
+  font-weight: 700; color: #FFF8F3; cursor: pointer; letter-spacing: 0.5px;
+}
+.fine-print-premium { margin-top: 10px; font-size: 8px; color: var(--text-secondary); line-height: 1.4; }
+
+/* ── 1000th Visitor Popup ── */
+.modal-visitor { border: 3px solid #D4A017; }
+.modal-visitor .modal-header { background: linear-gradient(135deg, #D4A017, #E8B830, #D4A017); overflow: hidden; }
+.modal-visitor .confetti-strip { position: absolute; top: 2px; left: 0; right: 0; font-size: 10px; letter-spacing: 4px; opacity: 0.4; white-space: nowrap; animation: adScrollConfetti 4s linear infinite; }
+@keyframes adScrollConfetti { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+.modal-visitor .big-party { font-size: 36px; display: block; margin-bottom: 8px; animation: adPartyBounce 0.8s ease-in-out infinite; }
+@keyframes adPartyBounce { 0%, 100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.1) rotate(3deg); } }
+.modal-visitor .modal-header h3 { color: #5C3D00; }
+.modal-visitor .modal-header .close-btn { background-color: rgba(92, 61, 0, 0.1); color: rgba(92, 61, 0, 0.4); }
+.modal-visitor .visitor-sub { font-size: 10px; color: rgba(92, 61, 0, 0.6); margin-top: 4px; }
+.miles-box { display: inline-flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #FFF8DC, #FFEEBB); padding: 12px 24px; border-radius: 12px; border: 1.5px dashed #D4A017; margin-bottom: 16px; }
+.miles-box .m-icon { font-size: 28px; line-height: 1; }
+.miles-box .m-amount { font-size: 20px; font-weight: 700; color: #5C3D00; }
+.miles-box .m-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(92, 61, 0, 0.5); }
+.visitor-cta { width: 100%; padding: 13px; background: linear-gradient(135deg, #D4A017, #E8B830); border: none; border-radius: 12px; font-family: var(--font); font-size: 12px; font-weight: 700; color: #5C3D00; cursor: pointer; margin-bottom: 8px; }
+
+/* ── Turnip Ticker Popup ── */
+.modal-turnip { border: 2px solid #F57F17; }
+.modal-turnip .modal-header { background: linear-gradient(135deg, #F57F17, #FFB300, #F9A825); }
+.modal-turnip .modal-header h3 { color: #5D4037; }
+.modal-turnip .modal-header .close-btn { background-color: rgba(0,0,0,0.08); color: rgba(93, 64, 55, 0.5); }
+.modal-turnip .t-sub { font-size: 9px; color: rgba(93, 64, 55, 0.6); margin-top: 2px; }
+.turnip-ticker { display: flex; justify-content: center; gap: 12px; margin-bottom: 16px; }
+.ticker-card { background-color: var(--bg); border-radius: 10px; padding: 10px 14px; text-align: center; flex: 1; }
+.ticker-label { font-size: 8px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 4px; }
+.ticker-value { font-size: 18px; font-weight: 700; color: var(--text-primary); }
+.ticker-trend { font-size: 9px; margin-top: 2px; }
+.ticker-trend.up { color: #2E7D32; }
+.ticker-trend.down { color: #C62828; }
+.turnip-disclaimer { font-size: 9px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.4; }
+.turnip-cta { width: 100%; padding: 12px; background: linear-gradient(135deg, #F57F17, #FFB300); border: none; border-radius: 12px; font-family: var(--font); font-size: 12px; font-weight: 700; color: #5D4037; cursor: pointer; margin-bottom: 6px; }
+
+/* ── HHP Lottie Popup ── */
+.modal-lottie { border: 2px solid #00897B; }
+.modal-lottie .modal-header { background: linear-gradient(135deg, #00695C, #00897B, #00796B); }
+.modal-lottie .modal-header h3 { color: #E0F2F1; }
+.modal-lottie .modal-header .l-sub { font-size: 9px; color: rgba(224, 242, 241, 0.5); text-transform: uppercase; letter-spacing: 2px; margin-top: 2px; }
+.room-preview { display: flex; gap: 8px; margin-bottom: 16px; }
+.room-card { flex: 1; background-color: var(--bg); border-radius: 10px; padding: 14px 8px; text-align: center; }
+.room-card .room-emoji { font-size: 24px; display: block; margin-bottom: 6px; }
+.room-card .room-name { font-size: 8px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-primary); font-weight: 700; line-height: 1.3; }
+.lottie-pitch { font-size: 10px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 14px; }
+.lottie-cta { width: 100%; padding: 12px; background: linear-gradient(135deg, #00897B, #00695C); border: none; border-radius: 12px; font-family: var(--font); font-size: 12px; font-weight: 700; color: #E0F2F1; cursor: pointer; margin-bottom: 6px; }
+
+/* ── Cookie Popup ── */
+.modal-cookie { border: 2px solid var(--parfait); }
+.modal-cookie .modal-header { background: linear-gradient(135deg, var(--parfait), var(--dolce-pink)); }
+.modal-cookie .modal-header h3 { color: var(--text-primary); }
+.modal-cookie .modal-header .close-btn { background-color: rgba(0,0,0,0.05); color: rgba(0,0,0,0.3); }
+.cookie-text { font-size: 10px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px; }
+.cookie-btns { display: flex; gap: 8px; }
+.cookie-btn {
+  flex: 1; padding: 11px; border-radius: 12px; font-family: var(--font);
+  font-size: 11px; font-weight: 700; cursor: pointer; border: none;
+}
+.cookie-accept { background: linear-gradient(135deg, var(--pines), var(--palm-leaf)); color: #FFF8F3; }
+.cookie-decline { background-color: var(--bg); color: var(--text-secondary); border: 1px solid var(--border) !important; }
+
+/* ============================= */
+/*   AD TOAST                    */
+/* ============================= */
+
+.ad-toast {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10001;
+  animation: adToastSlide 3s ease-in-out forwards;
+  pointer-events: none;
+}
+.ad-toast-bar {
+  background-color: var(--palm-leaf); color: #FFF8F3; font-size: 11px;
+  padding: 12px 20px; border-radius: 12px; display: inline-flex; align-items: center; gap: 8px;
+  box-shadow: 0 4px 16px rgba(47, 59, 28, 0.3);
+  white-space: nowrap;
+  font-family: var(--font);
+}
+.ad-toast-icon { font-size: 16px; line-height: 1; }
+@keyframes adToastSlide {
+  0% { transform: translateX(-50%) translateY(16px); opacity: 0; }
+  15%, 85% { transform: translateX(-50%) translateY(0); opacity: 1; }
+  100% { transform: translateX(-50%) translateY(-8px); opacity: 0; }
+}
+
 /* ─── Reduce Motion ─── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
