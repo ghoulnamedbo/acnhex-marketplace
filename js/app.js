@@ -1816,6 +1816,12 @@ async function init() {
   state._pageEnter = true;
   render();
   initPullToRefresh();
+  // Dismiss loading screen
+  const ls = document.getElementById('loading-screen');
+  if (ls) {
+    ls.classList.add('ls-fade-out');
+    ls.addEventListener('transitionend', () => ls.remove(), { once: true });
+  }
 }
 
 init();
