@@ -164,41 +164,49 @@ async function renderCatalog() {
 
     <div class="hero-receipt-banner">
       <div class="hero-search-row">
-        <span class="hero-search-label" id="search-open-label">Search items or tags...</span>
-        <button class="header-btn" id="search-open">${ICONS.search}</button>
+        <div class="hero-search-fake" id="search-open-label">
+          <span class="hero-search-icon">${ICONS.search}</span>
+          <span class="hero-search-placeholder">Search items or tags...</span>
+        </div>
+        <button class="header-btn hero-filter-btn" id="search-open">${ICONS.filter}</button>
       </div>
+
       <div class="hero-inner">
-        <div class="hero-receipt-col">
-          <div class="receipt">
-            <div class="receipt-header">
-              <div class="receipt-logo">Nook's Cranny</div>
-              <div class="receipt-date">Order #4092 · Today</div>
+        <div class="receipt">
+          <div class="receipt-header">
+            <div class="receipt-stars">✦ ACNHEX Market ✦</div>
+            <div class="receipt-date">Nook Inc. Official Item Registry</div>
+          </div>
+          <div class="receipt-lines">
+            <div class="receipt-line r-visible">
+              <span class="receipt-swatch" style="background:#e87070"></span>
+              <span class="receipt-item-name">bunk bed</span>
+              <span class="receipt-item-hex">206A</span>
             </div>
-            <div class="receipt-lines" id="receipt-lines">
-              <div class="receipt-line r-visible">
-                <span class="receipt-item-name">Iron Garden Bench</span>
-                <span class="receipt-item-hex">0x1A3F</span>
-              </div>
-              <div class="receipt-line r-visible">
-                <span class="receipt-item-name">Nova Light</span>
-                <span class="receipt-item-hex">0x20CC</span>
-              </div>
-              <div class="receipt-line r-visible">
-                <span class="receipt-item-name">Crescent Chair</span>
-                <span class="receipt-item-hex">0x0E71</span>
-              </div>
+            <div class="receipt-line r-visible">
+              <span class="receipt-swatch" style="background:#6a823e"></span>
+              <span class="receipt-item-name">public telephone</span>
+              <span class="receipt-item-hex">3019</span>
             </div>
-            <hr class="receipt-divider">
-            <div class="receipt-cmd r-visible">
-              <span class="code-keyword">!order</span> <span class="code-value">0x1A3F</span><span class="code-sep">, </span><span class="code-value">0x20CC</span><span class="code-sep">, </span><span class="code-value">0x0E71</span>
+            <div class="receipt-line r-visible">
+              <span class="receipt-swatch" style="background:#e6b1c4"></span>
+              <span class="receipt-item-name">Pave's photo</span>
+              <span class="receipt-item-hex">018B</span>
             </div>
           </div>
+          <hr class="receipt-divider">
+          <div class="receipt-cmd-label">BOT COMMAND</div>
+          <div class="receipt-cmd r-visible">
+            <span class="code-keyword">$order</span> <span class="code-value">000000480000206A</span>,<br><span class="code-value">0000000100003019</span>,<br><span class="code-value">000000000000018B</span>
+          </div>
         </div>
-        <div class="hero-info-col">
-          <div class="hero-tagline">Browse. Pick. Paste the code.</div>
-          <div class="hero-subtitle">Build your dream island — grab hex codes for any item and drop them straight into the bot.</div>
-          <div class="hero-nook-badge"><span>🍃</span> Nook Inc. Certified</div>
-        </div>
+      </div>
+
+      <div class="hero-bottom">
+        <div class="hero-nook-badge"><span>✦</span> NOOK INC. CERTIFIED</div>
+        <div class="hero-tagline">Browse. Pick.</div>
+        <div class="hero-tagline-green">Order instantly.</div>
+        <div class="hero-subtitle">25,000+ ACNH items → Discord bot commands in seconds.</div>
       </div>
     </div>
 
