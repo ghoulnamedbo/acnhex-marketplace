@@ -1821,6 +1821,7 @@ async function init() {
   if (ls) {
     ls.classList.add('ls-fade-out');
     ls.addEventListener('transitionend', () => ls.remove(), { once: true });
+    setTimeout(() => { if (ls.parentNode) ls.remove(); }, 800);
   }
 }
 
