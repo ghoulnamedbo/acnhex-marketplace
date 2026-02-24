@@ -819,6 +819,7 @@ function attachSearchResultEvents() {
       state.searchQuery = '';
       state.searchResults = null;
       state.page = 'detail';
+      state._pageEnter = true;
       loadItemDetail(card.dataset.item);
     });
   });
@@ -1038,6 +1039,21 @@ async function render() {
   app.innerHTML = `<div id="ptr-indicator" class="ptr-indicator"></div>` + content + renderNav() + renderModal() + renderSearch() + renderWishlistToast() + renderListPicker();
   attachEvents();
 
+  // Apply entrance animations only on page/category navigation
+  if (state._pageEnter) {
+    state._pageEnter = false;
+    const page = app.querySelector('.page');
+    if (page) {
+      page.classList.add('page-enter');
+      page.addEventListener('animationend', () => page.classList.remove('page-enter'), { once: true });
+    }
+    const grid = app.querySelector('.item-grid');
+    if (grid) {
+      grid.classList.add('grid-enter');
+      grid.addEventListener('animationend', () => grid.classList.remove('grid-enter'), { once: true });
+    }
+  }
+
   // Trigger cart badge pop animation after add-to-cart
   if (state._cartBounce) {
     state._cartBounce = false;
@@ -1072,6 +1088,7 @@ function attachEvents() {
         // Preserve existing home page state — don't reset items/category
         state.page = 'catalog';
         state.searchOpen = false;
+        state._pageEnter = true;
         render();
         window.scrollTo(0, state.scrollY || 0);
       } else {
@@ -1080,6 +1097,7 @@ function attachEvents() {
         state.page = target;
         state.searchOpen = false;
         if (target === 'wishlist') state.viewingListId = null;
+        state._pageEnter = true;
         render();
       }
     });
@@ -1095,6 +1113,7 @@ function attachEvents() {
       state.expandedTotal = 0;
       const catScrollEl = document.getElementById('cat-scroll');
       if (catScrollEl) state.catScrollLeft = catScrollEl.scrollLeft;
+      state._pageEnter = true;
       render();
       loadExpandedCatalog();
     });
@@ -1137,6 +1156,7 @@ function attachEvents() {
       state.searchQuery = '';
       state.searchResults = null;
       state.page = 'detail';
+      state._pageEnter = true;
       loadItemDetail(card.dataset.item);
     });
   });
@@ -1311,6 +1331,7 @@ function attachEvents() {
       const savedOverlayScroll = state.savedSearch.overlayScrollY;
       state.savedSearch = null;
       state.previousPage = null;
+      state._pageEnter = true;
       await render();
       attachSearchResultEvents();
       attachSearchScrollObserver();
@@ -1320,6 +1341,7 @@ function attachEvents() {
       state.page = 'catalog';
       state.itemDetail = null;
       state.previousPage = null;
+      state._pageEnter = true;
       await render();
       window.scrollTo(0, state.scrollY);
     }
@@ -1730,6 +1752,7 @@ async function loadItemDetail(itemId) {
   render(); // Show loading
   window.scrollTo(0, 0);
   state.itemDetail = await data.getItemDetail(itemId);
+  state._pageEnter = true;
   render();
   window.scrollTo(0, 0);
 }
@@ -1797,6 +1820,7 @@ async function init() {
   state.isRandom = true;
   state.randomUsedIndices = new Set();
   state.randomItems = await data.getRandomExpandedItems(50, state.randomUsedIndices);
+  state._pageEnter = true;
   render();
   initPullToRefresh();
 }
