@@ -1622,7 +1622,6 @@ body { min-height: 100vh; min-height: 100dvh; }
   padding: 24px 20px;
   min-height: 110px;
   border-radius: 16px;
-  overflow: hidden;
 }
 
 .ad-icon {
