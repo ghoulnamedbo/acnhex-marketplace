@@ -208,7 +208,7 @@ async function renderCatalog() {
           <hr class="receipt-divider">
           <div class="receipt-cmd-label">BOT COMMAND</div>
           <div class="receipt-cmd r-visible">
-            <span class="code-keyword">$order</span> <span class="code-value">000000480000206A</span>,<br><span class="code-value">0000000100003019</span>,<br><span class="code-value">000000000000018B</span>
+            <span class="code-keyword">$order</span> <span class="code-value">000000480000206A</span><br><span class="code-value">0000000100003019</span><br><span class="code-value">000000000000018B</span>
           </div>
         </div>
       </div>
@@ -410,7 +410,7 @@ function renderCart() {
         <h4 class="label-upper" style="margin-bottom:12px">Bot Command</h4>
         <div class="code-block">
           <span class="code-keyword">${esc(prefix)}order</span> ${hexes.map((hex, i) =>
-            `<span class="code-value">${esc(hex)}</span>${i < hexes.length - 1 ? '<span class="code-sep">, </span>' : ''}`
+            `<span class="code-value">${esc(hex)}</span>${i < hexes.length - 1 ? ' ' : ''}`
           ).join('')}
           <button class="copy-btn" id="copy-cmd">${ICONS.copy} Copy</button>
         </div>
@@ -547,7 +547,7 @@ function renderSettings() {
         <h4 class="label-upper" style="margin-bottom:14px">Preview</h4>
         <div class="code-block" style="border-radius:14px;padding:14px 16px;font-size:12px">
           <span class="code-keyword">${esc(state.prefix)}order</span>
-          <span class="code-value">0x0A3F</span><span class="code-sep">,</span>
+          <span class="code-value">0x0A3F</span>
           <span class="code-value">0x1B2C</span>
         </div>
       </div>
@@ -645,7 +645,7 @@ function renderModal() {
       <h4 class="label-upper" style="margin-bottom:10px">Preview</h4>
       <div class="code-block" id="modal-preview" style="border-radius:14px;padding:14px 16px;font-size:12px;margin-bottom:8px">
         <span class="code-keyword">${esc(state.prefix)}order</span>
-        <span class="code-value">0x0A3F</span><span class="code-sep">,</span>
+        <span class="code-value">0x0A3F</span>
         <span class="code-value">0x1B2C</span>
       </div>
 
@@ -1520,7 +1520,7 @@ function attachEvents() {
   // Copy list order
   const copyListBtn = document.getElementById('copy-list-order');
   if (copyListBtn) copyListBtn.addEventListener('click', () => {
-    const command = `${state.prefix}order ${lastRenderedListHexes.join(', ')}`;
+    const command = `${state.prefix}order ${lastRenderedListHexes.join(' ')}`;
     navigator.clipboard.writeText(command).then(() => {
       copyListBtn.innerHTML = `${ICONS.check} Copied!`;
       setTimeout(() => { copyListBtn.innerHTML = `${ICONS.copy} Copy Order`; }, 2000);
@@ -1600,7 +1600,7 @@ function attachEvents() {
   // Copy command
   const copyBtn = document.getElementById('copy-cmd');
   if (copyBtn) copyBtn.addEventListener('click', () => {
-    const command = `${state.prefix}order ${state.cart.map(c => c.hex).join(', ')}`;
+    const command = `${state.prefix}order ${state.cart.map(c => c.hex).join(' ')}`;
     navigator.clipboard.writeText(command).then(() => {
       copyBtn.innerHTML = `${ICONS.check} Copied!`;
       setTimeout(() => { copyBtn.innerHTML = `${ICONS.copy} Copy`; }, 2000);
@@ -1677,7 +1677,7 @@ function attachEvents() {
     state.prefix = e.target.value;
     const preview = document.getElementById('modal-preview');
     if (preview) {
-      preview.innerHTML = `<span class="code-keyword">${esc(state.prefix)}order</span> <span class="code-value">0x0A3F</span><span class="code-sep">,</span> <span class="code-value">0x1B2C</span>`;
+      preview.innerHTML = `<span class="code-keyword">${esc(state.prefix)}order</span> <span class="code-value">0x0A3F</span> <span class="code-value">0x1B2C</span>`;
     }
     // Update preset active states
     app.querySelectorAll('[data-modal-preset]').forEach(b => {
@@ -1692,7 +1692,7 @@ function attachEvents() {
       if (inp) inp.value = state.prefix;
       const preview = document.getElementById('modal-preview');
       if (preview) {
-        preview.innerHTML = `<span class="code-keyword">${esc(state.prefix)}order</span> <span class="code-value">0x0A3F</span><span class="code-sep">,</span> <span class="code-value">0x1B2C</span>`;
+        preview.innerHTML = `<span class="code-keyword">${esc(state.prefix)}order</span> <span class="code-value">0x0A3F</span> <span class="code-value">0x1B2C</span>`;
       }
       app.querySelectorAll('[data-modal-preset]').forEach(b => {
         b.classList.toggle('active', b.dataset.modalPreset === state.prefix);
