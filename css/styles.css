@@ -394,6 +394,15 @@ body { min-height: 100vh; min-height: 100dvh; }
   transition: background 0.15s ease, transform 0.15s ease;
 }
 .remove-btn:hover { background: #e8c4cc; transform: scale(1.06); }
+.dupe-btn {
+  background: var(--tag-bg); border: none; border-radius: 12px;
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--pines); flex-shrink: 0;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.dupe-btn:hover { background: #dde8cc; transform: scale(1.06); }
+.dupe-btn:active { transform: scale(0.9); transition-duration: 0.08s; }
+.dupe-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .clear-cart-btn {
   background: var(--dolce-pink); color: var(--danger); border: none;
   border-radius: 10px; padding: 6px 14px; font-size: 11px; font-weight: 700;

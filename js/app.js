@@ -215,16 +215,9 @@ function renderItemCard(item, idx) {
         <span class="item-variant">${esc(item.v1)}</span>
         <span class="hex-badge">${esc(item.hex)}</span>
       </div>
-      <div class="qty-row">
-        <div class="qty-control">
-          <button class="qty-btn" data-qty-minus="${esc(item.id)}-${vi}">−</button>
-          <span class="qty-value" id="qty-${esc(item.id)}-${vi}">0</span>
-          <button class="qty-btn" data-qty-plus="${esc(item.id)}-${vi}">+</button>
-        </div>
-        <button class="add-cart-btn" data-add-cart="${esc(item.id)}" ${cartFull ? 'disabled' : ''}>
-          ${ICONS.plus} Add to Cart
-        </button>
-      </div>
+      <button class="add-cart-btn" data-add-cart="${esc(item.id)}" ${cartFull ? 'disabled' : ''}>
+        ${ICONS.plus} Add
+      </button>
     </div>
   </div>`;
 }
@@ -350,6 +343,7 @@ function renderCart() {
               <p class="cart-item-name">${esc(item.name)}</p>
               <p class="cart-item-meta">${esc(item.variant)} · <span style="color:var(--pines)">${esc(item.hex)}</span></p>
             </div>
+            <button class="dupe-btn" data-dupe-idx="${idx}" ${getCartTotal() >= 40 ? 'disabled' : ''}>${ICONS.plus}</button>
             <button class="remove-btn" data-remove-idx="${idx}">${ICONS.trash}</button>
           </div>`).join('')}
       </div>
@@ -803,7 +797,7 @@ function attachSearchResultEvents() {
   if (!container) return;
   container.querySelectorAll('[data-item]').forEach(card => {
     card.addEventListener('click', (e) => {
-      if (e.target.closest('[data-heart]') || e.target.closest('[data-add-cart]') || e.target.closest('.qty-btn')) return;
+      if (e.target.closest('[data-heart]') || e.target.closest('[data-add-cart]')) return;
       state.selectedItemId = card.dataset.item;
       state.selectedVariantIdx = parseInt(card.dataset.vi) || 0;
       // Save search state before leaving so back button can restore it
@@ -830,42 +824,12 @@ function attachSearchResultEvents() {
       toggleWishlist(btn.dataset.heart, vi);
     });
   });
-  // Qty +/- in search results
-  container.querySelectorAll('[data-qty-plus]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const span = document.getElementById('qty-' + btn.dataset.qtyPlus);
-      if (span) {
-        const cur = parseInt(span.textContent) || 0;
-        if (cur < 40 - getCartTotal()) span.textContent = cur + 1;
-      }
-    });
-  });
-  container.querySelectorAll('[data-qty-minus]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const span = document.getElementById('qty-' + btn.dataset.qtyMinus);
-      if (span) {
-        const cur = parseInt(span.textContent) || 0;
-        if (cur > 0) span.textContent = cur - 1;
-      }
-    });
-  });
   container.querySelectorAll('[data-add-cart]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const card = btn.closest('[data-item]');
       const vi = card ? parseInt(card.dataset.vi) || 0 : 0;
-      const span = document.getElementById('qty-' + btn.dataset.addCart + '-' + vi);
-      const qty = span ? parseInt(span.textContent) || 0 : 0;
-      if (qty < 1) {
-        addToCartFromIndex(btn.dataset.addCart, vi);
-      } else {
-        for (let i = 0; i < qty; i++) {
-          addToCartFromIndex(btn.dataset.addCart, vi);
-        }
-        if (span) span.textContent = '0';
-      }
+      addToCartFromIndex(btn.dataset.addCart, vi);
     });
   });
 }
@@ -1147,7 +1111,7 @@ function attachEvents() {
     card.addEventListener('click', (e) => {
       if (e.target.closest('[data-heart]') || e.target.closest('[data-add-cart]') ||
           e.target.closest('.remove-btn') || e.target.closest('.wishlist-add-btn') ||
-          e.target.closest('[data-remove-list-idx]') || e.target.closest('.qty-btn')) return;
+          e.target.closest('[data-remove-list-idx]')) return;
       state.scrollY = window.scrollY;
       state.selectedItemId = card.dataset.item;
       state.selectedVariantIdx = parseInt(card.dataset.vi) || 0;
@@ -1171,48 +1135,14 @@ function attachEvents() {
     });
   });
 
-  // Qty +/- buttons in item cards (skip search overlay)
-  app.querySelectorAll('[data-qty-plus]').forEach(btn => {
-    if (btn.closest('.search-overlay')) return;
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const span = document.getElementById('qty-' + btn.dataset.qtyPlus);
-      if (span) {
-        const cur = parseInt(span.textContent) || 0;
-        const remaining = 40 - getCartTotal();
-        if (cur < remaining) span.textContent = cur + 1;
-      }
-    });
-  });
-  app.querySelectorAll('[data-qty-minus]').forEach(btn => {
-    if (btn.closest('.search-overlay')) return;
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const span = document.getElementById('qty-' + btn.dataset.qtyMinus);
-      if (span) {
-        const cur = parseInt(span.textContent) || 0;
-        if (cur > 0) span.textContent = cur - 1;
-      }
-    });
-  });
-
-  // Add to cart buttons (with qty — skip search overlay)
+  // Add to cart buttons (skip search overlay)
   app.querySelectorAll('[data-add-cart]').forEach(btn => {
     if (btn.closest('.search-overlay')) return;
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const card = btn.closest('[data-item]');
       const vi = card ? parseInt(card.dataset.vi) || 0 : 0;
-      const span = document.getElementById('qty-' + btn.dataset.addCart + '-' + vi);
-      const qty = span ? parseInt(span.textContent) || 0 : 0;
-      if (qty < 1) {
-        addToCartFromIndex(btn.dataset.addCart, vi);
-      } else {
-        for (let i = 0; i < qty; i++) {
-          addToCartFromIndex(btn.dataset.addCart, vi);
-        }
-        if (span) span.textContent = '0';
-      }
+      addToCartFromIndex(btn.dataset.addCart, vi);
     });
   });
 
@@ -1397,6 +1327,16 @@ function attachEvents() {
     const vi = parseInt(detailListBtn.dataset.listVi) || 0;
     state.listPickerItem = { id: itemId, variantIdx: vi, excludeLoved: true };
     render();
+  });
+
+  // Cart duplicate by index
+  app.querySelectorAll('[data-dupe-idx]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (getCartTotal() >= 40) return;
+      const idx = parseInt(btn.dataset.dupeIdx);
+      const item = state.cart[idx];
+      if (item) addToCart({ ...item });
+    });
   });
 
   // Cart remove by index
