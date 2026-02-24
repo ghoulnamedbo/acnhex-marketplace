@@ -410,31 +410,7 @@ export function getNextInterstitial() {
   return interstitialPool[interstitialIdx++];
 }
 
-// ─── Render: Notification-Style Ads ───
-export function renderNotificationAd(notif) {
-  return `<div class="notif-ad ad-fake-ad ${notif.cls}" data-fake-ad>
-    <div class="notif-icon">${notif.icon}</div>
-    <div class="notif-content">
-      <div class="notif-title">${notif.title}</div>
-      <div class="notif-body">${notif.body}</div>
-    </div>
-    <div class="notif-time">${notif.time}</div>
-    <div class="notif-ad-badge">Sponsored</div>
-  </div>`;
-}
-
-export function getRandomNotifications(count) {
-  const shuffled = shuffleArray(NOTIFICATIONS);
-  return shuffled.slice(0, Math.min(count, shuffled.length));
-}
-
-// ─── Render: Notification Section (for catalog page) ───
-export function renderNotificationSection() {
-  const notifs = getRandomNotifications(3);
-  return `<div class="ad-notif-section">
-    ${notifs.map(n => renderNotificationAd(n)).join('')}
-  </div>`;
-}
+// (Static notification section removed — notifications are floating overlays only)
 
 // ─── Render: Popup Modals ───
 function renderPopupPremium() {
@@ -592,6 +568,7 @@ export function renderAdToast(visible) {
 // ─── Catalog Page Ad Helpers ───
 // Pick one random interstitial per page load for the grid
 let gridInterstitialType = null;
+let interstitialShownThisSession = false;
 
 function ensureGridInterstitial() {
   if (!gridInterstitialType) {
@@ -599,6 +576,14 @@ function ensureGridInterstitial() {
     gridInterstitialType = inter.type;
   }
   return gridInterstitialType;
+}
+
+// 30% chance of showing, max 1 per session (only on initial home load)
+function shouldShowInterstitial() {
+  if (interstitialShownThisSession) return false;
+  if (Math.random() > 0.3) return false;
+  interstitialShownThisSession = true;
+  return true;
 }
 
 // Reset the grid interstitial on page refresh
@@ -614,19 +599,25 @@ export function renderItemGridWithAds(items, renderItemCardFn) {
   const interType = ensureGridInterstitial();
   let html = '';
   let interstitialInserted = false;
+  let bannersInserted = 0;
+  const maxBanners = window.innerWidth < 768 ? 2 : 3;
+  // Random interval between 20-30 items for banner ads
+  let nextBannerAt = 20 + Math.floor(Math.random() * 11);
 
   for (let idx = 0; idx < items.length; idx++) {
     html += renderItemCardFn(items[idx], idx);
 
-    // Insert interstitial after item 5 (within first batch, below categories in grid)
-    if (idx === 4 && !interstitialInserted) {
+    // Insert interstitial after item 17 (30% chance, only on initial load)
+    if (idx === 16 && !interstitialInserted && shouldShowInterstitial()) {
       html += renderInterstitialAd(interType);
       interstitialInserted = true;
     }
 
-    // Insert a banner ad every 8 items (offset by interstitial position)
-    if ((idx + 1) % 8 === 0 && idx < items.length - 1) {
+    // Insert a banner ad every 20-30 items, max 2 on mobile / 3 on desktop
+    if ((idx + 1) === nextBannerAt && idx < items.length - 1 && bannersInserted < maxBanners) {
       html += renderBannerAd(getNextBannerAd());
+      bannersInserted++;
+      nextBannerAt += 20 + Math.floor(Math.random() * 11);
     }
   }
   return html;
@@ -640,7 +631,7 @@ export function renderCatalogAdSection() {
 
 // ─── Floating Notification Ads ───
 let floatingNotifShownCount = 0;
-const FLOATING_NOTIF_MAX = 3; // max per session
+const FLOATING_NOTIF_MAX = 2; // max per session
 let floatingNotifPool = [];
 let floatingNotifIdx = 0;
 
@@ -677,30 +668,47 @@ export function canShowFloatingNotif() {
   return floatingNotifShownCount < FLOATING_NOTIF_MAX;
 }
 
+// ─── Popup Global Cooldown ───
+let lastPopupTime = 0;
+const POPUP_COOLDOWN = 180000; // 3 minutes between popups
+
+function isPopupOnCooldown() {
+  if (lastPopupTime === 0) return false;
+  return (Date.now() - lastPopupTime) < POPUP_COOLDOWN;
+}
+
+export function markPopupShown() {
+  lastPopupTime = Date.now();
+}
+
 // Popup trigger logic: specific triggers per popup type
 export function checkPopupTrigger(triggerContext) {
   // triggerContext = { type: 'init'|'nav'|'cartAdd'|'timer', adPageViews, sessionStart, itemsViewed }
 
-  // Cookie popup takes priority on first visit
+  // Cookie popup takes priority on first visit (exempt from cooldown)
   if (shouldShowPopup('cookie')) return 'cookie';
+
+  // Global cooldown: no popup within 3 minutes of another
+  if (isPopupOnCooldown()) return null;
 
   const trigger = triggerContext.type;
 
-  // Nook Inc. Premium: show once after first cart add in session
+  // Nook Inc. Premium: show once after first cart add in session (5% chance)
   if (trigger === 'cartAdd' && shouldShowPopup('premium')) {
-    return 'premium';
+    if (Math.random() < 0.05) return 'premium';
+    return null;
   }
 
-  // 1000th Visitor: show after viewing 50+ items or 5+ navigations (once per session)
+  // 1000th Visitor: show after viewing 50+ items or 5+ navigations (5% chance, once per session)
   if (trigger === 'nav' && shouldShowPopup('visitor')) {
-    if ((triggerContext.itemsViewed || 0) >= 50 || (triggerContext.adPageViews || 0) >= 5) {
+    if (((triggerContext.itemsViewed || 0) >= 50 || (triggerContext.adPageViews || 0) >= 5) && Math.random() < 0.05) {
       return 'visitor';
     }
   }
 
-  // Stalk Market Ticker: ~10% chance on home page visit (once per session)
+  // Stalk Market Ticker: ~5% chance on home page visit (once per session)
   if (trigger === 'nav' && shouldShowPopup('turnip')) {
-    if (Math.random() < 0.1) {
+    if (Math.random() < 0.05) {
       return 'turnip';
     }
   }

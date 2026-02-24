@@ -1587,8 +1587,8 @@ body { min-height: 100vh; min-height: 100dvh; }
 /* ── Banner Ad Base ── */
 .banner-ad {
   width: 100%;
+  min-height: 110px;
   border-radius: 16px;
-  overflow: hidden;
   position: relative;
   cursor: pointer;
   box-shadow: 0 2px 12px rgba(47, 59, 28, 0.1);
@@ -1621,12 +1621,25 @@ body { min-height: 100vh; min-height: 100dvh; }
   gap: 16px;
   padding: 24px 20px;
   min-height: 110px;
+  border-radius: 16px;
+  overflow: hidden;
 }
 
 .ad-icon {
   font-size: 46px;
   flex-shrink: 0;
   line-height: 1;
+  display: block;
+  position: relative;
+  z-index: 1;
+}
+
+.ad-text {
+  flex: 1;
+  min-width: 0;
+  display: block;
+  position: relative;
+  z-index: 1;
 }
 
 .ad-text h3 {
@@ -1634,11 +1647,15 @@ body { min-height: 100vh; min-height: 100dvh; }
   font-weight: 700;
   line-height: 1.3;
   margin-bottom: 4px;
+  display: block;
+  color: #FFFFFF;
 }
 
 .ad-text p {
   font-size: 10px;
   line-height: 1.4;
+  display: block;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .ad-tag {
@@ -1650,6 +1667,9 @@ body { min-height: 100vh; min-height: 100dvh; }
   letter-spacing: 1px;
   padding: 3px 8px;
   border-radius: 4px;
+  position: relative;
+  z-index: 1;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .ad-quote {
@@ -1657,6 +1677,9 @@ body { min-height: 100vh; min-height: 100dvh; }
   margin-top: 6px;
   font-size: 9px;
   font-style: italic;
+  position: relative;
+  z-index: 1;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .corner-badge {
@@ -1717,13 +1740,13 @@ body { min-height: 100vh; min-height: 100dvh; }
   content: ''; position: absolute; top: 3px; left: 3px; right: 3px; bottom: 3px;
   border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 13px; pointer-events: none;
 }
-.ad-gracie .gracie-brand { font-size: 9px; text-transform: uppercase; letter-spacing: 5px; color: #D4AF37; }
-.ad-gracie .gracie-title { font-size: 16px; font-weight: 700; color: #F5F0E0; letter-spacing: 1px; }
-.ad-gracie .gracie-tagline { font-size: 9px; color: rgba(245, 240, 224, 0.35); font-style: italic; }
+.ad-gracie .gracie-brand { font-size: 9px; text-transform: uppercase; letter-spacing: 5px; color: #D4AF37; position: relative; z-index: 1; }
+.ad-gracie .gracie-title { font-size: 16px; font-weight: 700; color: #F5F0E0; letter-spacing: 1px; position: relative; z-index: 1; }
+.ad-gracie .gracie-tagline { font-size: 9px; color: rgba(245, 240, 224, 0.35); font-style: italic; position: relative; z-index: 1; }
 .ad-gracie .gracie-cta {
   margin-top: 6px; font-size: 8px; text-transform: uppercase; letter-spacing: 2px;
   color: #D4AF37; border: 1px solid rgba(212, 175, 55, 0.3); padding: 5px 16px;
-  border-radius: 100px; display: inline-block;
+  border-radius: 100px; display: inline-block; position: relative; z-index: 1;
 }
 
 /* ── Banner: Brewster ── */
@@ -1956,6 +1979,7 @@ body { min-height: 100vh; min-height: 100dvh; }
   overflow: hidden;
   box-shadow: 0 2px 16px rgba(47, 59, 28, 0.12);
   position: relative;
+  grid-column: 1 / -1;
 }
 
 /* ── Tom Nook Mortgage ── */
@@ -2064,49 +2088,7 @@ body { min-height: 100vh; min-height: 100dvh; }
 }
 .dodo-fine { margin-top: 10px; font-size: 7px; color: rgba(255,255,255,0.2); position: relative; }
 
-/* ============================= */
-/*   NOTIFICATION-STYLE ADS      */
-/* ============================= */
-
-.notif-ad {
-  width: 100%; background-color: #FFFFFF;
-  border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; gap: 12px;
-  box-shadow: 0 2px 12px rgba(47, 59, 28, 0.08); position: relative; overflow: hidden;
-  cursor: pointer;
-}
-.notif-ad::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
-.notif-ad .notif-icon { font-size: 32px; flex-shrink: 0; line-height: 1; }
-.notif-ad .notif-content { flex: 1; min-width: 0; }
-.notif-ad .notif-title { font-size: 11px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
-.notif-ad .notif-body { font-size: 9px; color: var(--text-secondary); line-height: 1.4; }
-.notif-ad .notif-time { font-size: 8px; color: var(--text-light); flex-shrink: 0; align-self: flex-start; margin-top: 2px; }
-.notif-ad .notif-ad-badge { position: absolute; bottom: 6px; right: 10px; font-size: 7px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-light); }
-
-.notif-nooklink::before { background-color: var(--pines); }
-.notif-hhp::before { background-color: #00897B; }
-.notif-sale::before { background-color: #E91E63; }
-.notif-kk::before { background-color: #37474F; }
-.notif-celeste::before { background-color: #1A237E; }
-.notif-turnip::before { background-color: #F57F17; }
-
-/* ── Ad Notification Section ── */
-.ad-notif-section {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 0 24px;
-  margin: 16px 0;
-}
-
-/* ── Ad Catalog Section (interstitials between sections) ── */
-.ad-catalog-section {
-  padding: 0 24px;
-  margin: 20px 0;
-}
-
-.ad-catalog-section .interstitial {
-  max-width: 100%;
-}
+/* (Static notification section removed — notifications are floating overlays only) */
 
 /* ============================= */
 /*   POPUP MODALS                */
@@ -2261,6 +2243,29 @@ body { min-height: 100vh; min-height: 100dvh; }
 /* ============================= */
 /*   BANNER AD RESPONSIVE GRID  */
 /* ============================= */
+
+/* On mobile (2-col grid), banner ads span full width with stacked content */
+@media (max-width: 767px) {
+  .banner-ad .banner-inner {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 20px 16px;
+    min-height: auto;
+    overflow: visible;
+  }
+  .banner-ad .ad-icon { font-size: 40px; margin-bottom: 6px; }
+  .banner-ad .ad-text { width: 100%; }
+  .banner-ad .ad-text h3 { font-size: 12px; }
+  .banner-ad .ad-text p { font-size: 9px; }
+  .banner-ad .ad-tag { font-size: 7px; }
+  .banner-ad .ad-quote { font-size: 8px; }
+
+  /* Gracie Grace banner mobile */
+  .ad-gracie .gracie-brand { font-size: 9px; }
+  .ad-gracie .gracie-title { font-size: 14px; }
+  .ad-gracie .gracie-tagline { font-size: 8px; }
+}
 
 /* On wider screens (4+ col grid), banner ads span 2 cols × 2 rows */
 @media (min-width: 768px) {

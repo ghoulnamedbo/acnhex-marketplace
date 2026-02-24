@@ -1132,6 +1132,7 @@ function attachEvents() {
           sessionStart: state.sessionStart,
         });
         if (popupType) {
+          ads.markPopupShown();
           setTimeout(() => {
             state.activePopup = popupType;
             render();
@@ -1803,9 +1804,14 @@ function showFloatingNotif() {
 function scheduleFloatingNotif() {
   clearTimeout(state.floatingNotifTimer);
   if (!ads.canShowFloatingNotif()) return;
-  // Random delay between 30-60 seconds for subsequent notifications
-  const delay = 30000 + Math.random() * 30000;
+  // Random delay between 90-120 seconds for subsequent notifications
+  const delay = 90000 + Math.random() * 30000;
   state.floatingNotifTimer = setTimeout(() => {
+    // Don't show if user is actively scrolling
+    if (state._userScrolling) {
+      scheduleFloatingNotif(); // retry later
+      return;
+    }
     showFloatingNotif();
   }, delay);
 }
@@ -1821,6 +1827,7 @@ function startHhpTimer() {
         sessionStart: state.sessionStart,
       });
       if (popupType) {
+        ads.markPopupShown();
         state.activePopup = popupType;
         render();
       }
@@ -1901,6 +1908,7 @@ function addToCart(entry) {
     if (!state.activePopup) {
       const popupType = ads.checkPopupTrigger({ type: 'cartAdd' });
       if (popupType) {
+        ads.markPopupShown();
         setTimeout(() => {
           state.activePopup = popupType;
           render();
@@ -1977,6 +1985,18 @@ function initPullToRefresh() {
   });
 }
 
+// ─── Scroll Activity Tracking (for notification gating) ───
+let scrollIdleTimer = null;
+function initScrollTracking() {
+  window.addEventListener('scroll', () => {
+    state._userScrolling = true;
+    clearTimeout(scrollIdleTimer);
+    scrollIdleTimer = setTimeout(() => {
+      state._userScrolling = false;
+    }, 2000); // Consider user idle after 2s of no scroll
+  }, { passive: true });
+}
+
 // ─── Init ───
 async function init() {
   app.innerHTML = `<div class="loading" style="padding-top:40vh"><div class="spinner"></div><p class="text-secondary">Loading catalog...</p></div>`;
@@ -1988,6 +2008,7 @@ async function init() {
   state._pageEnter = true;
   render();
   initPullToRefresh();
+  initScrollTracking();
   // Dismiss loading screen
   const ls = document.getElementById('loading-screen');
   if (ls) {
@@ -1999,15 +2020,21 @@ async function init() {
   setTimeout(() => {
     const popupType = ads.checkPopupTrigger({ type: 'init' });
     if (popupType) {
+      ads.markPopupShown();
       state.activePopup = popupType;
       render();
     }
   }, 2000);
 
-  // Schedule first floating notification (10-15 seconds after load)
+  // Schedule first floating notification (45-60 seconds after load)
   state.floatingNotifTimer = setTimeout(() => {
+    // Don't show if user is actively scrolling
+    if (state._userScrolling) {
+      scheduleFloatingNotif(); // retry later
+      return;
+    }
     showFloatingNotif();
-  }, 10000 + Math.random() * 5000);
+  }, 45000 + Math.random() * 15000);
 
   // Start the 2-minute browse timer for HHP popup
   startHhpTimer();
