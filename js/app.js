@@ -1899,21 +1899,35 @@ function addToCartFromIndex(itemId, variantIdx = 0) {
   });
 }
 
-async function addToCart(entry) {
+function addToCart(entry) {
   if (state.cart.length >= 40) return;
   state.cart.push(entry);
   storage.setCart(state.cart);
   state._cartBounce = true;
-  await render();
-  if (state.searchOpen && state.searchResults) {
-    attachSearchResultEvents();
-    attachSearchScrollObserver();
+
+  if (state.searchOpen) {
+    // Surgical update: just refresh the cart badge without a full re-render
+    const cartTab = app.querySelector('[data-nav="cart"]');
+    if (cartTab) {
+      const wrapper = cartTab.querySelector('div');
+      const existing = cartTab.querySelector('.nav-badge');
+      if (existing) existing.textContent = state.cart.length;
+      else if (wrapper) wrapper.insertAdjacentHTML('beforeend', `<span class="nav-badge">${state.cart.length}</span>`);
+      const badge = cartTab.querySelector('.nav-badge');
+      if (badge) {
+        badge.classList.add('pop');
+        badge.addEventListener('animationend', () => badge.classList.remove('pop'), { once: true });
+      }
+    }
+    return;
   }
+
+  render();
 
   // Trigger premium popup on first cart add in session
   if (!state.firstCartAddDone) {
     state.firstCartAddDone = true;
-    if (!state.activePopup && !state.searchOpen) {
+    if (!state.activePopup) {
       const popupType = ads.checkPopupTrigger({ type: 'cartAdd' });
       if (popupType) {
         ads.markPopupShown();
