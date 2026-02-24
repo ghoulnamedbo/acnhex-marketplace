@@ -3,177 +3,303 @@
 
 // ─── Inline Banner Ad Data ───
 const INLINE_BANNERS = [
+  // 1. Redd — "Scam popup" style with fake reviews & promo code
   {
     cls: 'promo-redd',
-    icon: '\u{1F5BC}\uFE0F',
+    layout: 'scam',
+    icon: '🖼️',
     title: "Redd's Totally Legitimate Art Emporium",
-    body: '100% real paintings. No forgeries. Cousin\'s honor.',
-    tag: '\u2726 GUARANTEED AUTHENTIC \u2726',
+    body: '"100% REAL paintings, cousin! Would I lie?"',
+    rating: '⭐⭐⭐⭐⭐',
+    ratingCount: '4,127 verified reviews',
+    price: 'Starting at 4,980 bells',
+    promoCode: 'Use code COUSIN for 10% off',
+    finePrint: '* code doesn\'t actually work',
     extra: '',
   },
+  // 2. Sahara — "Mystery box" style with animated reveal
   {
     cls: 'promo-sahara',
-    icon: '\u{1F42A}',
+    layout: 'mystery',
+    icon: '🐪',
     title: "Sahara's Rug Warehouse",
-    body: 'Mysterious wallpapers &amp; flooring you won\'t believe, <span class="italic-accent">wallah!</span>',
+    subtitle: 'MYSTERY COLLECTION',
+    body: 'You never know what you\'ll get. That\'s the fun part, <span class="italic-accent">wallah!</span>',
+    mysteryItems: ['Wallpaper', 'Flooring', 'Rug'],
+    cta: 'Unwrap Mystery',
+    finePrint: '* All sales final. No refunds. No exchanges. No eye contact.',
     extra: '',
   },
+  // 3. CJ — "App store listing" style
   {
     cls: 'promo-cj',
-    icon: '\u{1F41F}',
+    layout: 'appstore',
+    icon: '🐟',
     title: "CJ's Fish Prints",
-    body: 'Turn your catch into wall-worthy ART. Models available.',
+    subtitle: 'SEASIDE STUDIO',
+    body: 'Turn your catch into wall-worthy art. Models available.',
+    rating: '⭐⭐⭐⭐⭐',
+    ratingCount: '2.3K',
+    appSize: '3 fish req.',
+    ctaLabel: 'Commission',
     quote: '"Bring me 3 and I\'ll make it EPIC, nyuk!"',
     extra: '',
   },
+  // 4. Kicks — "Product card" style with price & sizes
   {
     cls: 'promo-kicks',
-    icon: '\u{1F45F}',
+    layout: 'product',
+    icon: '👟',
     title: "Kicks' Shoe Boutique",
-    body: 'Socks, shoes &amp; bags. Step up your island style, mate!',
-    stars: true,
+    body: 'Step up your island style, mate!',
+    productName: 'Pleather Ankle Boots',
+    price: '2,800',
+    originalPrice: '4,200',
+    sizes: ['S', 'M', 'L'],
+    rating: '⭐⭐⭐⭐⭐',
+    ratingCount: '891',
+    tag: 'Best Seller',
     extra: '',
   },
+  // 5. Gracie Grace — Luxury centered layout
   {
     cls: 'promo-gracie',
+    layout: 'luxury',
     icon: null,
     isGracie: true,
     extra: '',
   },
+  // 6. Brewster — "Minimalist menu" style
   {
     cls: 'promo-brewster',
-    icon: '\u2615',
-    title: 'The Roost Caf\u00E9',
-    body: 'Pigeon milk blend. Brewed fresh. No conversation required.',
+    layout: 'menu',
+    icon: '☕',
+    title: 'The Roost',
+    menuItems: [
+      { item: 'House Blend', price: '200' },
+      { item: 'Pigeon Milk Latte', price: '350' },
+      { item: 'Silence', price: 'Free' },
+    ],
     quote: '"...Coo."',
-    extra: '<span class="steam-dots">\u2668\uFE0F</span>',
+    extra: '<span class="steam-dots">♨️</span>',
   },
+  // 7. Leif — "Seasonal sale" style with progress bar
   {
     cls: 'promo-leif',
-    icon: '\u{1F33A}',
+    layout: 'sale',
+    icon: '🌺',
     title: "Leif's Garden Shop",
-    body: 'Shrubs, flowers &amp; hedges. Make your island bloom, yeah!',
-    tag: '\u{1F331} Spring Sale',
+    body: 'Shrubs, flowers & hedges. Make your island bloom, yeah!',
+    saleName: '🌱 SPRING BLOWOUT',
+    discount: '40% OFF',
+    progressLabel: '73% claimed',
+    progressPercent: 73,
+    cta: 'Shop Now',
     extra: '',
   },
+  // 8. Wisp — "Spooky choice" style with two options
   {
     cls: 'promo-wisp',
-    icon: '\u{1F47B}',
+    layout: 'choice',
+    icon: '👻',
     title: "Wisp's Spirit Shop",
-    body: 'Something new... or something expensive. Your choice.',
-    quote: '"Please don\'t tell anyone you saw me..."',
-    extra: '<span class="wisp-stars">\u2728 \u2B50 \u2728</span>',
+    body: 'Gather my spirit pieces and choose your reward...',
+    optionA: '✨ Something new',
+    optionB: '💰 Something expensive',
+    quote: '"P-please don\'t tell anyone you saw me..."',
+    extra: '<span class="wisp-stars">✨ ⭐ ✨</span>',
   },
+  // 9. Daisy Mae — "Stock ticker" style for turnips
   {
     cls: 'promo-daisy',
-    icon: '\u{1F340}',
+    layout: 'ticker',
+    icon: '🍀',
     title: "Daisy Mae's Turnip Co.",
-    body: "Buy low, sell high! Gran-gran's secret recipe for profit.",
-    tag: '\u{1F4C8} Hot Tips Inside',
-    extra: '<span class="corner-badge" style="background-color:rgba(93,64,55,0.15);color:#5D4037;">Sundays Only</span>',
+    tickerLabel: 'TNIP',
+    tickerPrice: '98',
+    tickerChange: '▼ 12',
+    tickerTrend: 'down',
+    body: "Buy low, sell high! Gran-gran's secret recipe.",
+    tag: '📈 Sundays Only — AM Hours',
+    finePrint: '* Past turnip performance does not guarantee future results.',
+    extra: '',
   },
+  // 10. Blathers — "Museum exhibit card" style
   {
     cls: 'promo-blathers',
-    icon: '\u{1F989}',
-    title: 'The Museum Gift Shop',
-    body: 'Fossils assessed free of charge. Bug donations... tolerated.',
-    quote: '"Hoo! Please keep insects at a distance."',
+    layout: 'exhibit',
+    icon: '🦉',
+    title: 'Museum of Natural History',
+    subtitle: 'CURATED BY BLATHERS',
+    exhibits: [
+      { emoji: '🦴', name: 'Fossils' },
+      { emoji: '🐛', name: 'Bugs' },
+      { emoji: '🐟', name: 'Fish' },
+      { emoji: '🎨', name: 'Art' },
+    ],
+    body: 'Free assessments. Bug donations... tolerated.',
+    quote: '"Hoo! Do keep insects at a safe distance."',
     extra: '',
   },
+  // 11. Pascal — "Fortune cookie / wisdom card" style
   {
     cls: 'promo-pascal',
-    icon: '\u{1F9AA}',
+    layout: 'wisdom',
+    icon: '🧪',
     title: "Pascal's Pearl Wisdom",
-    body: 'Trade a scallop, get a pearl. And maybe some life advice.',
-    quote: '"Maaan... like, what even IS furniture?"',
+    body: 'Trade a scallop, receive enlightenment.',
+    wisdomQuote: '"Maaan... like, what even IS furniture? Is a chair just a shelf for your butt?"',
+    cta: '🐚 Trade Scallop',
     extra: '',
   },
+  // 12. Label — "Fashion challenge" scorecard style
   {
     cls: 'promo-label',
-    icon: '\u{1F3F7}\uFE0F',
+    layout: 'challenge',
+    icon: '🏷️',
     title: "Label's Fashion Check",
-    body: 'Pass the vibe check. Get a free Able Sisters coupon.',
-    tag: '\u2702\uFE0F Style Challenge',
+    body: 'Pass the vibe check. Win Able Sisters coupons.',
+    challengeTheme: "Today's Theme",
+    challengeWord: 'THEATRICAL',
+    rewards: ['Tailor Ticket', 'Able Coupon', 'Label\'s Love'],
     extra: '',
   },
+  // 13. Katrina — "Fortune teller" style with mystic layout
   {
     cls: 'promo-katrina',
-    icon: '\u{1F52E}',
+    layout: 'fortune',
+    icon: '🔮',
     title: "Katrina's Fortune Shop",
     body: 'Know your luck before you shake that tree.',
-    quote: '"Your future... is clouded with bells."',
-    extra: '<span class="fortune-stars">\u2726 \u2727 \u2726 \u2727</span>',
+    fortuneLabel: "TODAY'S READING",
+    fortuneResult: '✦ GREAT MISFORTUNE ✦',
+    fortuneDetail: 'Belongings luck: terrible',
+    quote: '"The stars... do not lie."',
+    price: '1,000 bells per reading',
+    extra: '<span class="fortune-stars">✦ ✧ ✦ ✧</span>',
   },
+  // 14. Flick — "Artist commission" style with portfolio vibe
   {
     cls: 'promo-flick',
-    icon: '\u{1F98B}',
+    layout: 'commission',
+    icon: '🦋',
     title: "Flick's Bug Commissions",
-    body: "Bring me any 3 bugs and I'll sculpt a masterpiece. ART IS LIFE.",
+    subtitle: 'ARTISAN SCULPTOR',
+    body: 'Every bug is a masterpiece waiting to happen.',
+    commissionSteps: ['Bring 3 of same bug', 'I sculpt it', 'ART IS BORN'],
     quote: '"Bugs are the purest form of beauty."',
+    turnaround: 'Next-day delivery',
     extra: '',
   },
+  // 15. Celeste — "Event flyer" style for meteor showers
   {
     cls: 'promo-celeste',
-    icon: '\u{1FA90}',
+    layout: 'event',
+    icon: '🪐',
     title: "Celeste's Star Fragment Exchange",
-    body: 'Wish upon a star. Craft wands &amp; celestial furniture.',
+    eventName: 'METEOR SHOWER',
+    eventDetail: 'Tonight • After 7 PM',
+    body: 'Wish upon a star. Craft wands & celestial DIYs.',
+    features: ['Star Fragments', 'Zodiac DIYs', 'Wand Recipes'],
     quote: '"The cosmos has so much to teach us, hoo!"',
-    extra: '<span class="celeste-sparkles">\u2B50 \u2728 \u2B50</span>',
+    extra: '<span class="celeste-sparkles">⭐ ✨ ⭐</span>',
   },
+  // 16. Gullivarrr — "Treasure map" style
   {
     cls: 'promo-gullivarrr',
-    icon: '\u{1F3F4}\u200D\u2620\uFE0F',
+    layout: 'treasure',
+    icon: '🏴‍☠️',
     title: "Gullivarrr's Pirate Treasures",
-    body: "Find me communicator parts and I'll reward ye with booty, matey!",
+    body: 'Find me communicator parts, earn pirate booty!',
+    lootTable: [
+      { emoji: '🗡️', name: 'Pirate Sword' },
+      { emoji: '👑', name: 'Pirate Crown' },
+      { emoji: '🛳️', name: 'Pirate Ship' },
+    ],
     quote: '"Arrr... where be me phone?"',
+    tag: '☠️ X MARKS THE SPOT',
     extra: '',
   },
+  // 17. Harriet — "Salon booking" style with services
   {
     cls: 'promo-harriet',
-    icon: '\u{1F484}',
+    layout: 'salon',
+    icon: '💄',
     title: 'Shampoodle Salon',
-    body: 'New hairstyles, new colors, new you. Walk-ins welcome!',
-    tag: '\u2702\uFE0F Glow Up Season',
+    subtitle: 'BY HARRIET',
+    body: 'New styles, new colors, new you.',
+    services: ['Haircut', 'Color', 'Perm'],
+    cta: 'Book Appointment',
+    tag: '✂️ Walk-ins Welcome',
     extra: '',
   },
+  // 18. K.K. Slider — "Concert ticket" style
   {
     cls: 'promo-kk',
-    icon: '\u{1F3B8}',
-    title: 'K.K. Slider Live!',
-    body: 'Saturday nights at the plaza. Requests welcome. No cover charge.',
+    layout: 'ticket',
+    icon: '🎸',
+    title: 'K.K. Slider',
+    eventName: 'LIVE IN CONCERT',
+    eventDetail: 'Saturday • 8 PM • The Plaza',
+    body: 'Requests welcome. No cover charge.',
+    features: ['Live Performance', 'Song Requests', 'Free Copies'],
     quote: '"Music should be free, man."',
-    extra: '<span class="music-notes">\u266A \u266B \u266A</span>',
+    extra: '<span class="music-notes">♪ ♫ ♪</span>',
   },
+  // 19. Tortimer — "Retro travel ad" / vintage postcard style
   {
     cls: 'promo-tortimer',
-    icon: '\u{1F422}',
+    layout: 'postcard',
+    icon: '🐢',
     title: "Tortimer's Island Tours",
-    body: 'Minigames, rare bugs, tropical fruit. The old mayor remembers.',
+    subtitle: 'EST. 2001',
+    body: 'Minigames, rare bugs, tropical fruit.',
+    features: ['Bug-Off', 'Fishing Tourney', 'Fruit Picking'],
     quote: '"Back in my day, we had REAL islands."',
+    tag: '🌴 Senior Discount Available',
     extra: '',
   },
+  // 20. Able Sisters — "Coupon/ticket" with tear line
   {
     cls: 'promo-able',
-    icon: '\u{1F9F5}',
-    title: 'Able Sisters Clearance',
-    body: 'End-of-season blowout. All custom designs 50% off (in spirit).',
-    tag: '\u{1F6CD}\uFE0F While Supplies Last',
+    layout: 'coupon',
+    icon: '🧵',
+    title: 'Able Sisters',
+    couponValue: '50% OFF',
+    couponDetail: 'All Custom Designs',
+    couponCode: 'SABLE4EVER',
+    body: 'End-of-season clearance. In spirit.',
+    finePrint: '* Discount is spiritual, not mathematical.',
     extra: '',
   },
+  // 21. Resetti — "System alert / warning popup" style
   {
     cls: 'promo-resetti',
-    icon: '\u{1F630}',
-    title: "Resetti's Save Data Insurance",
-    body: "Protect your island. Auto-save not enough? We've got you.",
+    layout: 'alert',
+    icon: '😰',
+    title: '⚠️ SAVE DATA WARNING',
+    body: 'Your island may be at risk. Resetti\'s Save Data Insurance protects what matters.',
+    alertLevel: 'THREAT LEVEL: HIGH',
+    features: ['Auto-backup every 3 min', '24/7 mole patrol', 'Rage-quit coverage'],
+    cta: 'PROTECT MY ISLAND',
     quote: '"DON\'T. RESET. YOUR. GAME."',
     extra: '<span class="alert-flash">Warning</span>',
   },
+  // 22. Rover — "Travel booking" style with destination cards
   {
     cls: 'promo-rover',
-    icon: '\u{1F68C}',
+    layout: 'booking',
+    icon: '🚌',
     title: "Rover's Travel Bureau",
-    body: "Moving to a new town? I can help with that. First trip's on me!",
+    subtitle: 'NEW LEAF ADVENTURES',
+    body: "Moving to a new town? First trip's on me!",
+    destinations: [
+      { emoji: '🏝️', name: 'Island' },
+      { emoji: '🏕️', name: 'Camp' },
+      { emoji: '🏘️', name: 'Town' },
+    ],
     quote: '"So... what\'s your name? Haha, just kidding."',
+    cta: 'Plan My Trip',
     extra: '',
   },
 ];
@@ -263,9 +389,13 @@ resetBannerPool();
 export function renderBannerAd(ad) {
   if (!ad) ad = getNextBannerAd();
 
+  const badge = '<span class="promo-badge">Ad</span>';
+  const extra = ad.extra || '';
+
+  // ── Gracie Grace: luxury centered layout
   if (ad.isGracie) {
     return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
-      <span class="promo-badge">Ad</span>
+      ${badge}
       <div class="banner-inner">
         <div class="gracie-brand">Gracie Grace</div>
         <div class="gracie-title">Luxury, Darling.</div>
@@ -275,14 +405,417 @@ export function renderBannerAd(ad) {
     </div>`;
   }
 
+  // ── Layout: scam (Redd)
+  if (ad.layout === 'scam') {
+    return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
+      ${badge}${extra}
+      <div class="banner-inner">
+        <div class="promo-icon">${ad.icon}</div>
+        <div class="promo-text">
+          <h3>${ad.title}</h3>
+          <p>${ad.body}</p>
+          <div class="promo-rating"><span class="promo-stars">${ad.rating}</span> <span class="promo-rating-count">(${ad.ratingCount})</span></div>
+          <div class="promo-price">${ad.price}</div>
+          <div class="promo-divider"></div>
+          <div class="promo-code">🎫 ${ad.promoCode}</div>
+          <div class="promo-fine-print">${ad.finePrint}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Layout: mystery (Sahara)
+  if (ad.layout === 'mystery') {
+    const items = ad.mysteryItems.map(i => `<span class="mystery-item">❓ ${i}</span>`).join('');
+    return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
+      ${badge}${extra}
+      <div class="banner-inner">
+        <div class="promo-icon">${ad.icon}</div>
+        <div class="promo-text">
+          <div class="promo-subtitle">${ad.subtitle}</div>
+          <h3>${ad.title}</h3>
+          <p>${ad.body}</p>
+          <div class="mystery-items">${items}</div>
+          <div class="promo-cta-btn">${ad.cta}</div>
+          <div class="promo-fine-print">${ad.finePrint}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Layout: appstore (CJ)
+  if (ad.layout === 'appstore') {
+    return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
+      ${badge}${extra}
+      <div class="banner-inner">
+        <div class="promo-icon promo-icon-app">${ad.icon}</div>
+        <div class="promo-text">
+          <h3>${ad.title}</h3>
+          <div class="promo-subtitle">${ad.subtitle}</div>
+          <div class="promo-app-meta">
+            <span class="promo-stars">${ad.rating}</span>
+            <span class="promo-rating-count">${ad.ratingCount}</span>
+            <span class="promo-app-size">${ad.appSize}</span>
+          </div>
+          ${ad.quote ? `<span class="promo-quote">${ad.quote}</span>` : ''}
+        </div>
+        <div class="promo-install-btn">${ad.ctaLabel}</div>
+      </div>
+    </div>`;
+  }
+
+  // ── Layout: product (Kicks)
+  if (ad.layout === 'product') {
+    const sizes = ad.sizes.map(s => `<span class="size-chip">${s}</span>`).join('');
+    return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
+      ${badge}${extra}
+      <div class="banner-inner">
+        <div class="promo-icon">${ad.icon}</div>
+        <div class="promo-text">
+          <span class="promo-hot-tag">${ad.tag}</span>
+          <h3>${ad.title}</h3>
+          <p class="promo-product-name">${ad.productName}</p>
+          <div class="promo-price-row">
+            <span class="promo-price">${ad.price} 🔔</span>
+            <span class="promo-original-price">${ad.originalPrice}</span>
+          </div>
+          <div class="promo-sizes">${sizes}</div>
+          <div class="promo-rating"><span class="promo-stars">${ad.rating}</span> <span class="promo-rating-count">(${ad.ratingCount})</span></div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Layout: menu (Brewster)
+  if (ad.layout === 'menu') {
+    const menuRows = ad.menuItems.map(m =>
+      `<div class="menu-row"><span class="menu-item-name">${m.item}</span><span class="menu-dots"></span><span class="menu-item-price">${m.price}${m.price !== 'Free' ? ' 🔔' : ''}</span></div>`
+    ).join('');
+    return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
+      ${badge}${extra}
+      <div class="banner-inner">
+        <div class="promo-icon">${ad.icon}</div>
+        <div class="promo-text">
+          <h3>${ad.title}</h3>
+          <div class="promo-menu">${menuRows}</div>
+          <span class="promo-quote">${ad.quote}</span>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Layout: sale (Leif)
+  if (ad.layout === 'sale') {
+    return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
+      ${badge}${extra}
+      <div class="banner-inner">
+        <div class="promo-icon">${ad.icon}</div>
+        <div class="promo-text">
+          <div class="promo-sale-badge">${ad.saleName}</div>
+          <h3>${ad.title}</h3>
+          <p>${ad.body}</p>
+          <div class="promo-discount">${ad.discount}</div>
+          <div class="promo-progress-wrap">
+            <div class="promo-progress-bar" style="width:${ad.progressPercent}%"></div>
+          </div>
+          <div class="promo-progress-label">${ad.progressLabel}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Layout: choice (Wisp)
+  if (ad.layout === 'choice') {
+    return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
+      ${badge}${extra}
+      <div class="banner-inner">
+        <div class="promo-icon">${ad.icon}</div>
+        <div class="promo-text">
+          <h3>${ad.title}</h3>
+          <p>${ad.body}</p>
+          <div class="promo-choices">
+            <span class="promo-choice-btn">${ad.optionA}</span>
+            <span class="promo-choice-btn">${ad.optionB}</span>
+          </div>
+          <span class="promo-quote">${ad.quote}</span>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Layout: ticker (Daisy Mae)
+  if (ad.layout === 'ticker') {
+    return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
+      ${badge}${extra}
+      <div class="banner-inner">
+        <div class="promo-icon">${ad.icon}</div>
+        <div class="promo-text">
+          <h3>${ad.title}</h3>
+          <div class="promo-ticker">
+            <span class="ticker-symbol">${ad.tickerLabel}</span>
+            <span class="ticker-price">${ad.tickerPrice} 🔔</span>
+            <span class="ticker-change ${ad.tickerTrend}">${ad.tickerChange}</span>
+          </div>
+          <p>${ad.body}</p>
+          <span class="promo-tag">${ad.tag}</span>
+          <div class="promo-fine-print">${ad.finePrint}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Layout: exhibit (Blathers)
+  if (ad.layout === 'exhibit') {
+    const wings = ad.exhibits.map(e => `<span class="exhibit-wing"><span class="exhibit-emoji">${e.emoji}</span><span class="exhibit-name">${e.name}</span></span>`).join('');
+    return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
+      ${badge}${extra}
+      <div class="banner-inner">
+        <div class="promo-icon">${ad.icon}</div>
+        <div class="promo-text">
+          <div class="promo-subtitle">${ad.subtitle}</div>
+          <h3>${ad.title}</h3>
+          <div class="exhibit-wings">${wings}</div>
+          <p>${ad.body}</p>
+          <span class="promo-quote">${ad.quote}</span>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Layout: wisdom (Pascal)
+  if (ad.layout === 'wisdom') {
+    return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
+      ${badge}${extra}
+      <div class="banner-inner">
+        <div class="promo-icon">${ad.icon}</div>
+        <div class="promo-text">
+          <h3>${ad.title}</h3>
+          <p>${ad.body}</p>
+          <div class="promo-wisdom-card">
+            <div class="wisdom-quote">${ad.wisdomQuote}</div>
+          </div>
+          <div class="promo-cta-btn">${ad.cta}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Layout: challenge (Label)
+  if (ad.layout === 'challenge') {
+    const rewardChips = ad.rewards.map(r => `<span class="reward-chip">🎁 ${r}</span>`).join('');
+    return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
+      ${badge}${extra}
+      <div class="banner-inner">
+        <div class="promo-icon">${ad.icon}</div>
+        <div class="promo-text">
+          <h3>${ad.title}</h3>
+          <p>${ad.body}</p>
+          <div class="promo-challenge-theme">${ad.challengeTheme}</div>
+          <div class="promo-challenge-word">${ad.challengeWord}</div>
+          <div class="promo-rewards">${rewardChips}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Layout: fortune (Katrina)
+  if (ad.layout === 'fortune') {
+    return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
+      ${badge}${extra}
+      <div class="banner-inner">
+        <div class="promo-icon">${ad.icon}</div>
+        <div class="promo-text">
+          <h3>${ad.title}</h3>
+          <p>${ad.body}</p>
+          <div class="promo-fortune-label">${ad.fortuneLabel}</div>
+          <div class="promo-fortune-result">${ad.fortuneResult}</div>
+          <div class="promo-fortune-detail">${ad.fortuneDetail}</div>
+          <span class="promo-quote">${ad.quote}</span>
+          <div class="promo-fortune-price">${ad.price}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Layout: commission (Flick)
+  if (ad.layout === 'commission') {
+    const steps = ad.commissionSteps.map((s, i) =>
+      `<span class="commission-step"><span class="step-num">${i + 1}</span>${s}</span>`
+    ).join('<span class="step-arrow">→</span>');
+    return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
+      ${badge}${extra}
+      <div class="banner-inner">
+        <div class="promo-icon">${ad.icon}</div>
+        <div class="promo-text">
+          <div class="promo-subtitle">${ad.subtitle}</div>
+          <h3>${ad.title}</h3>
+          <p>${ad.body}</p>
+          <div class="commission-steps">${steps}</div>
+          <span class="promo-quote">${ad.quote}</span>
+          <div class="promo-turnaround">⏱️ ${ad.turnaround}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Layout: event (Celeste)
+  if (ad.layout === 'event') {
+    const feats = ad.features.map(f => `<span class="event-feature">${f}</span>`).join('');
+    return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
+      ${badge}${extra}
+      <div class="banner-inner">
+        <div class="promo-icon">${ad.icon}</div>
+        <div class="promo-text">
+          <div class="promo-event-name">${ad.eventName}</div>
+          <h3>${ad.title}</h3>
+          <div class="promo-event-detail">${ad.eventDetail}</div>
+          <div class="event-features">${feats}</div>
+          <span class="promo-quote">${ad.quote}</span>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Layout: treasure (Gullivarrr)
+  if (ad.layout === 'treasure') {
+    const loot = ad.lootTable.map(l => `<span class="loot-item"><span class="loot-emoji">${l.emoji}</span><span class="loot-name">${l.name}</span></span>`).join('');
+    return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
+      ${badge}${extra}
+      <div class="banner-inner">
+        <div class="promo-icon">${ad.icon}</div>
+        <div class="promo-text">
+          <h3>${ad.title}</h3>
+          <p>${ad.body}</p>
+          <div class="loot-table">${loot}</div>
+          <span class="promo-tag">${ad.tag}</span>
+          <span class="promo-quote">${ad.quote}</span>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Layout: salon (Harriet)
+  if (ad.layout === 'salon') {
+    const svc = ad.services.map(s => `<span class="salon-service">✂️ ${s}</span>`).join('');
+    return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
+      ${badge}${extra}
+      <div class="banner-inner">
+        <div class="promo-icon">${ad.icon}</div>
+        <div class="promo-text">
+          <div class="promo-subtitle">${ad.subtitle}</div>
+          <h3>${ad.title}</h3>
+          <p>${ad.body}</p>
+          <div class="salon-services">${svc}</div>
+          <div class="promo-cta-btn">${ad.cta}</div>
+          <span class="promo-tag">${ad.tag}</span>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Layout: ticket (K.K.)
+  if (ad.layout === 'ticket') {
+    const feats = ad.features.map(f => `<span class="ticket-feature">${f}</span>`).join('');
+    return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
+      ${badge}${extra}
+      <div class="banner-inner">
+        <div class="promo-icon">${ad.icon}</div>
+        <div class="promo-text">
+          <div class="promo-event-name">${ad.eventName}</div>
+          <h3>${ad.title}</h3>
+          <div class="promo-event-detail">${ad.eventDetail}</div>
+          <div class="ticket-features">${feats}</div>
+          <span class="promo-quote">${ad.quote}</span>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Layout: postcard (Tortimer)
+  if (ad.layout === 'postcard') {
+    const feats = ad.features.map(f => `<span class="postcard-feature">🌴 ${f}</span>`).join('');
+    return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
+      ${badge}${extra}
+      <div class="banner-inner">
+        <div class="promo-icon">${ad.icon}</div>
+        <div class="promo-text">
+          <div class="promo-subtitle">${ad.subtitle}</div>
+          <h3>${ad.title}</h3>
+          <p>${ad.body}</p>
+          <div class="postcard-features">${feats}</div>
+          <span class="promo-quote">${ad.quote}</span>
+          <span class="promo-tag">${ad.tag}</span>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Layout: coupon (Able Sisters)
+  if (ad.layout === 'coupon') {
+    return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
+      ${badge}${extra}
+      <div class="banner-inner">
+        <div class="coupon-left">
+          <div class="promo-icon">${ad.icon}</div>
+          <div class="coupon-value">${ad.couponValue}</div>
+          <div class="coupon-detail">${ad.couponDetail}</div>
+        </div>
+        <div class="coupon-tear"></div>
+        <div class="promo-text coupon-right">
+          <h3>${ad.title}</h3>
+          <p>${ad.body}</p>
+          <div class="coupon-code">Code: ${ad.couponCode}</div>
+          <div class="promo-fine-print">${ad.finePrint}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Layout: alert (Resetti)
+  if (ad.layout === 'alert') {
+    const feats = ad.features.map(f => `<div class="alert-feature">✓ ${f}</div>`).join('');
+    return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
+      ${badge}${extra}
+      <div class="banner-inner">
+        <div class="promo-icon">${ad.icon}</div>
+        <div class="promo-text">
+          <h3>${ad.title}</h3>
+          <div class="promo-alert-level">${ad.alertLevel}</div>
+          <p>${ad.body}</p>
+          <div class="alert-features">${feats}</div>
+          <div class="promo-cta-btn promo-cta-alert">${ad.cta}</div>
+          <span class="promo-quote">${ad.quote}</span>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Layout: booking (Rover)
+  if (ad.layout === 'booking') {
+    const dests = ad.destinations.map(d => `<span class="dest-card"><span class="dest-emoji">${d.emoji}</span><span class="dest-name">${d.name}</span></span>`).join('');
+    return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
+      ${badge}${extra}
+      <div class="banner-inner">
+        <div class="promo-icon">${ad.icon}</div>
+        <div class="promo-text">
+          <div class="promo-subtitle">${ad.subtitle}</div>
+          <h3>${ad.title}</h3>
+          <p>${ad.body}</p>
+          <div class="dest-cards">${dests}</div>
+          <div class="promo-cta-btn">${ad.cta}</div>
+          <span class="promo-quote">${ad.quote}</span>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Fallback: generic layout
   let bottomContent = '';
   if (ad.tag) bottomContent = `<span class="promo-tag">${ad.tag}</span>`;
   if (ad.quote) bottomContent = `<span class="promo-quote">${ad.quote}</span>`;
-  if (ad.stars) bottomContent = `<div class="stars">\u2B50\u2B50\u2B50\u2B50\u2B50</div>`;
 
   return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
-    <span class="promo-badge">Ad</span>
-    ${ad.extra}
+    ${badge}${extra}
     <div class="banner-inner">
       <div class="promo-icon">${ad.icon}</div>
       <div class="promo-text">
