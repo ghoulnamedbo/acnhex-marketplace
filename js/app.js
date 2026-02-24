@@ -57,6 +57,13 @@ const state = {
   adToastVisible: false,
   activePopup: null,
   adPageViews: 0,
+  itemsViewed: 0,
+  sessionStart: Date.now(),
+  firstCartAddDone: false,
+  floatingNotif: null,
+  floatingNotifTimer: null,
+  floatingNotifAutoTimer: null,
+  hhpTimerStarted: false,
 };
 
 const app = document.getElementById('app');
@@ -214,8 +221,6 @@ async function renderCatalog() {
       </div>
     </div>
 
-    ${ads.renderCatalogAdSection()}
-
     <div style="padding:0 24px;margin-top:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <h3 class="heading-section">Categories</h3>
@@ -236,8 +241,6 @@ async function renderCatalog() {
         </div>
       </div>
     </div>
-
-    ${ads.renderNotificationSection()}
 
     <div style="padding:20px 24px 14px;display:flex;justify-content:space-between;align-items:center">
       <h3 class="heading-section">${isRandom ? 'Random Picks' : state.activeCategory === 'All' ? 'All Items' : esc(state.activeCategory)}</h3>
@@ -1055,7 +1058,7 @@ async function render() {
     case 'settings': content = renderSettings(); break;
     case 'info': content = renderInfo(); break;
   }
-  app.innerHTML = `<div id="ptr-indicator" class="ptr-indicator"></div>` + content + renderNav() + renderModal() + renderSearch() + renderWishlistToast() + renderListPicker() + ads.renderActivePopup(state.activePopup) + ads.renderAdToast(state.adToastVisible);
+  app.innerHTML = `<div id="ptr-indicator" class="ptr-indicator"></div>` + content + renderNav() + renderModal() + renderSearch() + renderWishlistToast() + renderListPicker() + ads.renderActivePopup(state.activePopup) + ads.renderAdToast(state.adToastVisible) + ads.renderFloatingNotif(state.floatingNotif);
   attachEvents();
 
   // Apply entrance animations only on page/category navigation
@@ -1122,7 +1125,12 @@ function attachEvents() {
       }
       // Check if a popup ad should be shown after navigation
       if (!state.activePopup) {
-        const popupType = ads.checkPopupTrigger(state.adPageViews);
+        const popupType = ads.checkPopupTrigger({
+          type: 'nav',
+          adPageViews: state.adPageViews,
+          itemsViewed: state.itemsViewed,
+          sessionStart: state.sessionStart,
+        });
         if (popupType) {
           setTimeout(() => {
             state.activePopup = popupType;
@@ -1141,6 +1149,7 @@ function attachEvents() {
       state.isRandom = false;
       state.expandedItems = null;
       state.expandedTotal = 0;
+      ads.resetGridInterstitial();
       const catScrollEl = document.getElementById('cat-scroll');
       if (catScrollEl) state.catScrollLeft = catScrollEl.scrollLeft;
       state._pageEnter = true;
@@ -1691,9 +1700,11 @@ function attachEvents() {
   });
 
   // ─── Fake Ad Events ───
-  // Clicking any inline banner or notification ad shows toast
+  // Clicking any inline banner or interstitial ad shows toast
   app.querySelectorAll('[data-fake-ad]').forEach(el => {
     el.addEventListener('click', (e) => {
+      // Don't trigger toast if clicking dismiss button on floating notif
+      if (e.target.closest('#notif-dismiss')) return;
       e.stopPropagation();
       showAdToast();
     });
@@ -1710,6 +1721,37 @@ function attachEvents() {
       }
     });
   });
+
+  // Floating notification dismiss button
+  const notifDismiss = document.getElementById('notif-dismiss');
+  if (notifDismiss) {
+    notifDismiss.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dismissFloatingNotif();
+    });
+  }
+
+  // Floating notification swipe to dismiss (mobile)
+  const floatingNotif = document.getElementById('floating-notif');
+  if (floatingNotif) {
+    let startX = 0;
+    let startY = 0;
+    let swiping = false;
+    floatingNotif.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      swiping = true;
+    }, { passive: true });
+    floatingNotif.addEventListener('touchmove', (e) => {
+      if (!swiping) return;
+      const diffY = startY - e.touches[0].clientY;
+      if (diffY > 30) { // swiped up
+        swiping = false;
+        dismissFloatingNotif();
+      }
+    }, { passive: true });
+    floatingNotif.addEventListener('touchend', () => { swiping = false; }, { passive: true });
+  }
 }
 
 // ─── Ad Toast Helper ───
@@ -1723,6 +1765,67 @@ function showAdToast() {
     const el = document.getElementById('ad-toast');
     if (el) el.remove();
   }, 3200);
+}
+
+// ─── Floating Notification Helpers ───
+function dismissFloatingNotif() {
+  const el = document.getElementById('floating-notif');
+  if (el) {
+    el.classList.add('dismissing');
+    el.addEventListener('animationend', () => {
+      state.floatingNotif = null;
+      const container = document.getElementById('floating-notif-container');
+      if (container) container.remove();
+      // Schedule next notification after a delay
+      scheduleFloatingNotif();
+    }, { once: true });
+  } else {
+    state.floatingNotif = null;
+    scheduleFloatingNotif();
+  }
+  clearTimeout(state.floatingNotifAutoTimer);
+}
+
+function showFloatingNotif() {
+  if (state.floatingNotif || state.activePopup) return; // don't overlap with popups
+  const notif = ads.getNextFloatingNotif();
+  if (!notif) return;
+  state.floatingNotif = notif;
+  render();
+
+  // Auto-dismiss after 8 seconds
+  clearTimeout(state.floatingNotifAutoTimer);
+  state.floatingNotifAutoTimer = setTimeout(() => {
+    dismissFloatingNotif();
+  }, 8000);
+}
+
+function scheduleFloatingNotif() {
+  clearTimeout(state.floatingNotifTimer);
+  if (!ads.canShowFloatingNotif()) return;
+  // Random delay between 30-60 seconds for subsequent notifications
+  const delay = 30000 + Math.random() * 30000;
+  state.floatingNotifTimer = setTimeout(() => {
+    showFloatingNotif();
+  }, delay);
+}
+
+// ─── HHP Browse Time Popup ───
+function startHhpTimer() {
+  if (state.hhpTimerStarted) return;
+  state.hhpTimerStarted = true;
+  setTimeout(() => {
+    if (!state.activePopup) {
+      const popupType = ads.checkPopupTrigger({
+        type: 'timer',
+        sessionStart: state.sessionStart,
+      });
+      if (popupType) {
+        state.activePopup = popupType;
+        render();
+      }
+    }
+  }, 125000); // Check at ~2 min mark
 }
 
 // ─── Actions ───
@@ -1791,10 +1894,25 @@ function addToCart(entry) {
   storage.setCart(state.cart);
   state._cartBounce = true;
   render();
+
+  // Trigger premium popup on first cart add in session
+  if (!state.firstCartAddDone) {
+    state.firstCartAddDone = true;
+    if (!state.activePopup) {
+      const popupType = ads.checkPopupTrigger({ type: 'cartAdd' });
+      if (popupType) {
+        setTimeout(() => {
+          state.activePopup = popupType;
+          render();
+        }, 800);
+      }
+    }
+  }
 }
 
 async function loadItemDetail(itemId) {
   state.itemDetail = null;
+  state.itemsViewed++;
   render(); // Show loading
   window.scrollTo(0, 0);
   state.itemDetail = await data.getItemDetail(itemId);
@@ -1845,6 +1963,7 @@ function initPullToRefresh() {
       indicator.classList.remove('pulling');
       indicator.classList.add('refreshing');
       // Refresh with new random items
+      ads.resetGridInterstitial();
       state.isRandom = true;
       state.randomUsedIndices = new Set();
       state.randomItems = await data.getRandomExpandedItems(50, state.randomUsedIndices);
@@ -1878,12 +1997,20 @@ async function init() {
   }
   // Show cookie popup on first visit (after a short delay for UX)
   setTimeout(() => {
-    const popupType = ads.checkPopupTrigger(state.adPageViews);
+    const popupType = ads.checkPopupTrigger({ type: 'init' });
     if (popupType) {
       state.activePopup = popupType;
       render();
     }
   }, 2000);
+
+  // Schedule first floating notification (10-15 seconds after load)
+  state.floatingNotifTimer = setTimeout(() => {
+    showFloatingNotif();
+  }, 10000 + Math.random() * 5000);
+
+  // Start the 2-minute browse timer for HHP popup
+  startHhpTimer();
 }
 
 init();

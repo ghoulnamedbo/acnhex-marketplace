@@ -590,15 +590,41 @@ export function renderAdToast(visible) {
 }
 
 // ─── Catalog Page Ad Helpers ───
+// Pick one random interstitial per page load for the grid
+let gridInterstitialType = null;
+
+function ensureGridInterstitial() {
+  if (!gridInterstitialType) {
+    const inter = getNextInterstitial();
+    gridInterstitialType = inter.type;
+  }
+  return gridInterstitialType;
+}
+
+// Reset the grid interstitial on page refresh
+export function resetGridInterstitial() {
+  gridInterstitialType = null;
+}
+
 // Determines how to interleave ads into the item grid
 export function renderItemGridWithAds(items, renderItemCardFn) {
   // Reset banner pool each render for fresh shuffle
   resetBannerPool();
 
+  const interType = ensureGridInterstitial();
   let html = '';
+  let interstitialInserted = false;
+
   for (let idx = 0; idx < items.length; idx++) {
     html += renderItemCardFn(items[idx], idx);
-    // Insert a banner ad every 8 items
+
+    // Insert interstitial after item 5 (within first batch, below categories in grid)
+    if (idx === 4 && !interstitialInserted) {
+      html += renderInterstitialAd(interType);
+      interstitialInserted = true;
+    }
+
+    // Insert a banner ad every 8 items (offset by interstitial position)
     if ((idx + 1) % 8 === 0 && idx < items.length - 1) {
       html += renderBannerAd(getNextBannerAd());
     }
@@ -606,27 +632,86 @@ export function renderItemGridWithAds(items, renderItemCardFn) {
   return html;
 }
 
-// Render a section of interstitial + notification ads for between catalog sections
+// Keep renderCatalogAdSection for backwards compatibility but return empty
+// (interstitials are now inside the grid)
 export function renderCatalogAdSection() {
-  const inter = getNextInterstitial();
-  return `<div class="ad-catalog-section">
-    ${renderInterstitialAd(inter.type)}
+  return '';
+}
+
+// ─── Floating Notification Ads ───
+let floatingNotifShownCount = 0;
+const FLOATING_NOTIF_MAX = 3; // max per session
+let floatingNotifPool = [];
+let floatingNotifIdx = 0;
+
+function resetFloatingNotifPool() {
+  floatingNotifPool = shuffleArray(NOTIFICATIONS);
+  floatingNotifIdx = 0;
+}
+resetFloatingNotifPool();
+
+export function getNextFloatingNotif() {
+  if (floatingNotifShownCount >= FLOATING_NOTIF_MAX) return null;
+  if (floatingNotifIdx >= floatingNotifPool.length) resetFloatingNotifPool();
+  floatingNotifShownCount++;
+  return floatingNotifPool[floatingNotifIdx++];
+}
+
+export function renderFloatingNotif(notif) {
+  if (!notif) return '';
+  return `<div class="floating-notif-container" id="floating-notif-container">
+    <div class="floating-notif ${notif.cls}" id="floating-notif" data-fake-ad>
+      <div class="notif-icon">${notif.icon}</div>
+      <div class="notif-content">
+        <div class="notif-title">${notif.title}</div>
+        <div class="notif-body">${notif.body}</div>
+      </div>
+      <div class="notif-time">${notif.time}</div>
+      <button class="notif-dismiss" id="notif-dismiss">&times;</button>
+      <div class="notif-ad-badge">Sponsored</div>
+    </div>
   </div>`;
 }
 
-// Popup trigger logic: which popup to show based on state
-const POPUP_SEQUENCE = ['premium', 'turnip', 'lottie', 'visitor'];
-const popupTriggerThreshold = Math.floor(Math.random() * 3) + 3; // Show after 3-5 page navigations
+export function canShowFloatingNotif() {
+  return floatingNotifShownCount < FLOATING_NOTIF_MAX;
+}
 
-export function checkPopupTrigger(adPageViews) {
+// Popup trigger logic: specific triggers per popup type
+export function checkPopupTrigger(triggerContext) {
+  // triggerContext = { type: 'init'|'nav'|'cartAdd'|'timer', adPageViews, sessionStart, itemsViewed }
+
   // Cookie popup takes priority on first visit
   if (shouldShowPopup('cookie')) return 'cookie';
 
-  // After enough page views, cycle through other popups
-  if (adPageViews >= popupTriggerThreshold) {
-    for (const type of POPUP_SEQUENCE) {
-      if (shouldShowPopup(type)) return type;
+  const trigger = triggerContext.type;
+
+  // Nook Inc. Premium: show once after first cart add in session
+  if (trigger === 'cartAdd' && shouldShowPopup('premium')) {
+    return 'premium';
+  }
+
+  // 1000th Visitor: show after viewing 50+ items or 5+ navigations (once per session)
+  if (trigger === 'nav' && shouldShowPopup('visitor')) {
+    if ((triggerContext.itemsViewed || 0) >= 50 || (triggerContext.adPageViews || 0) >= 5) {
+      return 'visitor';
     }
   }
+
+  // Stalk Market Ticker: ~10% chance on home page visit (once per session)
+  if (trigger === 'nav' && shouldShowPopup('turnip')) {
+    if (Math.random() < 0.1) {
+      return 'turnip';
+    }
+  }
+
+  // Happy Home Paradise: show after 2+ minutes browsing (once per session)
+  if (trigger === 'timer' && shouldShowPopup('lottie')) {
+    const elapsed = Date.now() - (triggerContext.sessionStart || Date.now());
+    if (elapsed >= 120000) { // 2 minutes
+      return 'lottie';
+    }
+  }
+
   return null;
 }
