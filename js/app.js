@@ -1718,6 +1718,10 @@ function attachEvents() {
         ads.dismissPopup(state.activePopup);
         state.activePopup = null;
         render();
+        if (state.searchOpen && state.searchResults) {
+          attachSearchResultEvents();
+          attachSearchScrollObserver();
+        }
         showAdToast();
       }
     });
@@ -1821,7 +1825,7 @@ function startHhpTimer() {
   if (state.hhpTimerStarted) return;
   state.hhpTimerStarted = true;
   setTimeout(() => {
-    if (!state.activePopup) {
+    if (!state.activePopup && !state.searchOpen) {
       const popupType = ads.checkPopupTrigger({
         type: 'timer',
         sessionStart: state.sessionStart,
@@ -1901,11 +1905,15 @@ function addToCart(entry) {
   storage.setCart(state.cart);
   state._cartBounce = true;
   render();
+  if (state.searchOpen && state.searchResults) {
+    attachSearchResultEvents();
+    attachSearchScrollObserver();
+  }
 
   // Trigger premium popup on first cart add in session
   if (!state.firstCartAddDone) {
     state.firstCartAddDone = true;
-    if (!state.activePopup) {
+    if (!state.activePopup && !state.searchOpen) {
       const popupType = ads.checkPopupTrigger({ type: 'cartAdd' });
       if (popupType) {
         ads.markPopupShown();
