@@ -1100,6 +1100,27 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overscroll-beh
   animation: badgePop 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
 }
 
+/* ─── Flying Add-to-Cart Animation ─── */
+.flying-item {
+  position: fixed;
+  z-index: 99999;
+  pointer-events: none;
+  width: 45px;
+  height: 45px;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  will-change: transform, opacity;
+}
+@keyframes cartIconPulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+.cart-pulse {
+  animation: cartIconPulse 0.25s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
 /* ─── Nav Tab Transitions ─── */
 .nav-tab {
   transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);

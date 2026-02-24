@@ -887,6 +887,8 @@ function attachSearchResultEvents() {
       e.stopPropagation();
       const card = btn.closest('[data-item]');
       const vi = card ? parseInt(card.dataset.vi) || 0 : 0;
+      const img = card && card.querySelector('.item-thumb img');
+      if (img) animateAddToCart(img.src, img);
       addToCartFromIndex(btn.dataset.addCart, vi);
     });
   });
@@ -957,6 +959,8 @@ function updateDetailVariant() {
     if (detailAddCart) detailAddCart.addEventListener('click', () => {
       const qty = parseInt(document.getElementById('detail-qty-cart')?.textContent) || 0;
       const count = qty < 1 ? 1 : qty;
+      const heroImg = document.getElementById('detail-hero-img');
+      if (heroImg) animateAddToCart(heroImg.src, heroImg);
       for (let i = 0; i < count; i++) {
         addToCart({
           id: item.id,
@@ -1218,6 +1222,8 @@ function attachEvents() {
       e.stopPropagation();
       const card = btn.closest('[data-item]');
       const vi = card ? parseInt(card.dataset.vi) || 0 : 0;
+      const img = card && card.querySelector('.item-thumb img');
+      if (img) animateAddToCart(img.src, img);
       addToCartFromIndex(btn.dataset.addCart, vi);
     });
   });
@@ -1387,6 +1393,8 @@ function attachEvents() {
       const variant = state.itemDetail.variants[vi] || state.itemDetail.variants[0];
       const qty = parseInt(document.getElementById('detail-qty-cart')?.textContent) || 0;
       const count = qty < 1 ? 1 : qty;
+      const heroImg = document.getElementById('detail-hero-img');
+      if (heroImg) animateAddToCart(heroImg.src, heroImg);
       for (let i = 0; i < count; i++) {
         addToCart({
           id: state.itemDetail.id,
@@ -1445,6 +1453,9 @@ function attachEvents() {
   app.querySelectorAll('[data-wl-add]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
+      const card = btn.closest('[data-item]');
+      const img = card && card.querySelector('.item-thumb img');
+      if (img) animateAddToCart(img.src, img);
       const entry = {
         id: btn.dataset.wlId,
         name: btn.dataset.wlName,
@@ -1837,6 +1848,37 @@ function startHhpTimer() {
       }
     }
   }, 125000); // Check at ~2 min mark
+}
+
+// ─── Flying Add-to-Cart Animation ───
+function animateAddToCart(imgSrc, startEl) {
+  const cartTab = app.querySelector('[data-nav="cart"]');
+  if (!cartTab || !startEl) return;
+  const startRect = startEl.getBoundingClientRect();
+  const endRect = cartTab.getBoundingClientRect();
+  const clone = document.createElement('img');
+  clone.src = imgSrc;
+  clone.className = 'flying-item';
+  clone.style.left = startRect.left + startRect.width / 2 - 22 + 'px';
+  clone.style.top = startRect.top + startRect.height / 2 - 22 + 'px';
+  clone.style.transition = 'transform 0.7s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.7s ease-in';
+  clone.style.transform = 'scale(1) translate(0, 0)';
+  clone.style.opacity = '1';
+  document.body.appendChild(clone);
+  const dx = endRect.left + endRect.width / 2 - (startRect.left + startRect.width / 2);
+  const dy = endRect.top + endRect.height / 2 - (startRect.top + startRect.height / 2);
+  requestAnimationFrame(() => {
+    clone.style.transform = `translate(${dx}px, ${dy}px) scale(0.25)`;
+    clone.style.opacity = '0';
+  });
+  clone.addEventListener('transitionend', function handler(e) {
+    if (e.propertyName !== 'transform') return;
+    clone.removeEventListener('transitionend', handler);
+    clone.remove();
+    // Pulse the cart icon on arrival
+    cartTab.classList.add('cart-pulse');
+    cartTab.addEventListener('animationend', () => cartTab.classList.remove('cart-pulse'), { once: true });
+  });
 }
 
 // ─── Actions ───
