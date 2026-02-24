@@ -888,7 +888,7 @@ function attachSearchResultEvents() {
       const card = btn.closest('[data-item]');
       const vi = card ? parseInt(card.dataset.vi) || 0 : 0;
       const img = card && card.querySelector('.item-thumb img');
-      if (img) animateAddToCart(img.src, img);
+      if (img) _flyAnimRect = img.getBoundingClientRect();
       addToCartFromIndex(btn.dataset.addCart, vi);
     });
   });
@@ -960,7 +960,7 @@ function updateDetailVariant() {
       const qty = parseInt(document.getElementById('detail-qty-cart')?.textContent) || 0;
       const count = qty < 1 ? 1 : qty;
       const heroImg = document.getElementById('detail-hero-img');
-      if (heroImg) animateAddToCart(heroImg.src, heroImg);
+      if (heroImg) _flyAnimRect = heroImg.getBoundingClientRect();
       for (let i = 0; i < count; i++) {
         addToCart({
           id: item.id,
@@ -1223,7 +1223,7 @@ function attachEvents() {
       const card = btn.closest('[data-item]');
       const vi = card ? parseInt(card.dataset.vi) || 0 : 0;
       const img = card && card.querySelector('.item-thumb img');
-      if (img) animateAddToCart(img.src, img);
+      if (img) _flyAnimRect = img.getBoundingClientRect();
       addToCartFromIndex(btn.dataset.addCart, vi);
     });
   });
@@ -1394,7 +1394,7 @@ function attachEvents() {
       const qty = parseInt(document.getElementById('detail-qty-cart')?.textContent) || 0;
       const count = qty < 1 ? 1 : qty;
       const heroImg = document.getElementById('detail-hero-img');
-      if (heroImg) animateAddToCart(heroImg.src, heroImg);
+      if (heroImg) _flyAnimRect = heroImg.getBoundingClientRect();
       for (let i = 0; i < count; i++) {
         addToCart({
           id: state.itemDetail.id,
@@ -1455,7 +1455,7 @@ function attachEvents() {
       e.stopPropagation();
       const card = btn.closest('[data-item]');
       const img = card && card.querySelector('.item-thumb img');
-      if (img) animateAddToCart(img.src, img);
+      if (img) _flyAnimRect = img.getBoundingClientRect();
       const entry = {
         id: btn.dataset.wlId,
         name: btn.dataset.wlName,
@@ -1851,35 +1851,7 @@ function startHhpTimer() {
 }
 
 // ─── Flying Add-to-Cart Animation ───
-function animateAddToCart(imgSrc, startEl) {
-  const cartTab = app.querySelector('[data-nav="cart"]');
-  if (!cartTab || !startEl) return;
-  const startRect = startEl.getBoundingClientRect();
-  const endRect = cartTab.getBoundingClientRect();
-  const clone = document.createElement('img');
-  clone.src = imgSrc;
-  clone.className = 'flying-item';
-  clone.style.left = startRect.left + startRect.width / 2 - 22 + 'px';
-  clone.style.top = startRect.top + startRect.height / 2 - 22 + 'px';
-  clone.style.transition = 'transform 0.7s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.7s ease-in';
-  clone.style.transform = 'scale(1) translate(0, 0)';
-  clone.style.opacity = '1';
-  document.body.appendChild(clone);
-  const dx = endRect.left + endRect.width / 2 - (startRect.left + startRect.width / 2);
-  const dy = endRect.top + endRect.height / 2 - (startRect.top + startRect.height / 2);
-  requestAnimationFrame(() => {
-    clone.style.transform = `translate(${dx}px, ${dy}px) scale(0.25)`;
-    clone.style.opacity = '0';
-  });
-  clone.addEventListener('transitionend', function handler(e) {
-    if (e.propertyName !== 'transform') return;
-    clone.removeEventListener('transitionend', handler);
-    clone.remove();
-    // Pulse the cart icon on arrival
-    cartTab.classList.add('cart-pulse');
-    cartTab.addEventListener('animationend', () => cartTab.classList.remove('cart-pulse'), { once: true });
-  });
-}
+let _flyAnimRect = null;
 
 // ─── Actions ───
 async function toggleWishlist(itemId, variantIdx = 0) {
@@ -1943,6 +1915,39 @@ function addToCartFromIndex(itemId, variantIdx = 0) {
 
 function addToCart(entry) {
   if (state.cart.length >= 40) return;
+
+  // Fire flying animation using snapshot captured by click handler
+  if (_flyAnimRect && entry.img) {
+    const cartTab = app.querySelector('[data-nav="cart"]');
+    if (cartTab) {
+      const endRect = cartTab.getBoundingClientRect();
+      const sr = _flyAnimRect;
+      const clone = document.createElement('img');
+      clone.src = entry.img;
+      clone.className = 'flying-item';
+      clone.style.left = sr.left + sr.width / 2 - 22 + 'px';
+      clone.style.top = sr.top + sr.height / 2 - 22 + 'px';
+      clone.style.transition = 'transform 0.7s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.7s ease-in';
+      clone.style.transform = 'scale(1) translate(0, 0)';
+      clone.style.opacity = '1';
+      document.body.appendChild(clone);
+      const dx = endRect.left + endRect.width / 2 - (sr.left + sr.width / 2);
+      const dy = endRect.top + endRect.height / 2 - (sr.top + sr.height / 2);
+      requestAnimationFrame(() => {
+        clone.style.transform = `translate(${dx}px, ${dy}px) scale(0.25)`;
+        clone.style.opacity = '0';
+      });
+      clone.addEventListener('transitionend', function handler(e) {
+        if (e.propertyName !== 'transform') return;
+        clone.removeEventListener('transitionend', handler);
+        clone.remove();
+        cartTab.classList.add('cart-pulse');
+        cartTab.addEventListener('animationend', () => cartTab.classList.remove('cart-pulse'), { once: true });
+      });
+    }
+  }
+  _flyAnimRect = null;
+
   state.cart.push(entry);
   storage.setCart(state.cart);
   state._cartBounce = true;
