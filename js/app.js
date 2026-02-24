@@ -1702,7 +1702,7 @@ function attachEvents() {
 
   // ─── Fake Ad Events ───
   // Clicking any inline banner or interstitial ad shows toast
-  app.querySelectorAll('[data-fake-ad]').forEach(el => {
+  app.querySelectorAll('[data-nook-promo]').forEach(el => {
     el.addEventListener('click', (e) => {
       // Don't trigger toast if clicking dismiss button on floating notif
       if (e.target.closest('#notif-dismiss')) return;
@@ -1763,7 +1763,7 @@ function showAdToast() {
   render();
   adToastTimer = setTimeout(() => {
     state.adToastVisible = false;
-    const el = document.getElementById('ad-toast');
+    const el = document.getElementById('promo-toast');
     if (el) el.remove();
   }, 3200);
 }

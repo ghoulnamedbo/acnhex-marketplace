@@ -4,7 +4,7 @@
 // ─── Inline Banner Ad Data ───
 const INLINE_BANNERS = [
   {
-    cls: 'ad-redd',
+    cls: 'promo-redd',
     icon: '\u{1F5BC}\uFE0F',
     title: "Redd's Totally Legitimate Art Emporium",
     body: '100% real paintings. No forgeries. Cousin\'s honor.',
@@ -12,14 +12,14 @@ const INLINE_BANNERS = [
     extra: '',
   },
   {
-    cls: 'ad-sahara',
+    cls: 'promo-sahara',
     icon: '\u{1F42A}',
     title: "Sahara's Rug Warehouse",
     body: 'Mysterious wallpapers &amp; flooring you won\'t believe, <span class="italic-accent">wallah!</span>',
     extra: '',
   },
   {
-    cls: 'ad-cj',
+    cls: 'promo-cj',
     icon: '\u{1F41F}',
     title: "CJ's Fish Prints",
     body: 'Turn your catch into wall-worthy ART. Models available.',
@@ -27,7 +27,7 @@ const INLINE_BANNERS = [
     extra: '',
   },
   {
-    cls: 'ad-kicks',
+    cls: 'promo-kicks',
     icon: '\u{1F45F}',
     title: "Kicks' Shoe Boutique",
     body: 'Socks, shoes &amp; bags. Step up your island style, mate!',
@@ -35,13 +35,13 @@ const INLINE_BANNERS = [
     extra: '',
   },
   {
-    cls: 'ad-gracie',
+    cls: 'promo-gracie',
     icon: null,
     isGracie: true,
     extra: '',
   },
   {
-    cls: 'ad-brewster',
+    cls: 'promo-brewster',
     icon: '\u2615',
     title: 'The Roost Caf\u00E9',
     body: 'Pigeon milk blend. Brewed fresh. No conversation required.',
@@ -49,7 +49,7 @@ const INLINE_BANNERS = [
     extra: '<span class="steam-dots">\u2668\uFE0F</span>',
   },
   {
-    cls: 'ad-leif',
+    cls: 'promo-leif',
     icon: '\u{1F33A}',
     title: "Leif's Garden Shop",
     body: 'Shrubs, flowers &amp; hedges. Make your island bloom, yeah!',
@@ -57,7 +57,7 @@ const INLINE_BANNERS = [
     extra: '',
   },
   {
-    cls: 'ad-wisp',
+    cls: 'promo-wisp',
     icon: '\u{1F47B}',
     title: "Wisp's Spirit Shop",
     body: 'Something new... or something expensive. Your choice.',
@@ -65,7 +65,7 @@ const INLINE_BANNERS = [
     extra: '<span class="wisp-stars">\u2728 \u2B50 \u2728</span>',
   },
   {
-    cls: 'ad-daisy',
+    cls: 'promo-daisy',
     icon: '\u{1F340}',
     title: "Daisy Mae's Turnip Co.",
     body: "Buy low, sell high! Gran-gran's secret recipe for profit.",
@@ -73,7 +73,7 @@ const INLINE_BANNERS = [
     extra: '<span class="corner-badge" style="background-color:rgba(93,64,55,0.15);color:#5D4037;">Sundays Only</span>',
   },
   {
-    cls: 'ad-blathers',
+    cls: 'promo-blathers',
     icon: '\u{1F989}',
     title: 'The Museum Gift Shop',
     body: 'Fossils assessed free of charge. Bug donations... tolerated.',
@@ -81,7 +81,7 @@ const INLINE_BANNERS = [
     extra: '',
   },
   {
-    cls: 'ad-pascal',
+    cls: 'promo-pascal',
     icon: '\u{1F9AA}',
     title: "Pascal's Pearl Wisdom",
     body: 'Trade a scallop, get a pearl. And maybe some life advice.',
@@ -89,7 +89,7 @@ const INLINE_BANNERS = [
     extra: '',
   },
   {
-    cls: 'ad-label',
+    cls: 'promo-label',
     icon: '\u{1F3F7}\uFE0F',
     title: "Label's Fashion Check",
     body: 'Pass the vibe check. Get a free Able Sisters coupon.',
@@ -97,7 +97,7 @@ const INLINE_BANNERS = [
     extra: '',
   },
   {
-    cls: 'ad-katrina',
+    cls: 'promo-katrina',
     icon: '\u{1F52E}',
     title: "Katrina's Fortune Shop",
     body: 'Know your luck before you shake that tree.',
@@ -105,7 +105,7 @@ const INLINE_BANNERS = [
     extra: '<span class="fortune-stars">\u2726 \u2727 \u2726 \u2727</span>',
   },
   {
-    cls: 'ad-flick',
+    cls: 'promo-flick',
     icon: '\u{1F98B}',
     title: "Flick's Bug Commissions",
     body: "Bring me any 3 bugs and I'll sculpt a masterpiece. ART IS LIFE.",
@@ -113,7 +113,7 @@ const INLINE_BANNERS = [
     extra: '',
   },
   {
-    cls: 'ad-celeste',
+    cls: 'promo-celeste',
     icon: '\u{1FA90}',
     title: "Celeste's Star Fragment Exchange",
     body: 'Wish upon a star. Craft wands &amp; celestial furniture.',
@@ -121,7 +121,7 @@ const INLINE_BANNERS = [
     extra: '<span class="celeste-sparkles">\u2B50 \u2728 \u2B50</span>',
   },
   {
-    cls: 'ad-gullivarrr',
+    cls: 'promo-gullivarrr',
     icon: '\u{1F3F4}\u200D\u2620\uFE0F',
     title: "Gullivarrr's Pirate Treasures",
     body: "Find me communicator parts and I'll reward ye with booty, matey!",
@@ -129,7 +129,7 @@ const INLINE_BANNERS = [
     extra: '',
   },
   {
-    cls: 'ad-harriet',
+    cls: 'promo-harriet',
     icon: '\u{1F484}',
     title: 'Shampoodle Salon',
     body: 'New hairstyles, new colors, new you. Walk-ins welcome!',
@@ -137,7 +137,7 @@ const INLINE_BANNERS = [
     extra: '',
   },
   {
-    cls: 'ad-kk',
+    cls: 'promo-kk',
     icon: '\u{1F3B8}',
     title: 'K.K. Slider Live!',
     body: 'Saturday nights at the plaza. Requests welcome. No cover charge.',
@@ -145,7 +145,7 @@ const INLINE_BANNERS = [
     extra: '<span class="music-notes">\u266A \u266B \u266A</span>',
   },
   {
-    cls: 'ad-tortimer',
+    cls: 'promo-tortimer',
     icon: '\u{1F422}',
     title: "Tortimer's Island Tours",
     body: 'Minigames, rare bugs, tropical fruit. The old mayor remembers.',
@@ -153,7 +153,7 @@ const INLINE_BANNERS = [
     extra: '',
   },
   {
-    cls: 'ad-able',
+    cls: 'promo-able',
     icon: '\u{1F9F5}',
     title: 'Able Sisters Clearance',
     body: 'End-of-season blowout. All custom designs 50% off (in spirit).',
@@ -161,7 +161,7 @@ const INLINE_BANNERS = [
     extra: '',
   },
   {
-    cls: 'ad-resetti',
+    cls: 'promo-resetti',
     icon: '\u{1F630}',
     title: "Resetti's Save Data Insurance",
     body: "Protect your island. Auto-save not enough? We've got you.",
@@ -169,7 +169,7 @@ const INLINE_BANNERS = [
     extra: '<span class="alert-flash">Warning</span>',
   },
   {
-    cls: 'ad-rover',
+    cls: 'promo-rover',
     icon: '\u{1F68C}',
     title: "Rover's Travel Bureau",
     body: "Moving to a new town? I can help with that. First trip's on me!",
@@ -264,8 +264,8 @@ export function renderBannerAd(ad) {
   if (!ad) ad = getNextBannerAd();
 
   if (ad.isGracie) {
-    return `<div class="banner-ad ad-fake-ad ${ad.cls}" data-fake-ad>
-      <span class="ad-badge">Ad</span>
+    return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
+      <span class="promo-badge">Ad</span>
       <div class="banner-inner">
         <div class="gracie-brand">Gracie Grace</div>
         <div class="gracie-title">Luxury, Darling.</div>
@@ -276,16 +276,16 @@ export function renderBannerAd(ad) {
   }
 
   let bottomContent = '';
-  if (ad.tag) bottomContent = `<span class="ad-tag">${ad.tag}</span>`;
-  if (ad.quote) bottomContent = `<span class="ad-quote">${ad.quote}</span>`;
+  if (ad.tag) bottomContent = `<span class="promo-tag">${ad.tag}</span>`;
+  if (ad.quote) bottomContent = `<span class="promo-quote">${ad.quote}</span>`;
   if (ad.stars) bottomContent = `<div class="stars">\u2B50\u2B50\u2B50\u2B50\u2B50</div>`;
 
-  return `<div class="banner-ad ad-fake-ad ${ad.cls}" data-fake-ad>
-    <span class="ad-badge">Ad</span>
+  return `<div class="nook-promo nook-flyer ${ad.cls}" data-nook-promo>
+    <span class="promo-badge">Ad</span>
     ${ad.extra}
     <div class="banner-inner">
-      <div class="ad-icon">${ad.icon}</div>
-      <div class="ad-text">
+      <div class="promo-icon">${ad.icon}</div>
+      <div class="promo-text">
         <h3>${ad.title}</h3>
         <p>${ad.body}</p>
         ${bottomContent}
@@ -296,9 +296,9 @@ export function renderBannerAd(ad) {
 
 // ─── Render: Interstitial Ads ───
 function renderMortgage() {
-  return `<div class="interstitial ad-fake-ad" data-fake-ad>
-    <span class="ad-badge">Ad</span>
-    <div class="ad-nook-mortgage">
+  return `<div class="nook-interstitial nook-flyer" data-nook-promo>
+    <span class="promo-badge">Ad</span>
+    <div class="nook-mortgage">
       <div class="mortgage-top">Nook Inc. Financial</div>
       <div class="mortgage-icon">\u{1F3E0}</div>
       <div class="mortgage-title">Home Loan Refinancing</div>
@@ -315,9 +315,9 @@ function renderMortgage() {
 }
 
 function renderGazette() {
-  return `<div class="interstitial ad-fake-ad" data-fake-ad>
+  return `<div class="nook-interstitial nook-flyer" data-nook-promo>
     <span class="gazette-badge">Sponsored</span>
-    <div class="ad-gazette">
+    <div class="nook-gazette">
       <div class="gazette-header">
         <div class="gazette-name">The Island Gazette</div>
         <div class="gazette-date">Isabelle's Morning Announcements</div>
@@ -332,9 +332,9 @@ function renderGazette() {
 }
 
 function renderNookShopping() {
-  return `<div class="interstitial ad-fake-ad" data-fake-ad>
-    <span class="ad-badge">Ad</span>
-    <div class="ad-nook-shopping">
+  return `<div class="nook-interstitial nook-flyer" data-nook-promo>
+    <span class="promo-badge">Ad</span>
+    <div class="nook-shopping">
       <div class="shopping-scanline"></div>
       <div class="shopping-channel">Nook Shopping Channel</div>
       <div class="shopping-icon">\u{1F4FA}</div>
@@ -364,9 +364,9 @@ function renderNookShopping() {
 }
 
 function renderDodo() {
-  return `<div class="interstitial ad-fake-ad" data-fake-ad>
-    <span class="ad-badge">Ad</span>
-    <div class="ad-dodo">
+  return `<div class="nook-interstitial nook-flyer" data-nook-promo>
+    <span class="promo-badge">Ad</span>
+    <div class="nook-dodo">
       <div class="dodo-clouds"></div>
       <div class="dodo-brand">Dodo Airlines</div>
       <div class="dodo-icon">\u2708\uFE0F</div>
@@ -414,8 +414,8 @@ export function getNextInterstitial() {
 
 // ─── Render: Popup Modals ───
 function renderPopupPremium() {
-  return `<div class="ad-popup-overlay" id="ad-popup-overlay" data-popup-type="premium">
-    <div class="ad-popup-dim" data-popup-dismiss></div>
+  return `<div class="promo-popup-overlay" id="promo-popup-overlay" data-popup-type="premium">
+    <div class="promo-popup-dim" data-popup-dismiss></div>
     <div class="modal-box modal-premium">
       <div class="modal-header">
         <button class="close-btn" data-popup-dismiss>&times;</button>
@@ -438,8 +438,8 @@ function renderPopupPremium() {
 }
 
 function renderPopupVisitor() {
-  return `<div class="ad-popup-overlay" id="ad-popup-overlay" data-popup-type="visitor">
-    <div class="ad-popup-dim" data-popup-dismiss></div>
+  return `<div class="promo-popup-overlay" id="promo-popup-overlay" data-popup-type="visitor">
+    <div class="promo-popup-dim" data-popup-dismiss></div>
     <div class="modal-box modal-visitor">
       <div class="modal-header">
         <span class="confetti-strip">\u{1F389}\u{1F38A}\u2728\u{1F389}\u{1F38A}\u2728\u{1F389}\u{1F38A}\u2728\u{1F389}\u{1F38A}\u2728</span>
@@ -458,8 +458,8 @@ function renderPopupVisitor() {
 }
 
 function renderPopupTurnip() {
-  return `<div class="ad-popup-overlay" id="ad-popup-overlay" data-popup-type="turnip">
-    <div class="ad-popup-dim" data-popup-dismiss></div>
+  return `<div class="promo-popup-overlay" id="promo-popup-overlay" data-popup-type="turnip">
+    <div class="promo-popup-dim" data-popup-dismiss></div>
     <div class="modal-box modal-turnip">
       <div class="modal-header">
         <button class="close-btn" data-popup-dismiss>&times;</button>
@@ -481,8 +481,8 @@ function renderPopupTurnip() {
 }
 
 function renderPopupLottie() {
-  return `<div class="ad-popup-overlay" id="ad-popup-overlay" data-popup-type="lottie">
-    <div class="ad-popup-dim" data-popup-dismiss></div>
+  return `<div class="promo-popup-overlay" id="promo-popup-overlay" data-popup-type="lottie">
+    <div class="promo-popup-dim" data-popup-dismiss></div>
     <div class="modal-box modal-lottie">
       <div class="modal-header">
         <button class="close-btn" data-popup-dismiss>&times;</button>
@@ -505,8 +505,8 @@ function renderPopupLottie() {
 }
 
 function renderPopupCookie() {
-  return `<div class="ad-popup-overlay" id="ad-popup-overlay" data-popup-type="cookie">
-    <div class="ad-popup-dim"></div>
+  return `<div class="promo-popup-overlay" id="promo-popup-overlay" data-popup-type="cookie">
+    <div class="promo-popup-dim"></div>
     <div class="modal-box modal-cookie">
       <div class="modal-header">
         <button class="close-btn" data-popup-dismiss>&times;</button>
@@ -557,9 +557,9 @@ export function renderActivePopup(activePopupType) {
 // ─── Toast ───
 export function renderAdToast(visible) {
   if (!visible) return '';
-  return `<div class="ad-toast" id="ad-toast">
-    <div class="ad-toast-bar">
-      <span class="ad-toast-icon">\u{1F343}</span>
+  return `<div class="promo-toast" id="promo-toast">
+    <div class="promo-toast-bar">
+      <span class="promo-toast-icon">\u{1F343}</span>
       Nook Inc. thanks you for your interest!
     </div>
   </div>`;
@@ -651,7 +651,7 @@ export function getNextFloatingNotif() {
 export function renderFloatingNotif(notif) {
   if (!notif) return '';
   return `<div class="floating-notif-container" id="floating-notif-container">
-    <div class="floating-notif ${notif.cls}" id="floating-notif" data-fake-ad>
+    <div class="floating-notif ${notif.cls}" id="floating-notif" data-nook-promo>
       <div class="notif-icon">${notif.icon}</div>
       <div class="notif-content">
         <div class="notif-title">${notif.title}</div>
@@ -659,7 +659,7 @@ export function renderFloatingNotif(notif) {
       </div>
       <div class="notif-time">${notif.time}</div>
       <button class="notif-dismiss" id="notif-dismiss">&times;</button>
-      <div class="notif-ad-badge">Sponsored</div>
+      <div class="notif-promo-badge">Sponsored</div>
     </div>
   </div>`;
 }
