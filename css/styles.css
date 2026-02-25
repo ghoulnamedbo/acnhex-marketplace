@@ -3343,6 +3343,117 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   transform: translateX(20px);
 }
 
+/* ─── Sound Volume Slider ─── */
+.sound-volume-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  transition: opacity 0.3s;
+}
+
+.sound-volume-row.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.sound-slider {
+  flex: 1;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #d5ccc5;
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+
+.sound-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--palm);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  transition: transform 0.15s;
+}
+
+.sound-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.sound-slider::-webkit-slider-thumb:active {
+  transform: scale(0.95);
+}
+
+.sound-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--palm);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.sound-slider::-moz-range-track {
+  height: 6px;
+  background: #d5ccc5;
+  border-radius: 3px;
+}
+
+.volume-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 32px;
+  text-align: right;
+}
+
+/* ─── Ad Preferences Toggles ─── */
+.ad-options-group {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  transition: opacity 0.3s;
+}
+
+.ad-options-group.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.ad-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.ad-toggle-row:not(:last-child) {
+  border-bottom: 1px solid var(--border);
+}
+
+.toggle-small {
+  width: 36px;
+  height: 20px;
+}
+
+.toggle-small .toggle-thumb {
+  width: 14px;
+  height: 14px;
+}
+
+.toggle-small input:checked + .toggle-track .toggle-thumb {
+  transform: translateX(16px);
+}
+
 /* ─── Narrow Viewport Responsive (320px–400px) ─── */
 @media (max-width: 400px) {
   /* Reduce side padding on narrow screens */

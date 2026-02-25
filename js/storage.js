@@ -6,6 +6,14 @@ const KEYS = {
   seenIntro: 'acnhex_seen_intro',
   loadMode: 'acnhex_load_mode',
   wishlists: 'acnhex_wishlists',
+  soundEnabled: 'acnhex_sound_enabled',
+  soundVolume: 'acnhex_sound_volume',
+  adsEnabled: 'acnhex_ads_enabled',
+  adsBanners: 'acnhex_ads_banners',
+  adsInterstitials: 'acnhex_ads_interstitials',
+  adsPopups: 'acnhex_ads_popups',
+  adsFloating: 'acnhex_ads_floating',
+  cookieDismissed: 'acnhex_cookie_dismissed',
 };
 
 function get(key, fallback) {

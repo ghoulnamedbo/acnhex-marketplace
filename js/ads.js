@@ -2,6 +2,11 @@
 // In-universe Animal Crossing ads for ACNHEX Market
 import NookSounds from './sounds.js';
 
+// ─── Ad Preferences Helper ───
+function getPrefs() {
+  return window.getAdPrefs ? window.getAdPrefs() : { enabled: true, banners: true, interstitials: true, popups: true, floatingNotifs: true };
+}
+
 // ─── Inline Banner Ad Data ───
 const INLINE_BANNERS = [
   // 1. Redd — "Scam popup" style with fake reviews & promo code
@@ -1112,7 +1117,7 @@ function ensureGridInterstitial() {
   return gridInterstitialType;
 }
 
-// 30% chance of showing, max 1 per session (only on initial home load)
+// 60% chance of showing, max 1 per session (per category until one shows)
 // Decision is made once and cached so re-renders produce the same result
 let interstitialDecided = false;
 let interstitialVisible = false;
@@ -1121,7 +1126,7 @@ function shouldShowInterstitial() {
   if (interstitialShownThisSession) return false;
   if (!interstitialDecided) {
     interstitialDecided = true;
-    interstitialVisible = Math.random() <= 0.3;
+    interstitialVisible = Math.random() <= 0.6;
   }
   if (interstitialVisible) {
     interstitialShownThisSession = true;
@@ -1145,6 +1150,7 @@ export function renderItemGridWithAds(items, renderItemCardFn) {
   // Reset pool index (not the shuffle) so re-renders produce the same banners
   bannerPoolIdx = 0;
 
+  const prefs = getPrefs();
   const interType = ensureGridInterstitial();
   let html = '';
   let interstitialInserted = false;
@@ -1156,14 +1162,14 @@ export function renderItemGridWithAds(items, renderItemCardFn) {
     html += renderItemCardFn(items[idx], idx);
 
     // Insert interstitial after item 17 (30% chance, only on initial load)
-    if (idx === 16 && !interstitialInserted && shouldShowInterstitial()) {
+    if (prefs.enabled && prefs.interstitials && idx === 16 && !interstitialInserted && shouldShowInterstitial()) {
       html += renderInterstitialAd(interType);
       interstitialInserted = true;
       NookSounds.play('interstitial');
     }
 
     // Insert a banner ad every BANNER_INTERVAL items
-    if ((idx + 1) % BANNER_INTERVAL === 0 && idx < items.length - 1 && bannersInserted < maxBanners) {
+    if (prefs.enabled && prefs.banners && (idx + 1) % BANNER_INTERVAL === 0 && idx < items.length - 1 && bannersInserted < maxBanners) {
       html += renderBannerAd(getNextBannerAd());
       bannersInserted++;
     }
@@ -1190,6 +1196,8 @@ function resetFloatingNotifPool() {
 resetFloatingNotifPool();
 
 export function getNextFloatingNotif() {
+  const prefs = getPrefs();
+  if (!prefs.enabled || !prefs.floatingNotifs) return null;
   if (floatingNotifShownCount >= FLOATING_NOTIF_MAX) return null;
   if (floatingNotifIdx >= floatingNotifPool.length) resetFloatingNotifPool();
   floatingNotifShownCount++;
@@ -1232,6 +1240,9 @@ export function markPopupShown() {
 // Popup trigger logic: specific triggers per popup type
 export function checkPopupTrigger(triggerContext) {
   // triggerContext = { type: 'init'|'nav'|'cartAdd'|'timer', adPageViews, sessionStart, itemsViewed }
+
+  const prefs = getPrefs();
+  if (!prefs.enabled || !prefs.popups) return null;
 
   // Cookie popup takes priority on first visit (exempt from cooldown)
   if (shouldShowPopup('cookie')) return 'cookie';

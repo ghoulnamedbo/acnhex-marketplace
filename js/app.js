@@ -68,6 +68,13 @@ const state = {
   hhpTimerStarted: false,
   detailHistory: [],
   soundEnabled: false,
+  soundVolume: 0.5,
+  // Fake ad preferences
+  adsEnabled: true,
+  adsBanners: true,
+  adsInterstitials: true,
+  adsPopups: true,
+  adsFloatingNotifs: true,
 };
 
 const app = document.getElementById('app');
@@ -89,9 +96,27 @@ function initWishlists() {
 }
 initWishlists();
 
-// Load sound preference from localStorage
+// Load sound preferences from localStorage
 state.soundEnabled = localStorage.getItem('acnhex_sound_enabled') === 'true';
+state.soundVolume = parseFloat(localStorage.getItem('acnhex_sound_volume')) || 0.5;
 NookSounds.setEnabled(state.soundEnabled);
+NookSounds.setVolume(state.soundVolume);
+
+// Load ad preferences from localStorage (default ON)
+state.adsEnabled = localStorage.getItem('acnhex_ads_enabled') !== 'false';
+state.adsBanners = localStorage.getItem('acnhex_ads_banners') !== 'false';
+state.adsInterstitials = localStorage.getItem('acnhex_ads_interstitials') !== 'false';
+state.adsPopups = localStorage.getItem('acnhex_ads_popups') !== 'false';
+state.adsFloatingNotifs = localStorage.getItem('acnhex_ads_floating') !== 'false';
+
+// Expose ad preferences for ads.js module
+window.getAdPrefs = () => ({
+  enabled: state.adsEnabled,
+  banners: state.adsBanners,
+  interstitials: state.adsInterstitials,
+  popups: state.adsPopups,
+  floatingNotifs: state.adsFloatingNotifs,
+});
 
 function isInWishlist(id, variantIdx = 0) {
   return state.wishlists.lists.some(list =>
@@ -807,6 +832,54 @@ function renderSettings() {
             <input type="checkbox" id="soundToggle" ${state.soundEnabled ? 'checked' : ''}>
             <span class="toggle-track"><span class="toggle-thumb"></span></span>
           </label>
+        </div>
+        <div class="sound-volume-row ${state.soundEnabled ? '' : 'disabled'}">
+          <span style="font-size:11px;color:var(--text-secondary)">🔈</span>
+          <input type="range" id="soundVolume" class="sound-slider" min="0" max="1" step="0.05" value="${state.soundVolume}" ${state.soundEnabled ? '' : 'disabled'}>
+          <span style="font-size:11px;color:var(--text-secondary)">🔊</span>
+          <span id="volumeLabel" class="volume-label">${Math.round(state.soundVolume * 100)}%</span>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <h4 class="label-upper" style="margin-bottom:14px">🦝 Fake Promos</h4>
+        <p class="text-secondary" style="font-size:11px;margin-bottom:14px">Toggle the in-universe Animal Crossing fake ads and promos.</p>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:12px;font-weight:700">Enable Fake Ads</span>
+          <label class="toggle-container">
+            <input type="checkbox" id="adsToggle" ${state.adsEnabled ? 'checked' : ''}>
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          </label>
+        </div>
+        <div class="ad-options-group ${state.adsEnabled ? '' : 'disabled'}" id="adOptionsGroup">
+          <div class="ad-toggle-row">
+            <span>🖼️ Banner Ads</span>
+            <label class="toggle-container toggle-small">
+              <input type="checkbox" id="adsBannersToggle" ${state.adsBanners ? 'checked' : ''} ${state.adsEnabled ? '' : 'disabled'}>
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </label>
+          </div>
+          <div class="ad-toggle-row">
+            <span>📺 Full-page Interstitials</span>
+            <label class="toggle-container toggle-small">
+              <input type="checkbox" id="adsInterstitialsToggle" ${state.adsInterstitials ? 'checked' : ''} ${state.adsEnabled ? '' : 'disabled'}>
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </label>
+          </div>
+          <div class="ad-toggle-row">
+            <span>💬 Popup Overlays</span>
+            <label class="toggle-container toggle-small">
+              <input type="checkbox" id="adsPopupsToggle" ${state.adsPopups ? 'checked' : ''} ${state.adsEnabled ? '' : 'disabled'}>
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </label>
+          </div>
+          <div class="ad-toggle-row">
+            <span>🔔 Floating Notifications</span>
+            <label class="toggle-container toggle-small">
+              <input type="checkbox" id="adsFloatingToggle" ${state.adsFloatingNotifs ? 'checked' : ''} ${state.adsEnabled ? '' : 'disabled'}>
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </label>
+          </div>
         </div>
       </div>
 
@@ -2044,11 +2117,64 @@ function attachEvents() {
 
   // Sound toggle
   const soundToggle = document.getElementById('soundToggle');
+  const soundVolumeSlider = document.getElementById('soundVolume');
+  const volumeLabel = document.getElementById('volumeLabel');
+  const volumeRow = document.querySelector('.sound-volume-row');
+
   if (soundToggle) soundToggle.addEventListener('change', (e) => {
     state.soundEnabled = e.target.checked;
     NookSounds.setEnabled(state.soundEnabled);
     localStorage.setItem('acnhex_sound_enabled', state.soundEnabled);
+    // Enable/disable volume slider based on sound toggle
+    if (soundVolumeSlider) soundVolumeSlider.disabled = !state.soundEnabled;
+    if (volumeRow) volumeRow.classList.toggle('disabled', !state.soundEnabled);
     if (state.soundEnabled) NookSounds.play('toggleSound');
+  });
+
+  // Volume slider
+  if (soundVolumeSlider) soundVolumeSlider.addEventListener('input', (e) => {
+    state.soundVolume = parseFloat(e.target.value);
+    NookSounds.setVolume(state.soundVolume);
+    localStorage.setItem('acnhex_sound_volume', state.soundVolume);
+    if (volumeLabel) volumeLabel.textContent = Math.round(state.soundVolume * 100) + '%';
+  });
+
+  // Ad toggles
+  const adsToggle = document.getElementById('adsToggle');
+  const adOptionsGroup = document.getElementById('adOptionsGroup');
+  const adsBannersToggle = document.getElementById('adsBannersToggle');
+  const adsInterstitialsToggle = document.getElementById('adsInterstitialsToggle');
+  const adsPopupsToggle = document.getElementById('adsPopupsToggle');
+  const adsFloatingToggle = document.getElementById('adsFloatingToggle');
+
+  if (adsToggle) adsToggle.addEventListener('change', (e) => {
+    state.adsEnabled = e.target.checked;
+    localStorage.setItem('acnhex_ads_enabled', state.adsEnabled);
+    // Enable/disable sub-toggles
+    if (adOptionsGroup) adOptionsGroup.classList.toggle('disabled', !state.adsEnabled);
+    [adsBannersToggle, adsInterstitialsToggle, adsPopupsToggle, adsFloatingToggle].forEach(t => {
+      if (t) t.disabled = !state.adsEnabled;
+    });
+  });
+
+  if (adsBannersToggle) adsBannersToggle.addEventListener('change', (e) => {
+    state.adsBanners = e.target.checked;
+    localStorage.setItem('acnhex_ads_banners', state.adsBanners);
+  });
+
+  if (adsInterstitialsToggle) adsInterstitialsToggle.addEventListener('change', (e) => {
+    state.adsInterstitials = e.target.checked;
+    localStorage.setItem('acnhex_ads_interstitials', state.adsInterstitials);
+  });
+
+  if (adsPopupsToggle) adsPopupsToggle.addEventListener('change', (e) => {
+    state.adsPopups = e.target.checked;
+    localStorage.setItem('acnhex_ads_popups', state.adsPopups);
+  });
+
+  if (adsFloatingToggle) adsFloatingToggle.addEventListener('change', (e) => {
+    state.adsFloatingNotifs = e.target.checked;
+    localStorage.setItem('acnhex_ads_floating', state.adsFloatingNotifs);
   });
 
   // Clear data
