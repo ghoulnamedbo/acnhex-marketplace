@@ -289,6 +289,8 @@ function renderItemCard(item, idx) {
 }
 
 // ─── Item Detail ───
+let _reviewCache = { itemId: null, data: null };
+
 async function renderDetail() {
   if (!state.itemDetail) {
     return `<div class="page"><div class="loading"><div class="spinner"></div><p class="text-secondary">Loading...</p></div></div>`;
@@ -386,7 +388,6 @@ async function renderDetail() {
 // ─── Similar Items Section ───
 const STYLE_TAGS = new Set(['active','cool','cute','elegant','gorgeous','simple']);
 let _similarCache = { itemId: null, matches: null, badgeText: null };
-let _reviewCache = { itemId: null, data: null };
 
 async function renderSimilarItems(item) {
   try {
