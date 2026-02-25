@@ -2,6 +2,7 @@ import * as storage from './storage.js';
 import * as data from './data.js';
 import * as reviews from './reviews.js';
 import * as ads from './ads.js';
+import NookSounds from './sounds.js';
 
 // ─── SVG Icons ───
 const ICONS = {
@@ -54,6 +55,7 @@ const state = {
   previousPage: null,
   savedSearch: null,
   catScrollLeft: 0,
+  similarScrollLeft: 0,
   adToastVisible: false,
   activePopup: null,
   adPageViews: 0,
@@ -64,6 +66,8 @@ const state = {
   floatingNotifTimer: null,
   floatingNotifAutoTimer: null,
   hhpTimerStarted: false,
+  detailHistory: [],
+  soundEnabled: false,
 };
 
 const app = document.getElementById('app');
@@ -84,6 +88,10 @@ function initWishlists() {
   state.wishlists = wl;
 }
 initWishlists();
+
+// Load sound preference from localStorage
+state.soundEnabled = localStorage.getItem('acnhex_sound_enabled') === 'true';
+NookSounds.setEnabled(state.soundEnabled);
 
 function isInWishlist(id, variantIdx = 0) {
   return state.wishlists.lists.some(list =>
@@ -292,7 +300,14 @@ async function renderDetail() {
   const bg = data.getItemBg(0);
   const inWishlist = isInWishlist(item.id, vi);
   const cartFull = getCartTotal() >= 40;
-  const reviewData = await reviews.generateReviewSection(item);
+  let reviewData;
+  if (_reviewCache.itemId === item.id && _reviewCache.data) {
+    reviewData = _reviewCache.data;
+  } else {
+    reviewData = await reviews.generateReviewSection(item);
+    _reviewCache = { itemId: item.id, data: reviewData };
+  }
+  const similarHtml = await renderSimilarItems(item);
 
   const detailFields = [
     ['Hex ID', item.hexBase],
@@ -348,6 +363,8 @@ async function renderDetail() {
 
     ${reviewData.html}
 
+    ${similarHtml}
+
     <div class="sticky-cta" id="detail-cta">
       <button class="cta-btn-secondary" id="detail-add-to-list" data-list-item="${esc(item.id)}" data-list-vi="${vi}">
         📋 Add to List
@@ -366,55 +383,269 @@ async function renderDetail() {
   </div>`;
 }
 
+// ─── Similar Items Section ───
+const STYLE_TAGS = new Set(['active','cool','cute','elegant','gorgeous','simple']);
+let _similarCache = { itemId: null, matches: null, badgeText: null };
+let _reviewCache = { itemId: null, data: null };
+
+async function renderSimilarItems(item) {
+  try {
+    let allMatches, badgeText;
+
+    // Reuse cached matches for the same item (prevents reshuffle on heart toggle re-render)
+    if (_similarCache.itemId === item.id && _similarCache.matches) {
+      allMatches = _similarCache.matches;
+      badgeText = _similarCache.badgeText;
+    } else {
+      const categoryItems = await data.getCategoryItems(item.category);
+      if (!categoryItems || categoryItems.length < 2) return '';
+
+      const vi = state.selectedVariantIdx;
+      const variant = item.variants[vi] || item.variants[0];
+      const curSet = (item.hhaSet || '').trim();
+      const curSeries = (item.hhaSeries || '').trim();
+      const curStyles = (item.tags || []).filter(t => STYLE_TAGS.has(t.toLowerCase()));
+      const curColor1 = (variant.color1 || '').toLowerCase();
+      const curColor2 = (variant.color2 || '').toLowerCase();
+
+      const setMatches = [];
+      const styleMatches = [];
+      const colorMatches = [];
+      const seen = new Set();
+
+      for (const other of categoryItems) {
+        if (other.id === item.id) continue;
+        if (seen.has(other.id)) continue;
+
+        const ov = other.variants[0];
+        if (!ov) continue;
+
+        const otherSet = (other.hhaSet || '').trim();
+        const otherSeries = (other.hhaSeries || '').trim();
+        if ((curSet && curSet !== 'None' && otherSet === curSet) ||
+            (curSeries && curSeries !== 'None' && otherSeries === curSeries)) {
+          seen.add(other.id);
+          setMatches.push({ item: other, variant: ov, matchType: 'set' });
+          continue;
+        }
+
+        const otherStyles = (other.tags || []).filter(t => STYLE_TAGS.has(t.toLowerCase()));
+        if (curStyles.length && otherStyles.some(s => curStyles.includes(s))) {
+          seen.add(other.id);
+          styleMatches.push({ item: other, variant: ov, matchType: 'style' });
+          continue;
+        }
+
+        const oc1 = (ov.color1 || '').toLowerCase();
+        const oc2 = (ov.color2 || '').toLowerCase();
+        if ((curColor1 && (oc1 === curColor1 || oc2 === curColor1)) ||
+            (curColor2 && (oc1 === curColor2 || oc2 === curColor2))) {
+          seen.add(other.id);
+          colorMatches.push({ item: other, variant: ov, matchType: 'color' });
+          continue;
+        }
+      }
+
+      const shuffle = arr => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
+      allMatches = [...shuffle(setMatches), ...shuffle(styleMatches), ...shuffle(colorMatches)].slice(0, 12);
+
+      const badgeParts = [];
+      if (curSet && curSet !== 'None') badgeParts.push(curSet);
+      else if (curSeries && curSeries !== 'None') badgeParts.push(curSeries);
+      if (curStyles.length) badgeParts.push(curStyles[0]);
+      if (curColor1) badgeParts.push(variant.color1);
+      badgeText = badgeParts.slice(0, 2).join(' \u00b7 ') || 'Similar';
+
+      // Cache for this item so re-renders (heart toggles) don't reshuffle
+      _similarCache = { itemId: item.id, matches: allMatches, badgeText };
+    }
+
+    if (allMatches.length === 0) return '';
+
+    const cardsHtml = allMatches.map((m, idx) => {
+      const o = m.item;
+      const v = m.variant;
+      const inWL = isInWishlist(o.id, 0);
+      const hex = v.hexVariated || v.hex || o.hexBase;
+      const shortHex = hex.length > 6 ? hex.slice(-4).toUpperCase() : hex.toUpperCase();
+      const matchClass = m.matchType === 'set' ? 'match-set' : m.matchType === 'style' ? 'match-style' : 'match-color';
+      const matchLabel = m.matchType === 'set' ? 'SET' : m.matchType === 'style' ? 'STYLE' : 'COLOR';
+      return `<div class="similar-card" data-item="${esc(o.id)}" data-vi="0">
+        <div class="similar-card-image" style="background:${data.getItemBg(idx)}">
+          <span class="similar-match-tag ${matchClass}">${matchLabel}</span>
+          <button class="similar-card-heart" data-heart="${esc(o.id)}" data-heart-vi="0">${ICONS.heart(inWL)}</button>
+          ${v.image ? `<img src="${esc(v.image)}" loading="lazy" onerror="this.outerHTML='<span style=font-size:52px>📦</span>'" alt="">` : '<span style="font-size:52px">📦</span>'}
+        </div>
+        <div class="similar-card-info">
+          <div class="similar-card-name">${esc(o.name)}</div>
+          <div class="similar-card-variant">${esc(v.name)}</div>
+          <span class="similar-card-hex">${esc(shortHex)}</span>
+        </div>
+      </div>`;
+    }).join('');
+
+    return `<div class="similar-section" style="padding-left:24px;padding-right:24px">
+      <div class="similar-header">
+        <h4 class="label-upper" style="margin:0;display:flex;align-items:center;gap:6px"><span style="font-size:14px">🍃</span> SIMILAR ITEMS</h4>
+        <span class="similar-badge">${esc(badgeText)}</span>
+      </div>
+      <div class="similar-scroll-wrapper">
+        <button class="similar-arrow left" id="similar-arrow-left">‹</button>
+        <div class="similar-scroll hide-scrollbar" id="similar-scroll">
+          ${cardsHtml}
+        </div>
+        <button class="similar-arrow right" id="similar-arrow-right">›</button>
+      </div>
+    </div>`;
+  } catch (e) {
+    console.warn('Similar items error:', e);
+    return '';
+  }
+}
+
 // ─── Cart Page ───
+const CART_EMPTY_QUOTES = [
+  "Your pockets are empty! Time to go shopping, hm?",
+  "No items? Nook Inc. believes in you! Browse away!",
+  "Even a journey of 40 items begins with a single add!",
+  "Tom Nook is tapping his foot… go find something nice!",
+];
+function getShortHex(hex) {
+  if (!hex) return '';
+  return hex.length > 6 ? hex.slice(-4).toUpperCase() : hex.toUpperCase();
+}
+
 function renderCart() {
   const cart = state.cart;
   const prefix = state.prefix;
   const total = getCartTotal();
   const hexes = cart.map(c => c.hex);
 
-  return `<div class="page">
-    <div class="page-header">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <h1 class="heading-xl" style="margin-bottom:4px">Your Cart</h1>
-        ${cart.length > 0 ? `<button class="clear-cart-btn" id="clear-cart">Clear Cart</button>` : ''}
+  return `<div class="page cart-page">
+    <!-- Ledger Header -->
+    <div class="ledger-header">
+      <div class="ledger-header-top">
+        <div>
+          <div class="ledger-sub">Order Ledger</div>
+          <div class="ledger-title">Your Cart</div>
+        </div>
+        <div class="ledger-right">
+          <div class="ledger-count">${total}<span class="ledger-count-max">/40</span></div>
+          ${cart.length > 0 ? `<button class="ledger-clear-btn" id="clear-cart">Clear</button>` : ''}
+        </div>
       </div>
-      <p class="text-secondary" style="margin-bottom:16px">${total} / 40 items · ${40 - total} slots remaining</p>
-      <div class="progress-bar">
-        <div class="progress-fill ${total > 35 ? 'danger' : ''}" style="width:${(total / 40) * 100}%"></div>
+      <div class="ledger-progress">
+        <div class="ledger-progress-track">
+          <div class="ledger-progress-fill ${total > 35 ? 'danger' : ''}" style="width:${(total / 40) * 100}%"></div>
+        </div>
+        <div class="ledger-progress-labels">
+          <span>${total} items</span>
+          <span>${40 - total} slots open</span>
+        </div>
       </div>
     </div>
 
     ${cart.length === 0 ? `
-      <div class="empty-state">
-        <p class="empty-emoji">🛒</p>
-        <p class="empty-title">Cart is empty</p>
-        <p class="empty-text">Browse the catalog to add items</p>
+      <!-- Empty State -->
+      <div class="cart-empty-card">
+        <div class="cart-empty-inner">
+          <div class="cart-empty-leaves">
+            <div class="cart-leaf" style="left:15%;animation-delay:0s">🍃</div>
+            <div class="cart-leaf" style="left:37%;animation-delay:1.6s">🌱</div>
+            <div class="cart-leaf" style="left:59%;animation-delay:3.2s">🍃</div>
+            <div class="cart-leaf" style="left:81%;animation-delay:4.8s">🌱</div>
+          </div>
+          <div class="cart-empty-icon">🛒</div>
+          <div class="cart-empty-title">Your cart is empty!</div>
+          <div class="cart-empty-quote">
+            "${esc(CART_EMPTY_QUOTES[Math.floor(Math.random() * CART_EMPTY_QUOTES.length)])}"
+            <div class="cart-empty-attr">— Nook Inc.</div>
+          </div>
+          <button class="cart-empty-cta" data-nav="catalog">🏠 Start Shopping</button>
+        </div>
       </div>` : `
-      <div style="padding:0 24px;display:flex;flex-direction:column;gap:12px">
+      <!-- Ledger Items -->
+      <div class="ledger-items">
         ${cart.map((item, idx) => `
-          <div class="cart-item">
-            <div class="cart-thumb" style="background:${data.getItemBg(0)}">
+          <div class="ledger-row" style="animation-delay:${idx * 0.07}s" data-cart-row="${idx}">
+            <div class="ledger-num">${String(idx + 1).padStart(2, '0')}</div>
+            <div class="ledger-thumb" style="background:${data.getItemBg(idx)}">
               ${item.img ? `<img src="${esc(item.img)}" onerror="this.outerHTML='📦'" alt="">` : '📦'}
             </div>
-            <div class="cart-item-info">
-              <p class="cart-item-name">${esc(item.name)}</p>
-              <p class="cart-item-meta">${esc(item.variant)} · <span style="color:var(--pines)">${esc(item.hex)}</span></p>
+            <div class="ledger-info">
+              <div class="ledger-item-name">${esc(item.name)}</div>
+              <div class="ledger-item-meta">
+                ${esc(item.variant)}
+                <span class="ledger-dot">·</span>
+                <code class="ledger-hex-pill">${esc(getShortHex(item.hex))}</code>
+              </div>
             </div>
-            <button class="dupe-btn" data-dupe-idx="${idx}" ${getCartTotal() >= 40 ? 'disabled' : ''}>${ICONS.plus}</button>
-            <button class="remove-btn" data-remove-idx="${idx}">${ICONS.trash}</button>
+            <button class="ledger-dupe-btn" data-dupe-idx="${idx}" ${getCartTotal() >= 40 ? 'disabled' : ''}>+</button>
+            <button class="ledger-remove-btn" data-remove-idx="${idx}">✕</button>
           </div>`).join('')}
       </div>
 
-      <div style="padding:28px 24px 0">
-        <h4 class="label-upper" style="margin-bottom:12px">Bot Command</h4>
-        <div class="code-block">
-          <span class="code-keyword">${esc(prefix)}order</span> ${hexes.map((hex, i) =>
-            `<span class="code-value">${esc(hex)}</span>${i < hexes.length - 1 ? ' ' : ''}`
-          ).join('')}
-          <button class="copy-btn" id="copy-cmd">${ICONS.copy} Copy</button>
+      <!-- Tear Line -->
+      <div class="tear-line">
+        <span class="tear-label">✂ tear here</span>
+      </div>
+
+      <!-- Shipping Label -->
+      <div class="shipping-section">
+        <div class="shipping-header">
+          <span class="shipping-header-label">Bot Command</span>
+          <span class="shipping-header-count">${total} items</span>
         </div>
-      </div>`}
+
+        <div class="tape-strip tape-top"></div>
+
+        <div class="shipping-label" id="copy-cmd">
+          <!-- Barcode -->
+          <div class="barcode">
+            ${Array.from({ length: 28 }).map((_, i) =>
+              `<div class="barcode-bar" style="width:${i % 3 === 0 ? 3 : 1.5}px;height:${i % 5 === 0 ? 24 : 18}px;opacity:${(0.6 + (i % 7) * 0.06).toFixed(2)}"></div>`
+            ).join('')}
+          </div>
+
+          <div class="ship-to">Ship to: Discord</div>
+
+          <!-- Item Manifest -->
+          <div class="manifest">
+            ${cart.map((item, i) => `
+              <div class="manifest-row${i < cart.length - 1 ? '' : ' last'}">
+                <span class="manifest-name">
+                  <span class="manifest-dot" style="background:${data.getItemBg(i)}"></span>
+                  ${esc(item.name)}
+                </span>
+                <code class="manifest-hex">${esc(getShortHex(item.hex))}</code>
+              </div>`).join('')}
+          </div>
+
+          <!-- Full Command -->
+          <div class="label-command">
+            <span class="label-cmd-prefix">${esc(prefix)}order</span> ${hexes.map((hex, i) =>
+              `<span class="label-cmd-hex">${esc(hex)}</span>${i < hexes.length - 1 ? '<span class="label-cmd-comma">, </span>' : ''}`
+            ).join('')}
+          </div>
+
+          <!-- Footer -->
+          <div class="label-footer">
+            <span>QTY: ${total}</span>
+            <span class="label-copy-hint">📋 tap to copy</span>
+          </div>
+
+          <!-- Copy Overlay (hidden by default, shown via JS) -->
+          <div class="stamp-overlay" id="stamp-overlay">
+            <div class="stamp-badge">📦 Copied!</div>
+          </div>
+        </div>
+
+        <div class="tape-strip tape-bottom"></div>
+      </div>
+
+      <!-- Nook Footer -->
+      <div class="nook-footer">✦ NOOK INC. CERTIFIED ✦</div>
+    `}
   </div>`;
 }
 
@@ -563,6 +794,18 @@ function renderSettings() {
             <span class="load-mode-icon">🔄</span>
             <span class="load-mode-label">Continuous Scroll</span>
           </button>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <h4 class="label-upper" style="margin-bottom:14px">Nook Inc. Sound Package</h4>
+        <p class="text-secondary" style="font-size:11px;margin-bottom:14px">Adds soft pocket sounds to browsing. Tom Nook approved.</p>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:12px;font-weight:700">🔊 Sound Effects</span>
+          <label class="toggle-container">
+            <input type="checkbox" id="soundToggle" ${state.soundEnabled ? 'checked' : ''}>
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          </label>
         </div>
       </div>
 
@@ -887,8 +1130,12 @@ function attachSearchResultEvents() {
       e.stopPropagation();
       const card = btn.closest('[data-item]');
       const vi = card ? parseInt(card.dataset.vi) || 0 : 0;
+      // Try img first, fall back to .item-thumb, then button for animation origin
       const img = card && card.querySelector('.item-thumb img');
+      const thumb = card && card.querySelector('.item-thumb');
       if (img) _flyAnimRect = img.getBoundingClientRect();
+      else if (thumb) _flyAnimRect = thumb.getBoundingClientRect();
+      else _flyAnimRect = btn.getBoundingClientRect();
       addToCartFromIndex(btn.dataset.addCart, vi);
     });
   });
@@ -1033,7 +1280,7 @@ function renderListPicker() {
   return `<div class="modal-overlay" id="list-picker-overlay">
     <div class="modal-card">
       <h2 style="font-size:16px;font-weight:700;margin-bottom:16px;color:var(--palm-leaf)">Save to List</h2>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch">
         ${state.wishlists.lists.map(list => {
           const inThis = list.items.some(w => w.id === item.id && w.variantIdx === item.variantIdx);
           const full = list.cap !== null && list.items.length >= list.cap;
@@ -1053,6 +1300,13 @@ function renderListPicker() {
 
 // ─── Render ───
 async function render() {
+  // Save similar items scroll position before DOM is replaced
+  // Only save when itemDetail is loaded (skip during loading transition to preserve reset)
+  if (state.page === 'detail' && state.itemDetail) {
+    const simScroll = document.getElementById('similar-scroll');
+    if (simScroll) state.similarScrollLeft = simScroll.scrollLeft;
+    state._detailScrollY = window.scrollY;
+  }
   let content = '';
   switch (state.page) {
     case 'catalog': content = await renderCatalog(); break;
@@ -1149,6 +1403,7 @@ function attachEvents() {
   // Category buttons
   app.querySelectorAll('[data-cat]').forEach(btn => {
     btn.addEventListener('click', () => {
+      NookSounds.play('categoryTap');
       state.activeCategory = btn.dataset.cat;
       state.loadedCount = 0;
       state.isRandom = false;
@@ -1192,10 +1447,20 @@ function attachEvents() {
       if (e.target.closest('[data-heart]') || e.target.closest('[data-add-cart]') ||
           e.target.closest('.remove-btn') || e.target.closest('.wishlist-add-btn') ||
           e.target.closest('[data-remove-list-idx]')) return;
-      state.scrollY = window.scrollY;
+      // If clicking a similar item from a detail page, push current item to history stack
+      if (state.page === 'detail' && state.itemDetail && card.closest('.similar-section')) {
+        state.detailHistory.push({
+          itemId: state.itemDetail.id,
+          variantIdx: state.selectedVariantIdx,
+        });
+      } else {
+        // Coming from catalog/wishlist — reset history and save scroll position
+        state.detailHistory = [];
+        state.scrollY = window.scrollY;
+        state.previousPage = 'catalog';
+      }
       state.selectedItemId = card.dataset.item;
       state.selectedVariantIdx = parseInt(card.dataset.vi) || 0;
-      state.previousPage = 'catalog';
       state.searchOpen = false;
       state.searchQuery = '';
       state.searchResults = null;
@@ -1222,8 +1487,12 @@ function attachEvents() {
       e.stopPropagation();
       const card = btn.closest('[data-item]');
       const vi = card ? parseInt(card.dataset.vi) || 0 : 0;
+      // Try img first, fall back to .item-thumb, then button for animation origin
       const img = card && card.querySelector('.item-thumb img');
+      const thumb = card && card.querySelector('.item-thumb');
       if (img) _flyAnimRect = img.getBoundingClientRect();
+      else if (thumb) _flyAnimRect = thumb.getBoundingClientRect();
+      else _flyAnimRect = btn.getBoundingClientRect();
       addToCartFromIndex(btn.dataset.addCart, vi);
     });
   });
@@ -1231,6 +1500,7 @@ function attachEvents() {
   // Load more (batch mode)
   const loadMore = document.getElementById('load-more');
   if (loadMore) loadMore.addEventListener('click', () => {
+    NookSounds.play('loadMore');
     state.isRandom ? loadMoreRandom() : loadExpandedCatalog();
   });
 
@@ -1239,6 +1509,7 @@ function attachEvents() {
   if (scrollSentinel) {
     const observer = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting && !state.expandedLoading) {
+        NookSounds.play('loadMore');
         state.isRandom ? loadMoreRandom() : loadExpandedCatalog();
       }
     }, { rootMargin: '200px' });
@@ -1337,10 +1608,17 @@ function attachEvents() {
   // Detail page
   const detailBack = document.getElementById('detail-back');
   if (detailBack) detailBack.addEventListener('click', async () => {
-    if (state.previousPage === 'search' && state.savedSearch) {
-      // Restore search state
+    if (state.detailHistory && state.detailHistory.length > 0) {
+      // Pop the history stack — go back to the previous detail item
+      const prev = state.detailHistory.pop();
+      state.selectedVariantIdx = prev.variantIdx;
+      state._pageEnter = true;
+      loadItemDetail(prev.itemId);
+    } else if (state.previousPage === 'search' && state.savedSearch) {
+      // Restore search state (only when history stack is empty)
       state.page = 'catalog';
       state.itemDetail = null;
+      state.detailHistory = [];
       state.searchOpen = true;
       state.searchQuery = state.savedSearch.query;
       state.searchResults = state.savedSearch.results;
@@ -1351,8 +1629,6 @@ function attachEvents() {
       state.previousPage = null;
       state._pageEnter = true;
       await render();
-      attachSearchResultEvents();
-      attachSearchScrollObserver();
       const overlay = document.getElementById('search-overlay');
       if (overlay) overlay.scrollTop = savedOverlayScroll;
     } else {
@@ -1368,6 +1644,7 @@ function attachEvents() {
   // Variant pills — surgical update instead of full render
   app.querySelectorAll('[data-variant]').forEach(btn => {
     btn.addEventListener('click', () => {
+      NookSounds.play('variantSwitch');
       state.selectedVariantIdx = parseInt(btn.dataset.variant);
       updateDetailVariant();
     });
@@ -1419,23 +1696,66 @@ function attachEvents() {
     render();
   });
 
-  // Cart duplicate by index
+  // Similar items carousel — arrow buttons & scroll
+  // (card taps and heart toggles are handled by the existing generic
+  //  [data-item] and [data-heart] handlers above — no duplicate needed)
+  const simScroll = document.getElementById('similar-scroll');
+  const simArrowL = document.getElementById('similar-arrow-left');
+  const simArrowR = document.getElementById('similar-arrow-right');
+  if (simScroll) {
+    const updateSimArrows = () => {
+      if (simArrowL) simArrowL.classList.toggle('hidden', simScroll.scrollLeft <= 4);
+      if (simArrowR) simArrowR.classList.toggle('hidden', simScroll.scrollLeft >= simScroll.scrollWidth - simScroll.clientWidth - 4);
+    };
+    simScroll.addEventListener('scroll', updateSimArrows, { passive: true });
+    // Restore saved similar items scroll position
+    if (state.similarScrollLeft) {
+      simScroll.scrollLeft = state.similarScrollLeft;
+    }
+    updateSimArrows();
+    if (simArrowL) simArrowL.addEventListener('click', () => simScroll.scrollBy({ left: -300, behavior: 'smooth' }));
+    if (simArrowR) simArrowR.addEventListener('click', () => simScroll.scrollBy({ left: 300, behavior: 'smooth' }));
+  }
+  // Restore detail page scroll position (prevents page jump on interactions)
+  if (state.page === 'detail' && state._detailScrollY !== undefined) {
+    window.scrollTo(0, state._detailScrollY);
+    state._detailScrollY = undefined;
+  }
+
+  // Cart duplicate by index (with pop animation)
   app.querySelectorAll('[data-dupe-idx]').forEach(btn => {
     btn.addEventListener('click', () => {
       if (getCartTotal() >= 40) return;
       const idx = parseInt(btn.dataset.dupeIdx);
       const item = state.cart[idx];
-      if (item) addToCart({ ...item });
+      if (item) {
+        btn.style.animation = 'dupPop 0.35s cubic-bezier(0.34,1.56,0.64,1)';
+        btn.style.boxShadow = '0 0 0 3px rgba(106,130,62,0.25)';
+        setTimeout(() => { btn.style.animation = ''; btn.style.boxShadow = ''; }, 700);
+        NookSounds.play('duplicate');
+        addToCart({ ...item });
+      }
     });
   });
 
-  // Cart remove by index
+  // Cart remove by index (with slide-out animation)
   app.querySelectorAll('[data-remove-idx]').forEach(btn => {
     btn.addEventListener('click', () => {
       const idx = parseInt(btn.dataset.removeIdx);
-      state.cart.splice(idx, 1);
-      storage.setCart(state.cart);
-      render();
+      NookSounds.play('removeItem');
+      const row = btn.closest('[data-cart-row]');
+      if (row) {
+        row.style.animation = 'slideOutRight 0.4s ease-in forwards';
+        row.addEventListener('animationend', () => {
+          state.cart.splice(idx, 1);
+          storage.setCart(state.cart);
+          render();
+        }, { once: true });
+      } else {
+        state.cart.splice(idx, 1);
+        storage.setCart(state.cart);
+        render();
+      }
     });
   });
 
@@ -1443,6 +1763,7 @@ function attachEvents() {
   const clearCartBtn = document.getElementById('clear-cart');
   if (clearCartBtn) clearCartBtn.addEventListener('click', () => {
     if (confirm('Clear all items from your cart?')) {
+      NookSounds.play('clearCart');
       state.cart = [];
       storage.setCart(state.cart);
       render();
@@ -1454,8 +1775,12 @@ function attachEvents() {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const card = btn.closest('[data-item]');
+      // Try img first, fall back to .item-thumb, then button for animation origin
       const img = card && card.querySelector('.item-thumb img');
+      const thumb = card && card.querySelector('.item-thumb');
       if (img) _flyAnimRect = img.getBoundingClientRect();
+      else if (thumb) _flyAnimRect = thumb.getBoundingClientRect();
+      else _flyAnimRect = btn.getBoundingClientRect();
       const entry = {
         id: btn.dataset.wlId,
         name: btn.dataset.wlName,
@@ -1501,17 +1826,23 @@ function attachEvents() {
   // Create new list
   const createList = document.getElementById('create-new-list');
   if (createList) createList.addEventListener('click', () => {
-    const name = prompt('List name:');
-    if (name && name.trim()) {
-      state.wishlists.lists.push({
-        id: Date.now().toString(36),
-        name: name.trim(),
-        cap: 40,
-        items: [],
-      });
-      storage.setWishlists(state.wishlists);
+    createList.outerHTML = `<div style="display:flex;gap:8px" id="new-list-form">
+      <input type="text" id="new-list-input" class="prefix-input" placeholder="List name..." autofocus style="flex:1;width:auto;margin:0">
+      <button class="preset-btn active" id="new-list-confirm" style="width:auto;padding:0 18px;font-size:18px">✓</button>
+    </div>`;
+    const inp = document.getElementById('new-list-input');
+    const doCreate = () => {
+      const name = (inp.value || '').trim();
+      if (name) {
+        state.wishlists.lists.push({ id: Date.now().toString(36), name, cap: 40, items: [] });
+        storage.setWishlists(state.wishlists);
+        NookSounds.play('newList');
+      }
       render();
-    }
+    };
+    document.getElementById('new-list-confirm').addEventListener('click', doCreate);
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') doCreate(); });
+    inp.focus();
   });
 
   // Delete list
@@ -1523,6 +1854,7 @@ function attachEvents() {
       if (list && confirm(`Delete "${list.name}"? Items will be removed from this list only.`)) {
         state.wishlists.lists = state.wishlists.lists.filter(l => l.id !== listId);
         storage.setWishlists(state.wishlists);
+        NookSounds.play('deleteList');
         render();
       }
     });
@@ -1531,11 +1863,32 @@ function attachEvents() {
   // Copy list order
   const copyListBtn = document.getElementById('copy-list-order');
   if (copyListBtn) copyListBtn.addEventListener('click', () => {
+    NookSounds.play('copyCommand');
     const command = `${state.prefix}order ${lastRenderedListHexes.join(' ')}`;
-    navigator.clipboard.writeText(command).then(() => {
+
+    const showCopied = () => {
       copyListBtn.innerHTML = `${ICONS.check} Copied!`;
       setTimeout(() => { copyListBtn.innerHTML = `${ICONS.copy} Copy Order`; }, 2000);
-    });
+    };
+    const fallbackCopy = (text) => {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (_) {}
+      document.body.removeChild(ta);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(command).then(showCopied).catch(() => {
+        fallbackCopy(command);
+        showCopied();
+      });
+    } else {
+      fallbackCopy(command);
+      showCopied();
+    }
   });
 
   // Toast "Change" button
@@ -1579,18 +1932,22 @@ function attachEvents() {
   // List picker — create list
   const createFromPicker = document.getElementById('create-list-from-picker');
   if (createFromPicker) createFromPicker.addEventListener('click', () => {
-    const name = prompt('List name:');
-    if (name && name.trim()) {
-      const newList = {
-        id: Date.now().toString(36),
-        name: name.trim(),
-        cap: 40,
-        items: [],
-      };
-      state.wishlists.lists.push(newList);
-      storage.setWishlists(state.wishlists);
+    createFromPicker.outerHTML = `<div style="display:flex;gap:8px;margin-bottom:12px" id="picker-list-form">
+      <input type="text" id="picker-list-input" class="prefix-input" placeholder="List name..." autofocus style="flex:1;width:auto;margin:0">
+      <button class="preset-btn active" id="picker-list-confirm" style="width:auto;padding:0 18px;font-size:18px">✓</button>
+    </div>`;
+    const inp = document.getElementById('picker-list-input');
+    const doCreate = () => {
+      const name = (inp.value || '').trim();
+      if (name) {
+        state.wishlists.lists.push({ id: Date.now().toString(36), name, cap: 40, items: [] });
+        storage.setWishlists(state.wishlists);
+      }
       render();
-    }
+    };
+    document.getElementById('picker-list-confirm').addEventListener('click', doCreate);
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') doCreate(); });
+    inp.focus();
   });
 
   // Close list picker
@@ -1608,14 +1965,46 @@ function attachEvents() {
     }
   });
 
-  // Copy command
-  const copyBtn = document.getElementById('copy-cmd');
-  if (copyBtn) copyBtn.addEventListener('click', () => {
+  // Copy command (shipping label click)
+  const copyLabel = document.getElementById('copy-cmd');
+  if (copyLabel) copyLabel.addEventListener('click', () => {
+    NookSounds.play('copyCommand');
     const command = `${state.prefix}order ${state.cart.map(c => c.hex).join(' ')}`;
-    navigator.clipboard.writeText(command).then(() => {
-      copyBtn.innerHTML = `${ICONS.check} Copied!`;
-      setTimeout(() => { copyBtn.innerHTML = `${ICONS.copy} Copy`; }, 2000);
-    });
+
+    // Show stamp overlay feedback
+    const showStamp = () => {
+      const overlay = document.getElementById('stamp-overlay');
+      if (overlay) {
+        overlay.classList.add('visible');
+        const hint = copyLabel.querySelector('.label-copy-hint');
+        if (hint) hint.style.opacity = '0';
+        setTimeout(() => {
+          overlay.classList.remove('visible');
+          if (hint) hint.style.opacity = '1';
+        }, 2500);
+      }
+    };
+
+    // Fallback copy using execCommand for non-secure contexts
+    const fallbackCopy = (text) => {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (_) {}
+      document.body.removeChild(ta);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(command).then(showStamp).catch(() => {
+        fallbackCopy(command);
+        showStamp();
+      });
+    } else {
+      fallbackCopy(command);
+      showStamp();
+    }
   });
 
   // Settings prefix
@@ -1623,6 +2012,7 @@ function attachEvents() {
   if (prefixInput) prefixInput.addEventListener('input', (e) => {
     state.prefix = e.target.value;
     storage.setPrefix(state.prefix);
+    NookSounds.play('prefixChange');
     render();
     setTimeout(() => {
       const inp = document.getElementById('prefix-input');
@@ -1635,6 +2025,7 @@ function attachEvents() {
     btn.addEventListener('click', () => {
       state.prefix = btn.dataset.preset;
       storage.setPrefix(state.prefix);
+      NookSounds.play('prefixChange');
       render();
     });
   });
@@ -1650,17 +2041,33 @@ function attachEvents() {
     });
   });
 
+  // Sound toggle
+  const soundToggle = document.getElementById('soundToggle');
+  if (soundToggle) soundToggle.addEventListener('change', (e) => {
+    state.soundEnabled = e.target.checked;
+    NookSounds.setEnabled(state.soundEnabled);
+    localStorage.setItem('acnhex_sound_enabled', state.soundEnabled);
+    if (state.soundEnabled) NookSounds.play('toggleSound');
+  });
+
   // Clear data
   const clearBtn = document.getElementById('clear-data');
-  if (clearBtn) clearBtn.addEventListener('click', () => {
-    if (confirm('This will clear your cart, wishlist, and prefix. Are you sure?')) {
+  if (clearBtn) clearBtn.addEventListener('click', async () => {
+    if (confirm('This will clear ALL data including cart, wishlists, settings, and cache. Are you sure?')) {
+      // Clear all localStorage
       storage.clearAll();
-      state.cart = [];
-      state.wishlists = { lists: [{ id: '__loved__', name: 'Loved Items', cap: null, items: [] }] };
-      state.viewingListId = null;
-      state.prefix = '!';
-      state.seenIntro = false;
-      render();
+      // Clear all caches (service worker, etc.)
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+      }
+      // Unregister service workers
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map(reg => reg.unregister()));
+      }
+      // Hard refresh (bypass cache)
+      location.reload(true);
     }
   });
 
@@ -1726,13 +2133,10 @@ function attachEvents() {
   app.querySelectorAll('[data-popup-dismiss]').forEach(el => {
     el.addEventListener('click', async () => {
       if (state.activePopup) {
+        NookSounds.play('dismissAd');
         ads.dismissPopup(state.activePopup);
         state.activePopup = null;
         await render();
-        if (state.searchOpen && state.searchResults) {
-          attachSearchResultEvents();
-          attachSearchScrollObserver();
-        }
         showAdToast();
       }
     });
@@ -1768,6 +2172,12 @@ function attachEvents() {
     }, { passive: true });
     floatingNotif.addEventListener('touchend', () => { swiping = false; }, { passive: true });
   }
+
+  // Re-attach search result events when search overlay is active
+  if (state.searchOpen && state.searchResults) {
+    attachSearchResultEvents();
+    attachSearchScrollObserver();
+  }
 }
 
 // ─── Ad Toast Helper ───
@@ -1775,6 +2185,7 @@ let adToastTimer = null;
 function showAdToast() {
   clearTimeout(adToastTimer);
   state.adToastVisible = true;
+  NookSounds.play('adToast');
   render();
   adToastTimer = setTimeout(() => {
     state.adToastVisible = false;
@@ -1785,6 +2196,7 @@ function showAdToast() {
 
 // ─── Floating Notification Helpers ───
 function dismissFloatingNotif() {
+  NookSounds.play('dismissAd');
   const el = document.getElementById('floating-notif');
   if (el) {
     el.classList.add('dismissing');
@@ -1807,6 +2219,7 @@ function showFloatingNotif() {
   const notif = ads.getNextFloatingNotif();
   if (!notif) return;
   state.floatingNotif = notif;
+  NookSounds.play('notification');
   render();
 
   // Auto-dismiss after 8 seconds
@@ -1855,14 +2268,14 @@ let _flyAnimRect = null;
 
 // ─── Actions ───
 async function toggleWishlist(itemId, variantIdx = 0) {
-  if (isInWishlist(itemId, variantIdx)) {
+  const wasIn = isInWishlist(itemId, variantIdx);
+  if (wasIn) {
     // Remove from ALL lists
     state.wishlists.lists.forEach(list => {
       list.items = list.items.filter(w => !(w.id === itemId && w.variantIdx === variantIdx));
     });
     storage.setWishlists(state.wishlists);
-    state._heartPulse = { id: itemId, vi: variantIdx };
-    await render();
+    NookSounds.play('heartRemove');
   } else {
     // Add to Loved Items by default (single instance only)
     const loved = state.wishlists.lists.find(l => l.id === '__loved__');
@@ -1870,10 +2283,39 @@ async function toggleWishlist(itemId, variantIdx = 0) {
       loved.items.push({ id: itemId, variantIdx });
     }
     storage.setWishlists(state.wishlists);
+    NookSounds.play('heartAdd');
     showWishlistToast(itemId, variantIdx, 'Loved Items');
-    state._heartPulse = { id: itemId, vi: variantIdx };
-    await render();
   }
+
+  if (state.searchOpen) {
+    // Surgical update: toggle heart icons without full re-render to prevent flash
+    const filled = !wasIn;
+    app.querySelectorAll(`[data-heart="${itemId}"][data-heart-vi="${variantIdx}"]`).forEach(btn => {
+      btn.innerHTML = ICONS.heart(filled);
+      btn.classList.add('pulse');
+      btn.addEventListener('animationend', () => btn.classList.remove('pulse'), { once: true });
+    });
+    // Inject wishlist toast
+    const existingToast = document.getElementById('wl-toast');
+    if (existingToast) existingToast.remove();
+    if (state.wishlistToast) {
+      app.insertAdjacentHTML('beforeend', renderWishlistToast());
+      const toastChange = document.getElementById('toast-change');
+      if (toastChange) toastChange.addEventListener('click', () => {
+        const t = state.wishlistToast;
+        if (t) {
+          state.listPickerItem = { id: t.itemId, variantIdx: t.variantIdx };
+          clearTimeout(toastTimer);
+          state.wishlistToast = null;
+          render();
+        }
+      });
+    }
+    return;
+  }
+
+  state._heartPulse = { id: itemId, vi: variantIdx };
+  await render();
 }
 
 function getCartTotal() {
@@ -1914,28 +2356,43 @@ function addToCartFromIndex(itemId, variantIdx = 0) {
 }
 
 function addToCart(entry) {
-  if (state.cart.length >= 40) return;
+  if (state.cart.length >= 40) { NookSounds.play('cartFull'); return; }
 
   // Fire flying animation using snapshot captured by click handler
-  if (_flyAnimRect && entry.img) {
+  if (_flyAnimRect) {
     const cartTab = app.querySelector('[data-nav="cart"]');
     if (cartTab) {
       const endRect = cartTab.getBoundingClientRect();
       const sr = _flyAnimRect;
-      const clone = document.createElement('img');
-      clone.src = entry.img;
+      let clone;
+      if (entry.img) {
+        clone = document.createElement('img');
+        clone.src = entry.img;
+      } else {
+        // Fallback: create a styled div for items without images
+        clone = document.createElement('div');
+        clone.textContent = '📦';
+        clone.style.display = 'flex';
+        clone.style.alignItems = 'center';
+        clone.style.justifyContent = 'center';
+        clone.style.fontSize = '24px';
+        clone.style.background = 'var(--tag-bg, #f0f0f0)';
+      }
       clone.className = 'flying-item';
       clone.style.left = sr.left + sr.width / 2 - 22 + 'px';
       clone.style.top = sr.top + sr.height / 2 - 22 + 'px';
-      clone.style.transition = 'transform 0.7s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.7s ease-in';
       clone.style.transform = 'scale(1) translate(0, 0)';
       clone.style.opacity = '1';
       document.body.appendChild(clone);
       const dx = endRect.left + endRect.width / 2 - (sr.left + sr.width / 2);
       const dy = endRect.top + endRect.height / 2 - (sr.top + sr.height / 2);
+      // Double rAF ensures element is painted before animating
       requestAnimationFrame(() => {
-        clone.style.transform = `translate(${dx}px, ${dy}px) scale(0.25)`;
-        clone.style.opacity = '0';
+        requestAnimationFrame(() => {
+          clone.style.transition = 'transform 0.7s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.7s ease-in';
+          clone.style.transform = `translate(${dx}px, ${dy}px) scale(0.25)`;
+          clone.style.opacity = '0';
+        });
       });
       clone.addEventListener('transitionend', function handler(e) {
         if (e.propertyName !== 'transform') return;
@@ -1950,6 +2407,7 @@ function addToCart(entry) {
 
   state.cart.push(entry);
   storage.setCart(state.cart);
+  NookSounds.play('addToCart');
   state._cartBounce = true;
 
   if (state.searchOpen) {
@@ -1989,6 +2447,10 @@ function addToCart(entry) {
 
 async function loadItemDetail(itemId) {
   state.itemDetail = null;
+  _similarCache = { itemId: null, matches: null, badgeText: null }; // clear similar items cache for new item
+  _reviewCache = { itemId: null, data: null }; // clear reviews cache for new item
+  state.similarScrollLeft = 0; // reset similar carousel scroll for new item
+  state._detailScrollY = undefined; // prevent restoring old scroll position
   state.itemsViewed++;
   render(); // Show loading
   window.scrollTo(0, 0);
@@ -2040,6 +2502,7 @@ function initPullToRefresh() {
       indicator.classList.remove('pulling');
       indicator.classList.add('refreshing');
       // Refresh with new random items
+      NookSounds.play('pullRefresh');
       ads.resetGridInterstitial();
       state.isRandom = true;
       state.randomUsedIndices = new Set();
