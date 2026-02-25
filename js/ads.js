@@ -1,5 +1,6 @@
 // ─── Fake Ads Module ───
 // In-universe Animal Crossing ads for ACNHEX Market
+import NookSounds from './sounds.js';
 
 // ─── Inline Banner Ad Data ───
 const INLINE_BANNERS = [
@@ -1158,6 +1159,7 @@ export function renderItemGridWithAds(items, renderItemCardFn) {
     if (idx === 16 && !interstitialInserted && shouldShowInterstitial()) {
       html += renderInterstitialAd(interType);
       interstitialInserted = true;
+      NookSounds.play('interstitial');
     }
 
     // Insert a banner ad every BANNER_INTERVAL items

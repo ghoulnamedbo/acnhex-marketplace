@@ -85,6 +85,10 @@ export function getTotalCount() {
   return catalogIndex?.items.length || 0;
 }
 
+export async function getCategoryItems(category) {
+  return loadCategoryData(category);
+}
+
 // ─── Expanded Variants (one card per variant) ───
 const expandedCache = {}; // category slug -> expanded array
 
