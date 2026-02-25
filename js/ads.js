@@ -1241,11 +1241,11 @@ export function markPopupShown() {
 export function checkPopupTrigger(triggerContext) {
   // triggerContext = { type: 'init'|'nav'|'cartAdd'|'timer', adPageViews, sessionStart, itemsViewed }
 
+  // Cookie popup ALWAYS shows on first visit (exempt from ad preferences & cooldown)
+  if (shouldShowPopup('cookie')) return 'cookie';
+
   const prefs = getPrefs();
   if (!prefs.enabled || !prefs.popups) return null;
-
-  // Cookie popup takes priority on first visit (exempt from cooldown)
-  if (shouldShowPopup('cookie')) return 'cookie';
 
   // Global cooldown: no popup within 3 minutes of another
   if (isPopupOnCooldown()) return null;

@@ -69,12 +69,12 @@ const state = {
   detailHistory: [],
   soundEnabled: false,
   soundVolume: 0.5,
-  // Fake ad preferences
-  adsEnabled: true,
-  adsBanners: true,
-  adsInterstitials: true,
-  adsPopups: true,
-  adsFloatingNotifs: true,
+  // Fake ad preferences (default OFF)
+  adsEnabled: false,
+  adsBanners: false,
+  adsInterstitials: false,
+  adsPopups: false,
+  adsFloatingNotifs: false,
 };
 
 const app = document.getElementById('app');
@@ -102,12 +102,12 @@ state.soundVolume = parseFloat(localStorage.getItem('acnhex_sound_volume')) || 0
 NookSounds.setEnabled(state.soundEnabled);
 NookSounds.setVolume(state.soundVolume);
 
-// Load ad preferences from localStorage (default ON)
-state.adsEnabled = localStorage.getItem('acnhex_ads_enabled') !== 'false';
-state.adsBanners = localStorage.getItem('acnhex_ads_banners') !== 'false';
-state.adsInterstitials = localStorage.getItem('acnhex_ads_interstitials') !== 'false';
-state.adsPopups = localStorage.getItem('acnhex_ads_popups') !== 'false';
-state.adsFloatingNotifs = localStorage.getItem('acnhex_ads_floating') !== 'false';
+// Load ad preferences from localStorage (default OFF)
+state.adsEnabled = localStorage.getItem('acnhex_ads_enabled') === 'true';
+state.adsBanners = localStorage.getItem('acnhex_ads_banners') === 'true';
+state.adsInterstitials = localStorage.getItem('acnhex_ads_interstitials') === 'true';
+state.adsPopups = localStorage.getItem('acnhex_ads_popups') === 'true';
+state.adsFloatingNotifs = localStorage.getItem('acnhex_ads_floating') === 'true';
 
 // Expose ad preferences for ads.js module
 window.getAdPrefs = () => ({
