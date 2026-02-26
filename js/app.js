@@ -32,6 +32,8 @@ const state = {
   viewingListId: null,
   wishlistToast: null,
   listPickerItem: null,
+  setPickerItems: null,
+  setPickerName: null,
   prefix: storage.getPrefix(),
   seenIntro: storage.getSeenIntro(),
   loadMode: storage.getLoadMode(),
@@ -589,7 +591,14 @@ async function renderDetail() {
           <div class="detail-set-name">${esc(item.hhaSet)} series</div>
           <div class="detail-set-count">Part of a set</div>
         </div>
-        <button class="detail-set-add-btn" data-set="${esc(item.hhaSet)}">+ Add set</button>
+        <div class="detail-set-actions">
+          <button class="detail-set-action-btn" data-set-cart="${esc(item.hhaSet)}" title="Add set to cart">
+            <span class="detail-set-action-plus">+</span>${ICONS.cart.replace(/width="24" height="24"/, 'width="16" height="16"')}
+          </button>
+          <button class="detail-set-action-btn" data-set-list="${esc(item.hhaSet)}" title="Save set to list">
+            <span class="detail-set-action-plus">+</span>${ICONS.wishlistNav.replace(/width="24" height="24"/, 'width="16" height="16"')}
+          </button>
+        </div>
       </div>
       ` : ''}
 
@@ -2072,6 +2081,31 @@ function renderListPicker() {
   </div>`;
 }
 
+// ─── Set Picker Modal (add entire set to a list) ───
+function renderSetPicker() {
+  if (!state.setPickerItems || state.setPickerItems.length === 0) return '';
+  const setName = state.setPickerName || 'Set';
+  return `<div class="modal-overlay" id="set-picker-overlay">
+    <div class="modal-card">
+      <h2 style="font-size:16px;font-weight:700;margin-bottom:8px;color:var(--palm-leaf)">Save ${esc(setName)} Series</h2>
+      <p style="font-size:12px;color:var(--text-light);margin-bottom:16px">${state.setPickerItems.length} items will be added</p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch">
+        ${state.wishlists.lists.filter(l => l.id !== '__loved__').map(list => {
+          const full = list.cap !== null && list.items.length >= list.cap;
+          const remaining = list.cap ? list.cap - list.items.length : Infinity;
+          const canAdd = Math.min(state.setPickerItems.length, remaining);
+          return `<button class="list-pick-btn" data-set-pick-list="${esc(list.id)}" ${full ? 'disabled' : ''}>
+            <span>${esc(list.name)}</span>
+            <span style="font-size:10px;color:var(--text-light)">${list.items.length}${list.cap ? '/' + list.cap : ''}${canAdd < state.setPickerItems.length ? ' · can add ' + canAdd : ''}</span>
+          </button>`;
+        }).join('')}
+      </div>
+      <button class="cta-btn-secondary" id="create-list-from-set-picker" style="margin-bottom:12px;width:100%">+ New List</button>
+      <button class="search-close-btn" id="close-set-picker" style="width:100%">Cancel</button>
+    </div>
+  </div>`;
+}
+
 // ─── Render ───
 async function render() {
   // Save similar items scroll position before DOM is replaced
@@ -2090,7 +2124,7 @@ async function render() {
     case 'settings': content = renderSettings(); break;
     case 'info': content = renderInfo(); break;
   }
-  app.innerHTML = `<div id="ptr-indicator" class="ptr-indicator"></div>` + content + renderNav() + renderModal() + renderSearch() + renderWishlistToast() + renderListPicker() + ads.renderActivePopup(state.activePopup) + ads.renderAdToast(state.adToastVisible) + ads.renderFloatingNotif(state.floatingNotif);
+  app.innerHTML = `<div id="ptr-indicator" class="ptr-indicator"></div>` + content + renderNav() + renderModal() + renderSearch() + renderWishlistToast() + renderListPicker() + renderSetPicker() + ads.renderActivePopup(state.activePopup) + ads.renderAdToast(state.adToastVisible) + ads.renderFloatingNotif(state.floatingNotif);
   attachEvents();
 
   // Apply entrance animations only on page/category navigation
@@ -2620,14 +2654,61 @@ function attachEvents() {
     });
   });
 
-  // Add Full Set button
-  document.querySelectorAll('.detail-set-add-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      btn.textContent = '✓ Added!';
-      btn.classList.add('detail-set-add-btn--added');
-      hapticTick();
-      NookSounds.play('addToCart');
-      setTimeout(() => { btn.textContent = '+ Add set'; btn.classList.remove('detail-set-add-btn--added'); }, 2000);
+  // Add Set to Cart button
+  document.querySelectorAll('[data-set-cart]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const setName = btn.dataset.setCart;
+      btn.classList.add('detail-set-action-btn--loading');
+
+      const setItems = await data.getItemsBySet(setName);
+      let addedCount = 0;
+
+      for (const item of setItems) {
+        if (getCartTotal() >= 40) break;
+        // Add first variant of each item
+        const v = item.variants[0];
+        addToCart({
+          id: item.id,
+          name: item.name,
+          variant: v.name,
+          variantIdx: 0,
+          hex: v.hexVariated || v.hex || item.hexBase,
+          img: v.image || item.image,
+        });
+        addedCount++;
+      }
+
+      btn.classList.remove('detail-set-action-btn--loading');
+      if (addedCount > 0) {
+        btn.classList.add('detail-set-action-btn--added');
+        hapticTick();
+        NookSounds.play('addToCart');
+        setTimeout(() => btn.classList.remove('detail-set-action-btn--added'), 1500);
+      }
+    });
+  });
+
+  // Add Set to List button
+  document.querySelectorAll('[data-set-list]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const setName = btn.dataset.setList;
+      btn.classList.add('detail-set-action-btn--loading');
+
+      const setItems = await data.getItemsBySet(setName);
+      btn.classList.remove('detail-set-action-btn--loading');
+
+      if (setItems.length > 0) {
+        // Store set items for the list picker
+        state.setPickerItems = setItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          variant: item.variants[0].name,
+          variantIdx: 0,
+          img: item.variants[0].image || item.image,
+        }));
+        state.setPickerName = setName;
+        render();
+      }
     });
   });
 
@@ -2886,6 +2967,104 @@ function attachEvents() {
   if (pickerOverlay) pickerOverlay.addEventListener('click', (e) => {
     if (e.target === pickerOverlay) {
       state.listPickerItem = null;
+      render();
+    }
+  });
+
+  // Set picker — pick a list for entire set
+  app.querySelectorAll('[data-set-pick-list]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const listId = btn.dataset.setPickList;
+      const items = state.setPickerItems;
+      if (!items || items.length === 0) return;
+
+      const list = state.wishlists.lists.find(l => l.id === listId);
+      if (!list) return;
+
+      let addedCount = 0;
+      for (const item of items) {
+        // Check list capacity
+        if (list.cap !== null && list.items.length >= list.cap) break;
+        // Skip if already in list
+        if (list.items.some(w => w.id === item.id && w.variantIdx === item.variantIdx)) continue;
+
+        list.items.push({
+          id: item.id,
+          variantIdx: item.variantIdx,
+          addedAt: Date.now(),
+        });
+        addedCount++;
+      }
+
+      if (addedCount > 0) {
+        storage.saveWishlists(state.wishlists);
+        hapticTick();
+        NookSounds.play('addToList');
+        state.wishlistToast = { listId, listName: list.name, action: 'add' };
+      }
+
+      state.setPickerItems = null;
+      state.setPickerName = null;
+      render();
+    });
+  });
+
+  // Create new list from set picker
+  const createFromSetPicker = document.getElementById('create-list-from-set-picker');
+  if (createFromSetPicker) createFromSetPicker.addEventListener('click', () => {
+    const modal = createFromSetPicker.closest('.modal-card');
+    createFromSetPicker.style.display = 'none';
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.placeholder = 'New list name';
+    inp.className = 'modal-input';
+    inp.style.marginBottom = '12px';
+    modal.insertBefore(inp, createFromSetPicker);
+
+    const doCreate = () => {
+      const name = inp.value.trim();
+      if (!name) return;
+      const newId = 'list_' + Date.now();
+      const newList = { id: newId, name, items: [], cap: null };
+
+      // Add set items to the new list
+      const items = state.setPickerItems || [];
+      for (const item of items) {
+        newList.items.push({
+          id: item.id,
+          variantIdx: item.variantIdx,
+          addedAt: Date.now(),
+        });
+      }
+
+      state.wishlists.lists.push(newList);
+      storage.saveWishlists(state.wishlists);
+      hapticTick();
+      NookSounds.play('addToList');
+      state.wishlistToast = { listId: newId, listName: name, action: 'add' };
+      state.setPickerItems = null;
+      state.setPickerName = null;
+      render();
+    };
+
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') doCreate(); });
+    inp.focus();
+  });
+
+  // Close set picker
+  const closeSetPicker = document.getElementById('close-set-picker');
+  if (closeSetPicker) closeSetPicker.addEventListener('click', () => {
+    state.setPickerItems = null;
+    state.setPickerName = null;
+    render();
+  });
+
+  // Also close set picker on overlay click
+  const setPickerOverlay = document.getElementById('set-picker-overlay');
+  if (setPickerOverlay) setPickerOverlay.addEventListener('click', (e) => {
+    if (e.target === setPickerOverlay) {
+      state.setPickerItems = null;
+      state.setPickerName = null;
       render();
     }
   });

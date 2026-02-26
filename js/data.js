@@ -271,3 +271,22 @@ export async function getRandomExpandedItems(count = 20, exclude = new Set()) {
 export function getExpandedTotal() {
   return expandedCache._all ? expandedCache._all.length : 0;
 }
+
+// ─── Get items by HHA Set ───
+export async function getItemsBySet(setName) {
+  if (!catalogIndex || !setName) return [];
+
+  // Load all category data to search for items with matching hhaSet
+  const cats = catalogIndex.categories;
+  await Promise.all(cats.map(c => loadCategoryData(c.name)));
+
+  const items = [];
+  for (const catSlug of Object.keys(categoryCache)) {
+    for (const item of categoryCache[catSlug]) {
+      if (item.hhaSet && item.hhaSet.toLowerCase() === setName.toLowerCase()) {
+        items.push(item);
+      }
+    }
+  }
+  return items;
+}

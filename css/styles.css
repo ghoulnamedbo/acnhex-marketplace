@@ -4212,28 +4212,59 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   margin-top: 1px;
 }
 
-.detail-set-add-btn {
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  font-weight: 700;
-  color: var(--pines);
-  background: var(--tag-bg);
-  border: none;
+.detail-set-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.detail-set-action-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
   border-radius: 12px;
-  padding: 8px 12px;
+  border: none;
+  background: var(--tag-bg);
+  color: var(--pines);
   cursor: pointer;
   transition: all 0.3s cubic-bezier(.34,1.56,.64,1);
-  white-space: nowrap;
 }
 
-.detail-set-add-btn:active {
-  transform: scale(0.95);
+.detail-set-action-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
-.detail-set-add-btn--added {
-  color: #fff;
+.detail-set-action-plus {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--pines);
+  line-height: 1;
+}
+
+.detail-set-action-btn:active {
+  transform: scale(0.92);
+}
+
+.detail-set-action-btn--loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.detail-set-action-btn--added {
   background: linear-gradient(135deg, var(--pines), var(--palm-leaf));
-  transform: scale(1.05);
+  color: #fff;
+  transform: scale(1.08);
+}
+
+.detail-set-action-btn--added .detail-set-action-plus {
+  color: #fff;
 }
 
 /* ── Variant Drawer Trigger Button ── */
