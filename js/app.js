@@ -1715,8 +1715,8 @@ function positionOrbitItems(selectedIdx) {
   if (isCircular) {
     // True circular positioning for < 15 variants (like mockup)
     const angleStep = 360 / count;
-    const radiusX = 130; // horizontal spread (was 100)
-    const radiusZ = 75;  // depth (was 60)
+    const radiusX = 200; // horizontal spread
+    const radiusZ = 110; // depth
 
     items.forEach((el) => {
       const idx = parseInt(el.dataset.variantOrbit, 10);
@@ -1738,8 +1738,8 @@ function positionOrbitItems(selectedIdx) {
       el.style.zIndex = Math.round(normalizedZ * 100);
       el.style.opacity = isFront ? 1 : opacity;
       el.style.filter = isFront ? 'none' : `blur(${blur}px) brightness(${brightness})`;
-      el.style.width = isFront ? '160px' : '120px';
-      el.style.height = isFront ? '160px' : '120px';
+      el.style.width = isFront ? '230px' : '160px';
+      el.style.height = isFront ? '230px' : '160px';
       el.style.boxShadow = isFront
         ? '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)'
         : '0 2px 8px rgba(0,0,0,0.06)';
@@ -1756,11 +1756,11 @@ function positionOrbitItems(selectedIdx) {
   } else {
     // Fixed 5-position mode for 15+ variants (windowed)
     const positions = [
-      { x: -160, scale: 0.55, z: 10, opacity: 0.5, blur: 6 },   // far-left (was -120)
-      { x: -85, scale: 0.75, z: 30, opacity: 0.75, blur: 2 },   // left (was -65)
+      { x: -230, scale: 0.55, z: 10, opacity: 0.5, blur: 6 },   // far-left
+      { x: -120, scale: 0.75, z: 30, opacity: 0.75, blur: 2 },  // left
       { x: 0, scale: 1.0, z: 100, opacity: 1, blur: 0 },        // center
-      { x: 85, scale: 0.75, z: 30, opacity: 0.75, blur: 2 },    // right (was 65)
-      { x: 160, scale: 0.55, z: 10, opacity: 0.5, blur: 6 },    // far-right (was 120)
+      { x: 120, scale: 0.75, z: 30, opacity: 0.75, blur: 2 },   // right
+      { x: 230, scale: 0.55, z: 10, opacity: 0.5, blur: 6 },    // far-right
     ];
 
     items.forEach((el) => {
@@ -1784,8 +1784,8 @@ function positionOrbitItems(selectedIdx) {
       el.style.zIndex = p.z;
       el.style.opacity = p.opacity;
       el.style.filter = isCenter ? 'none' : `blur(${p.blur}px) brightness(0.95)`;
-      el.style.width = isCenter ? '160px' : '110px';
-      el.style.height = isCenter ? '160px' : '110px';
+      el.style.width = isCenter ? '230px' : '150px';
+      el.style.height = isCenter ? '230px' : '150px';
       el.style.boxShadow = isCenter
         ? '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)'
         : '0 2px 8px rgba(0,0,0,0.06)';

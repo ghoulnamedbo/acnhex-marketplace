@@ -613,7 +613,7 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
 
 /* New hero with orbit carousel inside */
 .detail-hero-orbit {
-  min-height: 340px;
+  min-height: 500px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -626,7 +626,7 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
 }
 .detail-hero-orbit .variant-orbit-container {
   margin: 0;
-  padding: 40px 0 0;
+  padding: 60px 0 0;
 }
 .detail-single-variant {
   display: flex;
@@ -3744,13 +3744,13 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
 .variant-orbit-container {
   position: relative;
   width: 100%;
-  max-width: 450px;
+  max-width: 600px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  padding: 70px 0 0;
+  padding: 90px 0 0;
 }
 
 /* Disable animations for 15+ variants */
@@ -3761,8 +3761,8 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
 .variant-orbit-track {
   position: relative;
   width: 100%;
-  max-width: 400px;
-  height: 180px;
+  max-width: 560px;
+  height: 280px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3773,7 +3773,7 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
 
 /* Circular mode: slightly more height for full orbit */
 .variant-orbit-track--circular {
-  height: 190px;
+  height: 290px;
 }
 
 .variant-orbit-item {
