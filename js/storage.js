@@ -14,6 +14,7 @@ const KEYS = {
   adsPopups: 'acnhex_ads_popups',
   adsFloating: 'acnhex_ads_floating',
   cookieDismissed: 'acnhex_cookie_dismissed',
+  seenExportInfo: 'acnhex_seen_export_info',
 };
 
 function get(key, fallback) {
@@ -44,6 +45,9 @@ export function setLoadMode(m) { set(KEYS.loadMode, m); }
 
 export function getWishlists() { return get(KEYS.wishlists, null); }
 export function setWishlists(data) { set(KEYS.wishlists, data); }
+
+export function getSeenExportInfo() { return get(KEYS.seenExportInfo, false); }
+export function setSeenExportInfo(v) { set(KEYS.seenExportInfo, v); }
 
 export function clearAll() {
   Object.values(KEYS).forEach(k => localStorage.removeItem(k));

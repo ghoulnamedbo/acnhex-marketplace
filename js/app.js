@@ -82,11 +82,52 @@ const state = {
   variantDrawerOpen: false,
   // Saved detail state for tab switching
   _savedDetailState: null,
+  // Import/Export modals
+  showExportModal: false,
+  showImportModal: false,
+  seenExportInfo: storage.getSeenExportInfo(),
+  // Emoji picker
+  emojiPickerFor: null,
 };
 
 const app = document.getElementById('app');
 
 // ─── Wishlists Init & Helpers ───
+const EMOJIS = [
+  // Objects & Items
+  '📋','📁','📦','🎁','🛒','💼','🎒','👜','👛','🧳',
+  // Home & Furniture
+  '🏠','🏡','🛋️','🪑','🛏️','🚪','🪟','🛁','🚿','🪴',
+  // Nature & Plants
+  '🌸','🌺','🌻','🌹','🌷','💐','🌿','🍀','🌴','🌳','🌲','🍃','🍂','🌵','🪻',
+  // Animals
+  '🐱','🐶','🐰','🦊','🐻','🐼','🐨','🦁','🐯','🐸','🐟','🐠','🦋','🐝','🐞','🦆','🦉','🐧','🦩','🦜',
+  // Food & Drinks
+  '🍎','🍊','🍋','🍇','🍓','🍑','🍒','🥑','🍕','🍔','🍰','🧁','🍩','🍪','☕','🧋','🍵',
+  // Activities & Hobbies
+  '🎮','🎲','🎯','🎨','🎭','🎪','🎬','📷','🎸','🎹','🎵','🎶','📚','✏️','🖌️','🧵','🧶','🎣','⛳','🏄',
+  // Celestial & Weather
+  '⭐','🌟','✨','💫','🌙','☀️','🌈','☁️','❄️','🔥','💧',
+  // Hearts & Symbols
+  '❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💖','💝','💕',
+  // Gems & Sparkles
+  '💎','💍','👑','🏆','🎖️','🔮','🪩',
+  // Misc Objects
+  '🔔','🎀','🪄','🗝️','🔑','💡','🕯️','🪔','📱','💻','⌚','📺','🎧',
+  // Cute & Toys
+  '🧸','🪆','🎠','🎡','🎢','🎈','🎉','🎊',
+  // Travel & Places
+  '🏝️','🏖️','⛰️','🗻','🌋','🏕️','🗼','🗽','🎡','✈️','🚀','⛵',
+  // Faces & Expressions
+  '😊','🥰','😎','🤩','😴','🥳','😇','🤗',
+  // Hands & Gestures
+  '👍','👏','🙌','💪','🤝','✌️','🤞','👋',
+  // Zodiac
+  '♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓',
+  // Seasons
+  '🎃','🎄','🎅','🎆','🎇','🧧','🪻','🐣',
+];
+
 function initWishlists() {
   let wl = storage.getWishlists();
   if (!wl) {
@@ -96,9 +137,18 @@ function initWishlists() {
     if (oldList.length > 0 && typeof oldList[0] === 'string') {
       oldList = oldList.map(id => ({ id, variantIdx: 0 }));
     }
-    wl = { lists: [{ id: '__loved__', name: 'Loved Items', cap: null, items: oldList }] };
+    wl = { lists: [{ id: '__loved__', name: 'Loved Items', cap: null, items: oldList, emoji: '💚' }] };
     storage.setWishlists(wl);
   }
+  // Migrate: add emoji to existing lists if missing
+  let needsSave = false;
+  for (const list of wl.lists) {
+    if (!list.emoji) {
+      list.emoji = list.id === '__loved__' ? '💚' : '📋';
+      needsSave = true;
+    }
+  }
+  if (needsSave) storage.setWishlists(wl);
   state.wishlists = wl;
 }
 initWishlists();
@@ -146,6 +196,23 @@ function showWishlistToast(itemId, variantIdx, listName, isRemoval = false) {
     const el = document.getElementById('wl-toast');
     if (el) el.remove();
   }, 3000);
+}
+
+let simpleToastTimer = null;
+function showToast(message) {
+  clearTimeout(simpleToastTimer);
+  // Remove any existing simple toast
+  const existing = document.getElementById('simple-toast');
+  if (existing) existing.remove();
+  // Create and show new toast
+  const toast = document.createElement('div');
+  toast.id = 'simple-toast';
+  toast.className = 'wishlist-toast';
+  toast.innerHTML = `<span>${esc(message)}</span>`;
+  document.getElementById('app').appendChild(toast);
+  simpleToastTimer = setTimeout(() => {
+    toast.remove();
+  }, 2500);
 }
 
 function getTotalWishlistItems() {
@@ -952,9 +1019,12 @@ async function renderWishlist() {
   const totalItems = getTotalWishlistItems();
 
   return `<div class="page">
-    <div class="page-header" style="padding-bottom:20px">
-      <h1 class="heading-xl" style="margin-bottom:4px">Wishlist</h1>
-      <p class="text-secondary">${lists.length} list${lists.length !== 1 ? 's' : ''} · ${totalItems} item${totalItems !== 1 ? 's' : ''}</p>
+    <div class="page-header" style="padding-bottom:20px;display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <h1 class="heading-xl" style="margin-bottom:4px">Wishlist</h1>
+        <p class="text-secondary">${lists.length} list${lists.length !== 1 ? 's' : ''} · ${totalItems} item${totalItems !== 1 ? 's' : ''}</p>
+      </div>
+      <button class="import-btn" id="import-list-btn"><span class="emoji">📥</span> Import</button>
     </div>
 
     ${lists.length === 0 ? `
@@ -964,17 +1034,33 @@ async function renderWishlist() {
         <p class="empty-text">Tap the heart on items you love</p>
       </div>` : `
       <div style="padding:0 24px;display:flex;flex-direction:column;gap:12px">
-        ${lists.map(list => `
-          <div class="wishlist-item" data-view-list="${esc(list.id)}" style="cursor:pointer">
-            <div class="wishlist-thumb" style="background:${data.getItemBg(0)}">
-              <span class="emoji-fallback">${list.id === '__loved__' ? '💚' : '📋'}</span>
+        ${lists.map(list => {
+          // Get first 4 items for thumbnail preview
+          const thumbItems = list.items.slice(0, 4);
+          const extraCount = list.items.length > 4 ? list.items.length - 4 : 0;
+          return `
+          <div class="wishlist-item" data-view-list="${esc(list.id)}" style="cursor:pointer;border-left:${list.id === '__loved__' ? '4px solid var(--pines)' : '4px solid transparent'}">
+            <div class="wl-emoji-icon${list.id !== '__loved__' ? ' wl-emoji-editable' : ''}" ${list.id !== '__loved__' ? `data-edit-emoji="${esc(list.id)}"` : ''} style="background:${list.id === '__loved__' ? 'var(--tag-bg)' : 'var(--bg)'}">
+              <span class="emoji-fallback">${list.emoji || (list.id === '__loved__' ? '💚' : '📋')}</span>
+              ${list.id !== '__loved__' ? '<div class="wl-emoji-edit-badge">✎</div>' : ''}
             </div>
             <div style="flex:1;min-width:0">
-              <p style="font-size:13px;font-weight:700;margin-bottom:4px;color:var(--text-primary)">${esc(list.name)}</p>
+              <p style="font-size:13px;font-weight:700;margin-bottom:2px;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(list.name)}</p>
               <p style="font-size:10px;color:var(--text-secondary)">${list.items.length}${list.cap ? ' / ' + list.cap : ''} items</p>
+              ${list.cap && list.items.length > 0 ? `<div class="wl-progress-track"><div class="wl-progress-fill" style="width:${(list.items.length / list.cap * 100)}%"></div></div>` : ''}
+              ${thumbItems.length > 0 ? `
+              <div class="wl-thumb-strip">
+                ${thumbItems.map((it, i) => `<div class="wl-thumb" style="background:${data.getItemBg(i)}" data-thumb-item="${esc(it.id)}" data-thumb-vi="${it.variantIdx || 0}"></div>`).join('')}
+                ${extraCount > 0 ? `<div class="wl-thumb-extra">+${extraCount}</div>` : ''}
+              </div>` : ''}
             </div>
-            ${list.id !== '__loved__' ? `<button class="remove-btn" data-delete-list="${esc(list.id)}">${ICONS.trash}</button>` : ''}
-          </div>`).join('')}
+            ${list.id !== '__loved__' ? `
+              <div style="display:flex;gap:4px;flex-shrink:0">
+                <button class="wl-dup-btn" data-dup-list="${esc(list.id)}" title="Duplicate list">⧉</button>
+                <button class="remove-btn" data-delete-list="${esc(list.id)}">${ICONS.trash}</button>
+              </div>` : '<div style="color:var(--text-light);font-size:14px;flex-shrink:0">›</div>'}
+          </div>`;
+        }).join('')}
       </div>`}
 
     <div style="padding:20px 24px">
@@ -1004,42 +1090,77 @@ async function renderWishlistDetail() {
   }
   lastRenderedListHexes = entries.map(e => e.hex);
 
+  const listEmoji = list.emoji || (list.id === '__loved__' ? '💚' : '📋');
+
   return `<div class="page">
-    <div class="page-header" style="display:flex;align-items:center;gap:12px;padding-bottom:20px">
-      <button class="glass-btn" id="list-back" style="flex-shrink:0">${ICONS.chevronLeft}</button>
-      <div style="flex:1;min-width:0">
-        <h1 class="heading-xl" style="margin-bottom:4px">${esc(list.name)}</h1>
-        <p class="text-secondary">${entries.length}${list.cap ? ' / ' + list.cap : ''} items</p>
+    <div style="padding:16px 20px 14px;display:flex;align-items:flex-start;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+        <button class="glass-btn" id="list-back" style="position:static;flex-shrink:0">${ICONS.chevronLeft}</button>
+        <div style="min-width:0">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:18px">${listEmoji}</span>
+            <h2 style="font-size:20px;font-weight:700;color:var(--palm-leaf);letter-spacing:-0.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(list.name)}</h2>
+          </div>
+          <p style="font-size:10px;color:var(--text-secondary);margin-top:2px">${entries.length}${list.cap ? ' / ' + list.cap : ''} items</p>
+        </div>
       </div>
-      ${entries.length > 0 ? `<button class="copy-btn" id="copy-list-order" style="flex-shrink:0">${ICONS.copy} Copy Order</button>` : ''}
     </div>
 
+    ${entries.length > 0 && list.id !== '__loved__' ? `
+    <div style="padding:0 20px 10px;display:flex;gap:6px;flex-wrap:wrap">
+      <button class="export-btn" id="add-all-to-cart">🛒 Add All</button>
+      <button class="export-btn" id="export-list-btn">📤 Export List</button>
+    </div>` : ''}
+
     ${entries.length === 0 ? `
-      <div class="empty-state">
-        <p class="empty-emoji">📋</p>
-        <p class="empty-title">List is empty</p>
-        <p class="empty-text">Tap the heart on items to add them</p>
+      <div style="text-align:center;padding:60px 40px">
+        <div style="font-size:48px;margin-bottom:12px">🍃</div>
+        <div style="font-size:14px;font-weight:700;color:var(--palm-leaf)">Nothing here yet</div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:6px;line-height:1.6">Browse the catalog and tap the heart<br>to add items to this list.</div>
+        <button class="cta-btn" id="start-browsing-btn" style="margin-top:20px;padding:12px 24px;border-radius:50px">Start Browsing</button>
       </div>` : `
-      <div style="padding:0 24px;display:flex;flex-direction:column;gap:12px">
+      <div style="padding:0 12px 20px">
         ${entries.map((item, idx) => {
           const vi = item._vi || 0;
-          return `<div class="wishlist-item" data-item="${esc(item.id)}" data-vi="${vi}">
-            <div class="wishlist-thumb" style="background:${data.getItemBg(idx)}">
-              ${item.img ? `<img src="${esc(item.img)}" onerror="this.outerHTML='📦'" alt="">` : '📦'}
+          return `<div class="wishlist-detail-row" data-item="${esc(item.id)}" data-vi="${vi}">
+            <div style="width:50px;height:50px;border-radius:12px;background:${data.getItemBg(idx)};flex-shrink:0;display:flex;align-items:center;justify-content:center">
+              ${item.img ? `<img src="${esc(item.img)}" style="width:38px;height:38px;object-fit:contain" onerror="this.outerHTML='📦'" alt="">` : '📦'}
             </div>
             <div style="flex:1;min-width:0">
-              <p style="font-size:13px;font-weight:700;margin-bottom:4px;color:var(--text-primary)">${esc(item.n)}</p>
-              <p style="font-size:10px;color:var(--text-secondary)">${esc(item.v1)} · ${esc(item.hex)}</p>
+              <div style="font-size:12px;font-weight:700;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(item.n)}</div>
+              <div style="font-size:10px;color:var(--text-secondary);display:flex;align-items:center;gap:6px;margin-top:2px">
+                ${esc(item.v1)}
+                <span style="font-size:9px;font-weight:700;background:var(--tag-bg);color:var(--pines);padding:1px 6px;border-radius:50px">${esc(item.hex.slice(-4))}</span>
+              </div>
             </div>
-            <div class="wishlist-actions">
-              <button class="wishlist-add-btn" data-wl-add data-wl-id="${esc(item.id)}" data-wl-vi="${vi}" data-wl-name="${esc(item.n)}" data-wl-variant="${esc(item.v1)}" data-wl-hex="${esc(item.hex)}" data-wl-img="${esc(item.img || '')}">
-                ${ICONS.plus}
-              </button>
-              <button class="remove-btn" data-remove-list-idx="${idx}">${ICONS.trash}</button>
+            <div style="display:flex;gap:4px;flex-shrink:0">
+              <button class="wl-action-btn wl-cart-btn" data-wl-add data-wl-id="${esc(item.id)}" data-wl-vi="${vi}" data-wl-name="${esc(item.n)}" data-wl-variant="${esc(item.v1)}" data-wl-hex="${esc(item.hex)}" data-wl-img="${esc(item.img || '')}">+</button>
+              <button class="wl-action-btn wl-remove-btn" data-remove-list-idx="${idx}">✕</button>
             </div>
           </div>`;
         }).join('')}
-      </div>`}
+      </div>
+
+      ${list.id !== '__loved__' ? `
+      <!-- Receipt / Bot Command Section -->
+      <div style="padding:0 20px 16px">
+        <div style="border-top:2px dashed var(--border);margin:4px 0 16px;position:relative">
+          <span style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--bg);padding:0 8px;font-size:9px;color:var(--text-light)">✂ tear here</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:11px;font-weight:700;color:var(--palm-leaf);text-transform:uppercase;letter-spacing:0.1em">Bot Command</span>
+          <span style="font-size:10px;color:var(--text-secondary)">${entries.length} items</span>
+        </div>
+        <div class="receipt-block" id="copy-list-order">
+          <div class="receipt-tape"></div>
+          <div class="receipt-barcode">${Array.from({length:30}, () => `<span style="width:${Math.random()>.5?3:1.5}px"></span>`).join('')}</div>
+          <div style="font-size:9px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">SHIP TO: Discord</div>
+          ${entries.map(item => `<div class="receipt-item"><span>• ${esc(item.n)}</span><span class="hex">${esc(item.hex.slice(-4))}</span></div>`).join('')}
+          <div class="receipt-cmd">${esc(state.prefix)}order ${entries.map(e => e.hex).join(', ')}</div>
+          <div style="text-align:center;margin-top:8px;font-size:9px;color:var(--text-secondary);cursor:pointer">📋 tap to copy</div>
+        </div>
+        <div style="text-align:center;margin-top:10px;font-size:9px;color:var(--text-light)">✦ NOOK INC. CERTIFIED ✦</div>
+      </div>` : ''}`}
   </div>`;
 }
 
@@ -2107,6 +2228,78 @@ function renderSetPicker() {
   </div>`;
 }
 
+// ─── Export Modal ───
+function renderExportModal() {
+  if (!state.showExportModal) return '';
+  const list = state.wishlists.lists.find(l => l.id === state.viewingListId);
+  if (!list) return '';
+
+  const hexString = lastRenderedListHexes.join(' ');
+
+  return `<div class="sheet-overlay" id="export-modal-overlay">
+    <div class="sheet-modal">
+      <div class="sheet-handle"></div>
+      <div style="flex-shrink:0">
+        <div class="sheet-title">📤 Export List</div>
+        <div class="sheet-subtitle" style="margin-bottom:12px">${lastRenderedListHexes.length} items from "${esc(list.name)}"</div>
+      </div>
+      <div class="sheet-scroll">
+        ${!state.seenExportInfo ? `
+        <div class="export-info-blurb">
+          <span class="icon">💡</span>
+          <span>You can share this code with anyone using ACNHEX Market! They can paste it using the <strong>Import</strong> button on their Wishlist tab to recreate your list. Works across browsers and devices.</span>
+        </div>` : ''}
+        <textarea class="import-export-textarea" id="export-textarea" readonly style="margin-bottom:8px">${esc(hexString)}</textarea>
+      </div>
+      <div class="sheet-buttons" style="margin-top:8px">
+        <button class="sheet-btn-secondary" id="close-export-modal">Done</button>
+        <button class="sheet-btn-primary" id="copy-export-btn">📋 Copy</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ─── Import Modal ───
+function renderImportModal() {
+  if (!state.showImportModal) return '';
+
+  return `<div class="sheet-overlay" id="import-modal-overlay">
+    <div class="sheet-modal">
+      <div class="sheet-handle"></div>
+      <div style="flex-shrink:0">
+        <div class="sheet-title">📥 Import List</div>
+        <div class="sheet-subtitle">Paste space-separated hex IDs from an exported list.</div>
+      </div>
+      <div class="sheet-scroll">
+        <textarea class="import-export-textarea" id="import-textarea" placeholder="000000480000206A 0000000100003019 ..."></textarea>
+      </div>
+      <div class="sheet-buttons">
+        <button class="sheet-btn-secondary" id="close-import-modal">Cancel</button>
+        <button class="sheet-btn-primary" id="do-import-btn">Import</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ─── Emoji Picker ───
+function renderEmojiPicker() {
+  if (!state.emojiPickerFor) return '';
+  const list = state.wishlists.lists.find(l => l.id === state.emojiPickerFor);
+  if (!list) return '';
+
+  return `<div class="sheet-overlay" id="emoji-picker-overlay">
+    <div class="sheet-modal">
+      <div class="sheet-handle"></div>
+      <div style="font-size:11px;font-weight:700;color:var(--palm-leaf);margin-bottom:14px;text-transform:uppercase;letter-spacing:0.1em">Choose Icon</div>
+      <div class="sheet-scroll">
+        <div class="emoji-grid">
+          ${EMOJIS.map(em => `<button class="emoji-grid-btn${list.emoji === em ? ' active' : ''}" data-pick-emoji="${em}">${em}</button>`).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
 // ─── Render ───
 async function render() {
   // Save similar items scroll position before DOM is replaced
@@ -2125,7 +2318,7 @@ async function render() {
     case 'settings': content = renderSettings(); break;
     case 'info': content = renderInfo(); break;
   }
-  app.innerHTML = `<div id="ptr-indicator" class="ptr-indicator"></div>` + content + renderNav() + renderModal() + renderSearch() + renderWishlistToast() + renderListPicker() + renderSetPicker() + ads.renderActivePopup(state.activePopup) + ads.renderAdToast(state.adToastVisible) + ads.renderFloatingNotif(state.floatingNotif);
+  app.innerHTML = `<div id="ptr-indicator" class="ptr-indicator"></div>` + content + renderNav() + renderModal() + renderSearch() + renderWishlistToast() + renderListPicker() + renderSetPicker() + renderExportModal() + renderImportModal() + renderEmojiPicker() + ads.renderActivePopup(state.activePopup) + ads.renderAdToast(state.adToastVisible) + ads.renderFloatingNotif(state.floatingNotif);
   attachEvents();
 
   // Apply entrance animations only on page/category navigation
@@ -2161,6 +2354,28 @@ async function render() {
     if (heartBtn) {
       heartBtn.classList.add('pulse');
       heartBtn.addEventListener('animationend', () => heartBtn.classList.remove('pulse'), { once: true });
+    }
+  }
+
+  // Load thumbnail images for wishlist overview
+  loadWishlistThumbs();
+}
+
+// Load item images for wishlist thumbnail strip
+async function loadWishlistThumbs() {
+  const thumbs = app.querySelectorAll('[data-thumb-item]');
+  if (thumbs.length === 0) return;
+
+  for (const thumb of thumbs) {
+    const itemId = thumb.dataset.thumbItem;
+    const indexItem = data.getIndexItem(itemId);
+    if (indexItem && indexItem.img) {
+      const img = document.createElement('img');
+      img.src = indexItem.img;
+      img.loading = 'lazy';
+      img.style.cssText = 'width:24px;height:24px;object-fit:contain';
+      img.onerror = () => img.style.display = 'none';
+      thumb.appendChild(img);
     }
   }
 }
@@ -2833,6 +3048,8 @@ function attachEvents() {
   app.querySelectorAll('[data-view-list]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       if (e.target.closest('[data-delete-list]')) return;
+      if (e.target.closest('[data-edit-emoji]')) return;
+      if (e.target.closest('[data-dup-list]')) return;
       state.viewingListId = btn.dataset.viewList;
       render();
     });
@@ -2856,7 +3073,7 @@ function attachEvents() {
     const doCreate = () => {
       const name = (inp.value || '').trim();
       if (name) {
-        state.wishlists.lists.push({ id: Date.now().toString(36), name, cap: 40, items: [] });
+        state.wishlists.lists.push({ id: Date.now().toString(36), name, emoji: '📋', cap: 40, items: [] });
         storage.setWishlists(state.wishlists);
         NookSounds.play('newList');
       }
@@ -2882,15 +3099,71 @@ function attachEvents() {
     });
   });
 
-  // Copy list order
+  // Edit emoji button (opens picker)
+  app.querySelectorAll('[data-edit-emoji]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      state.emojiPickerFor = btn.dataset.editEmoji;
+      render();
+    });
+  });
+
+  // Emoji picker overlay (close on backdrop click)
+  const emojiOverlay = document.getElementById('emoji-picker-overlay');
+  if (emojiOverlay) {
+    emojiOverlay.addEventListener('click', (e) => {
+      if (e.target === emojiOverlay) {
+        state.emojiPickerFor = null;
+        render();
+      }
+    });
+  }
+
+  // Emoji grid buttons
+  app.querySelectorAll('[data-pick-emoji]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const emoji = btn.dataset.pickEmoji;
+      const list = state.wishlists.lists.find(l => l.id === state.emojiPickerFor);
+      if (list) {
+        list.emoji = emoji;
+        storage.setWishlists(state.wishlists);
+      }
+      state.emojiPickerFor = null;
+      render();
+    });
+  });
+
+  // Duplicate list button
+  app.querySelectorAll('[data-dup-list]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const listId = btn.dataset.dupList;
+      const original = state.wishlists.lists.find(l => l.id === listId);
+      if (original) {
+        const newList = {
+          id: 'list_' + Date.now(),
+          name: original.name + ' (copy)',
+          emoji: original.emoji,
+          cap: 40,
+          items: [...original.items],
+        };
+        state.wishlists.lists.push(newList);
+        storage.setWishlists(state.wishlists);
+        NookSounds.play('newList');
+        showToast('📋 List duplicated!');
+        render();
+      }
+    });
+  });
+
+  // Copy list order (receipt block click)
   const copyListBtn = document.getElementById('copy-list-order');
   if (copyListBtn) copyListBtn.addEventListener('click', () => {
     NookSounds.play('copyCommand');
-    const command = `${state.prefix}order ${lastRenderedListHexes.join(' ')}`;
+    const command = `${state.prefix}order ${lastRenderedListHexes.join(', ')}`;
 
     const showCopied = () => {
-      copyListBtn.innerHTML = `${ICONS.check} Copied!`;
-      setTimeout(() => { copyListBtn.innerHTML = `${ICONS.copy} Copy Order`; }, 2000);
+      showToast('📦 Copied to clipboard!');
     };
     const fallbackCopy = (text) => {
       const ta = document.createElement('textarea');
@@ -2962,7 +3235,7 @@ function attachEvents() {
     const doCreate = () => {
       const name = (inp.value || '').trim();
       if (name) {
-        state.wishlists.lists.push({ id: Date.now().toString(36), name, cap: 40, items: [] });
+        state.wishlists.lists.push({ id: Date.now().toString(36), name, emoji: '📋', cap: 40, items: [] });
         storage.setWishlists(state.wishlists);
       }
       render();
@@ -3046,7 +3319,7 @@ function attachEvents() {
       const name = (inp.value || '').trim();
       if (!name) return;
       // Create new list WITHOUT auto-adding items (user clicks list to add)
-      state.wishlists.lists.push({ id: Date.now().toString(36), name, cap: 40, items: [] });
+      state.wishlists.lists.push({ id: Date.now().toString(36), name, emoji: '📋', cap: 40, items: [] });
       storage.setWishlists(state.wishlists);
       // Re-render to show new list in picker (keep modal open)
       render();
@@ -3073,6 +3346,218 @@ function attachEvents() {
       state.setPickerName = null;
       render();
     }
+  });
+
+  // Export list button (open export modal)
+  const exportListBtn = document.getElementById('export-list-btn');
+  if (exportListBtn) exportListBtn.addEventListener('click', () => {
+    state.showExportModal = true;
+    render();
+  });
+
+  // Add All to Cart button (wishlist detail)
+  const addAllToCartBtn = document.getElementById('add-all-to-cart');
+  if (addAllToCartBtn) addAllToCartBtn.addEventListener('click', () => {
+    const list = state.wishlists.lists.find(l => l.id === state.viewingListId);
+    if (!list || list.items.length === 0) return;
+
+    const remaining = 40 - state.cart.length;
+    if (remaining <= 0) {
+      NookSounds.play('cartFull');
+      showToast('Cart is full (40 items max)');
+      return;
+    }
+
+    // Add items to cart (up to remaining space)
+    const toAdd = list.items.slice(0, remaining);
+    let addedCount = 0;
+
+    for (const item of toAdd) {
+      const detail = data.getIndexItem(item.id);
+      if (!detail) continue;
+      state.cart.push({
+        id: item.id,
+        name: detail.n,
+        variant: detail.v1,
+        variantIdx: item.variantIdx,
+        hex: detail.hex,
+        img: detail.img,
+      });
+      addedCount++;
+    }
+
+    if (addedCount > 0) {
+      storage.setCart(state.cart);
+      NookSounds.play('addToCart');
+      state._cartBounce = true;
+      showToast(`🛒 Added ${addedCount} items to cart`);
+      render();
+    }
+  });
+
+  // Start Browsing button (empty wishlist state)
+  const startBrowsingBtn = document.getElementById('start-browsing-btn');
+  if (startBrowsingBtn) startBrowsingBtn.addEventListener('click', () => {
+    state.viewingListId = null;
+    state.page = 'catalog';
+    state._pageEnter = true;
+    render();
+  });
+
+  // Export modal - close button
+  const closeExportModal = document.getElementById('close-export-modal');
+  if (closeExportModal) closeExportModal.addEventListener('click', () => {
+    state.showExportModal = false;
+    render();
+  });
+
+  // Export modal - overlay click to close
+  const exportModalOverlay = document.getElementById('export-modal-overlay');
+  if (exportModalOverlay) exportModalOverlay.addEventListener('click', (e) => {
+    if (e.target === exportModalOverlay) {
+      state.showExportModal = false;
+      render();
+    }
+  });
+
+  // Export modal - copy button
+  const copyExportBtn = document.getElementById('copy-export-btn');
+  if (copyExportBtn) copyExportBtn.addEventListener('click', () => {
+    NookSounds.play('copyCommand');
+    const hexString = lastRenderedListHexes.join(' ');
+
+    const showCopied = () => {
+      copyExportBtn.innerHTML = '✓ Copied!';
+      // Set the flag so the info blurb won't show next time
+      if (!state.seenExportInfo) {
+        state.seenExportInfo = true;
+        storage.setSeenExportInfo(true);
+      }
+      setTimeout(() => { copyExportBtn.innerHTML = '📋 Copy'; }, 2000);
+    };
+
+    const fallbackCopy = (text) => {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (_) {}
+      document.body.removeChild(ta);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(hexString).then(showCopied).catch(() => {
+        fallbackCopy(hexString);
+        showCopied();
+      });
+    } else {
+      fallbackCopy(hexString);
+      showCopied();
+    }
+  });
+
+  // Export textarea - select all on focus
+  const exportTextarea = document.getElementById('export-textarea');
+  if (exportTextarea) exportTextarea.addEventListener('focus', () => {
+    exportTextarea.select();
+  });
+
+  // Import list button (open import modal)
+  const importListBtn = document.getElementById('import-list-btn');
+  if (importListBtn) importListBtn.addEventListener('click', () => {
+    state.showImportModal = true;
+    render();
+  });
+
+  // Import modal - close button
+  const closeImportModal = document.getElementById('close-import-modal');
+  if (closeImportModal) closeImportModal.addEventListener('click', () => {
+    state.showImportModal = false;
+    render();
+  });
+
+  // Import modal - overlay click to close
+  const importModalOverlay = document.getElementById('import-modal-overlay');
+  if (importModalOverlay) importModalOverlay.addEventListener('click', (e) => {
+    if (e.target === importModalOverlay) {
+      state.showImportModal = false;
+      render();
+    }
+  });
+
+  // Import modal - do import button
+  const doImportBtn = document.getElementById('do-import-btn');
+  if (doImportBtn) doImportBtn.addEventListener('click', async () => {
+    const textarea = document.getElementById('import-textarea');
+    if (!textarea) return;
+
+    const text = textarea.value.trim();
+    if (!text) {
+      showToast('Paste hex IDs first');
+      return;
+    }
+
+    // Parse the input: split by whitespace, trim, filter empties
+    const tokens = text.split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) {
+      showToast('No valid hex IDs found');
+      return;
+    }
+
+    // Ensure expanded items are loaded for lookup
+    await data.getExpandedAll(0, 1);
+
+    // Resolve each hex to {id, variantIdx}
+    const resolved = [];
+    let skipped = 0;
+    for (const token of tokens) {
+      // Validate hex characters only
+      if (!/^[0-9A-Fa-f]+$/.test(token)) {
+        skipped++;
+        continue;
+      }
+      const result = data.lookupByHex(token);
+      if (result) {
+        // Cap at 40 items
+        if (resolved.length < 40) {
+          resolved.push(result);
+        } else {
+          skipped++;
+        }
+      } else {
+        skipped++;
+      }
+    }
+
+    if (resolved.length === 0) {
+      showToast('No valid items found');
+      return;
+    }
+
+    // Create a new wishlist with the imported items
+    const newList = {
+      id: 'imported_' + Date.now(),
+      name: 'Imported List',
+      emoji: '📥',
+      cap: 40,
+      items: resolved,
+    };
+
+    state.wishlists.lists.push(newList);
+    storage.setWishlists(state.wishlists);
+    NookSounds.play('newList');
+
+    // Close modal and show toast
+    state.showImportModal = false;
+
+    if (skipped > 0) {
+      showToast(`📥 Imported ${resolved.length} items (${skipped} skipped)`);
+    } else {
+      showToast(`📥 Imported ${resolved.length} items`);
+    }
+
+    render();
   });
 
   // Copy command (shipping label click)

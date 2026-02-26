@@ -272,6 +272,32 @@ export function getExpandedTotal() {
   return expandedCache._all ? expandedCache._all.length : 0;
 }
 
+// ─── Hex Lookup (for import) ───
+let hexLookupMap = null;
+
+export function lookupByHex(hex) {
+  if (!hex || typeof hex !== 'string') return null;
+  const normalized = hex.toUpperCase().trim();
+  if (!normalized || !/^[0-9A-F]+$/i.test(normalized)) return null;
+
+  // Build lookup map on first call (lazy init)
+  if (!hexLookupMap && expandedCache._all) {
+    hexLookupMap = new Map();
+    for (const item of expandedCache._all) {
+      if (item.hex) {
+        hexLookupMap.set(item.hex.toUpperCase(), { id: item.id, variantIdx: item.variantIdx });
+      }
+    }
+  }
+
+  if (!hexLookupMap) return null;
+  return hexLookupMap.get(normalized) || null;
+}
+
+export function invalidateHexLookup() {
+  hexLookupMap = null;
+}
+
 // ─── Get items by HHA Set ───
 export async function getItemsBySet(setName) {
   if (!catalogIndex || !setName) return [];
