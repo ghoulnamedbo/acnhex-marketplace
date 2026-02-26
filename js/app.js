@@ -3017,6 +3017,13 @@ function attachEvents() {
         hapticTick();
         NookSounds.play('addToList');
         state.wishlistToast = { listId, listName: list.name, action: 'add' };
+        // Auto-clear toast after 3 seconds
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          state.wishlistToast = null;
+          const el = document.getElementById('wl-toast');
+          if (el) el.remove();
+        }, 3000);
       }
 
       state.setPickerItems = null;
