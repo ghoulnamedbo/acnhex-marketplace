@@ -610,6 +610,76 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
 }
 .detail-hero img { max-width: 70%; max-height: 70%; object-fit: contain; }
 .detail-hero .emoji-fallback { font-size: 90px; }
+
+/* New hero with orbit carousel inside */
+.detail-hero-orbit {
+  min-height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0 0 36px 36px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  padding: 20px 0;
+}
+.detail-hero-orbit .variant-orbit-container {
+  margin: 0;
+  padding: 60px 0 0;
+}
+.detail-single-variant {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.detail-single-variant img {
+  max-width: 180px;
+  max-height: 180px;
+  object-fit: contain;
+}
+.detail-single-variant .emoji-fallback {
+  font-size: 80px;
+}
+
+/* Title row with rating and All button on right */
+.detail-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px 24px 12px;
+}
+.detail-title-left {
+  flex: 1;
+  min-width: 0;
+}
+.detail-title-left .heading-lg {
+  line-height: 1.25;
+  margin-bottom: 4px;
+}
+.detail-variant-name {
+  font-size: 12px;
+}
+.detail-title-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.detail-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.detail-rating span:first-child {
+  font-size: 14px;
+}
+.detail-rating-value {
+  font-size: 13px;
+  font-weight: 700;
+}
 .glass-btn {
   position: absolute; top: 20px;
   background: rgba(255,255,255,0.85); border: none; border-radius: 14px;
@@ -3575,7 +3645,560 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   .heading-xl { font-size: 22px; }
 }
 
-/* ─── Reduce Motion ─── */
+/* ── Variant Orbit Carousel ── */
+.variant-orbit-container {
+  position: relative;
+  width: 100%;
+  max-width: 450px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 70px 0 0;
+}
+
+/* Disable animations for 15+ variants */
+.variant-orbit-container--instant .variant-orbit-item {
+  transition: none !important;
+}
+
+.variant-orbit-track {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+}
+
+/* Circular mode: slightly more height for full orbit */
+.variant-orbit-track--circular {
+  height: 130px;
+}
+
+.variant-orbit-item {
+  position: absolute;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: hidden;
+}
+
+.variant-orbit-item img {
+  width: 65%;
+  height: 65%;
+  object-fit: contain;
+  transition: transform 0.15s ease;
+}
+
+.variant-orbit-fallback {
+  font-size: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.variant-orbit-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--palm-leaf);
+  margin-top: 6px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.8;
+  text-align: center;
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.variant-orbit-heart-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--blossoms);
+  border: 1.5px solid rgba(255,255,255,0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 7px;
+  color: #fff;
+  z-index: 10;
+  box-shadow: 0 1px 4px rgba(230,177,196,0.5);
+}
+
+/* Smaller heart dots on non-active orbit items */
+.variant-orbit-item:not(.variant-orbit-item--active) .variant-orbit-heart-dot {
+  width: 10px;
+  height: 10px;
+  font-size: 5px;
+}
+
+.variant-orbit-chevron {
+  position: absolute;
+  z-index: 200;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(237,229,223,0.8);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: none; /* hidden on mobile */
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--palm-leaf);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: all 0.2s ease;
+}
+
+.variant-orbit-chevron:hover {
+  background: rgba(255,255,255,0.95);
+  transform: scale(1.1);
+}
+
+/* Position chevrons near the orbit track */
+.variant-orbit-chevron-left { left: calc(50% - 300px); top: 50%; transform: translateY(-50%); }
+.variant-orbit-chevron-right { right: calc(50% - 300px); top: 50%; transform: translateY(-50%); }
+.variant-orbit-chevron:hover { transform: translateY(-50%) scale(1.1); }
+
+@media (min-width: 768px) {
+  .variant-orbit-chevron { display: flex; }
+  .variant-orbit-hint { display: none !important; }
+}
+
+@media (max-width: 480px) {
+  .variant-orbit-chevron-left { left: 8px; }
+  .variant-orbit-chevron-right { right: 8px; }
+}
+
+.variant-orbit-dots {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 6px;
+}
+
+.variant-orbit-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  transition: all 0.3s ease;
+}
+
+.variant-orbit-dot--active {
+  width: 18px;
+  background: var(--pines);
+}
+
+/* Progress bar for many variants (8+) */
+.variant-orbit-progress {
+  position: relative;
+  width: 200px;
+  max-width: 60%;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  margin: 6px auto 0;
+}
+
+.variant-orbit-progress-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: var(--pines);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.variant-orbit-progress-text {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.variant-orbit-hint {
+  position: relative;
+  margin-top: 16px;
+  font-size: 9px;
+  color: var(--text-secondary);
+  opacity: 0.35;
+}
+
+/* ── Collapsible Details ── */
+.detail-fields-collapsible {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(.34,1.56,.64,1);
+}
+
+.detail-fields-collapsible--open {
+  max-height: 600px; /* large enough for all fields */
+}
+
+.detail-more-hint {
+  font-size: 9px;
+  color: var(--text-light);
+  font-weight: 400;
+}
+
+.detail-expand-toggle {
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px 0;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--pines);
+  background: var(--tag-bg);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.detail-expand-toggle:active {
+  transform: scale(0.98);
+}
+
+.detail-expand-arrow {
+  transition: transform 0.3s ease;
+  display: inline-block;
+}
+
+.detail-expand-arrow--flipped {
+  transform: rotate(180deg);
+}
+
+/* ── Hex Copy Badge ── */
+.hex-copy-badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--tag-text);
+  background: var(--tag-bg);
+  border: none;
+  border-radius: 50px;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(.34,1.56,.64,1);
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+.hex-copy-badge:active {
+  transform: scale(0.95);
+}
+
+.hex-copy-badge--copied {
+  color: #fff;
+  background: var(--pines);
+  transform: scale(1.12);
+}
+
+/* Larger hex badge in detail fields */
+.detail-field-row .hex-copy-badge {
+  font-size: 12px;
+  padding: 4px 10px;
+}
+
+/* ── Variant Comparison Drawer ── */
+.variant-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 998;
+  background: rgba(0,0,0,0);
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  pointer-events: none;
+  transition: all 0.35s ease;
+}
+
+.variant-drawer-backdrop--open {
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  pointer-events: auto;
+}
+
+.variant-drawer {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(110%);
+  width: 100%;
+  max-width: 600px;
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -4px 32px rgba(0,0,0,0.12);
+  z-index: 999;
+  transition: transform 0.4s cubic-bezier(.34,1.56,.64,1);
+  max-height: 65vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.variant-drawer--open {
+  transform: translateX(-50%) translateY(0);
+}
+
+.variant-drawer-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  margin: 12px auto 8px;
+}
+
+.variant-drawer-header {
+  padding: 0 20px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.variant-drawer-table-header {
+  display: grid;
+  grid-template-columns: 44px 1fr 60px 60px 56px;
+  padding: 8px 20px;
+  gap: 8px;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.variant-drawer-scroll {
+  overflow-y: auto;
+  flex: 1;
+  padding: 4px 0;
+}
+
+.variant-drawer-row {
+  display: grid;
+  grid-template-columns: 44px 1fr 60px 60px 56px;
+  padding: 10px 20px;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  border-left: 3px solid transparent;
+  transition: all 0.2s ease;
+  font-family: 'Space Mono', monospace;
+}
+
+.variant-drawer-row--selected {
+  background: var(--tag-bg);
+  border-left-color: var(--pines);
+}
+
+.variant-drawer-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border: 1px solid rgba(237,229,223,0.5);
+  overflow: hidden;
+}
+
+.variant-drawer-row--selected .variant-drawer-thumb {
+  border: 2px solid rgba(106,130,62,0.4);
+}
+
+.variant-drawer-thumb img {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+}
+
+.variant-drawer-heart-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--blossoms);
+  border: 1px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 5px;
+  color: #fff;
+}
+
+.variant-drawer-name {
+  font-size: 11px;
+  color: var(--text-primary);
+  text-align: left;
+}
+
+.variant-drawer-row--selected .variant-drawer-name {
+  font-weight: 700;
+  color: var(--palm-leaf);
+}
+
+.variant-drawer-color {
+  font-size: 9px;
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+/* ── Add Full Set Card ── */
+.detail-set-card {
+  background: #fff;
+  border-radius: 22px;
+  padding: 16px 20px;
+  box-shadow: var(--shadow-card);
+  margin: 0 24px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.detail-set-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--tag-bg), #D6DFC8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.detail-set-info { flex: 1; min-width: 0; }
+
+.detail-set-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--palm-leaf);
+  text-transform: capitalize;
+}
+
+.detail-set-count {
+  font-size: 9px;
+  color: var(--text-secondary);
+  margin-top: 1px;
+}
+
+.detail-set-add-btn {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--pines);
+  background: var(--tag-bg);
+  border: none;
+  border-radius: 12px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(.34,1.56,.64,1);
+  white-space: nowrap;
+}
+
+.detail-set-add-btn:active {
+  transform: scale(0.95);
+}
+
+.detail-set-add-btn--added {
+  color: #fff;
+  background: linear-gradient(135deg, var(--pines), var(--palm-leaf));
+  transform: scale(1.05);
+}
+
+/* ── Variant Drawer Trigger Button ── */
+.variant-drawer-trigger {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--pines);
+  background: transparent;
+  border: 1.5px solid var(--pines);
+  border-radius: 50px;
+  padding: 3px 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+  margin-left: auto;
+}
+
+.variant-drawer-trigger:hover {
+  background: var(--tag-bg);
+}
+
+/* ── Detail Content Entrance Animation ── */
+.detail-content > * {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Detail Field Row (for collapsible) ── */
+.detail-field-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+  align-items: center;
+}
+
+.detail-field-row:first-of-type {
+  border-top: none;
+}
+
+.detail-field-label {
+  font-size: 10px;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.detail-field-value {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: right;
+  max-width: 60%;
+  word-break: break-all;
+}
+
+/* ── Reduce Motion ─── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

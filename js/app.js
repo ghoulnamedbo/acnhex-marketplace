@@ -75,6 +75,9 @@ const state = {
   adsInterstitials: false,
   adsPopups: false,
   adsFloatingNotifs: false,
+  // Detail page V2
+  detailsExpanded: false,
+  variantDrawerOpen: false,
 };
 
 const app = document.getElementById('app');
@@ -391,6 +394,18 @@ function renderItemCard(item, idx) {
 // ─── Item Detail ───
 let _reviewCache = { itemId: null, data: null };
 
+// Thumbnail background colors for orbit items
+const thumbBgs = [
+  'linear-gradient(135deg, #FDF6F0, #FAE5DC)',
+  'linear-gradient(135deg, #F0F6E8, #E2EDCE)',
+  'linear-gradient(135deg, #E8F4FA, #D0E8F5)',
+  'linear-gradient(135deg, #FFF8E7, #FAECC0)',
+  'linear-gradient(135deg, #F5F0F8, #E8DCF0)',
+  'linear-gradient(135deg, #F0FAF5, #D5F0E0)',
+  'linear-gradient(135deg, #FFF5F5, #FFE0E0)',
+  'linear-gradient(135deg, #F5FAFF, #E0EFFF)',
+];
+
 async function renderDetail() {
   if (!state.itemDetail) {
     return `<div class="page"><div class="loading"><div class="spinner"></div><p class="text-secondary">Loading...</p></div></div>`;
@@ -411,61 +426,194 @@ async function renderDetail() {
   }
   const similarHtml = await renderSimilarItems(item);
 
-  const detailFields = [
-    ['Hex ID', item.hexBase],
-    ['Hex ID (Variated)', variant.hexVariated || variant.hex || item.hexBase],
-    ['Size', item.size],
-    ['Catalog', item.catalog],
-    ['HHA Concepts', [item.hhaConcept1, item.hhaConcept2].filter(Boolean).join(', ')],
-    ['HHA Series', item.hhaSeries],
-    ['HHA Set', item.hhaSet],
-    ['Styles', (item.tags || []).filter(t => ['active','cool','cute','elegant','gorgeous','simple'].includes(t)).join(', ')],
-    ['Colors', [variant.color1, variant.color2].filter(Boolean).join(', ')],
-    ['DIY', item.diy],
-  ].filter(([, v]) => v && v !== 'NA');
+  // All detail fields for collapsible section
+  const allFields = [
+    ['Hex ID', item.hexBase, 'hex'],
+    ['Size', item.size, 'text'],
+    ['Hex ID (Variated)', variant.hexVariated || variant.hex || item.hexBase, 'hex'],
+    ['Catalog', item.catalog, 'text'],
+    ['HHA Concepts', [item.hhaConcept1, item.hhaConcept2].filter(Boolean).join(', '), 'text'],
+    ['HHA Series', item.hhaSeries, 'text'],
+    ['HHA Set', item.hhaSet, 'text'],
+    ['Styles', (item.tags || []).filter(t => ['active','cool','cute','elegant','gorgeous','simple'].includes(t)).join(', '), 'text'],
+    ['Colors', [variant.color1, variant.color2].filter(Boolean).join(', '), 'text'],
+    ['DIY', item.diy, 'text'],
+  ].filter(([, v]) => v && v !== 'NA' && v !== 'None');
+
+  // Primary fields (always visible): Hex ID and Size
+  const primaryFields = allFields.filter(([label]) => label === 'Hex ID' || label === 'Size');
+  // Secondary fields (collapsible)
+  const secondaryFields = allFields.filter(([label]) => label !== 'Hex ID' && label !== 'Size');
+
+  // Render a field row with hex badge or plain text
+  const renderFieldRow = ([label, val, type]) => {
+    if (type === 'hex') {
+      return `<div class="detail-field-row">
+        <span class="detail-field-label">${esc(label)}</span>
+        <button class="hex-copy-badge" data-hex="${esc(val)}">${esc(val)}</button>
+      </div>`;
+    }
+    return `<div class="detail-field-row">
+      <span class="detail-field-label">${esc(label)}</span>
+      <span class="detail-field-value">${esc(String(val))}</span>
+    </div>`;
+  };
+
+  // Determine if we use smooth animations (< 15 variants) or instant mode (15+)
+  const useAnimations = item.variants.length < 15;
 
   return `<div class="page">
-    <div class="detail-hero" style="background:${bg}">
-      ${variant.image ? `<img id="detail-hero-img" src="${esc(variant.image)}" onerror="this.outerHTML='<span class=emoji-fallback>📦</span>'" alt="">` : '<span class="emoji-fallback">📦</span>'}
+    <div class="detail-hero-orbit" id="detail-hero" style="background:${bg}">
       <button class="glass-btn left" id="detail-back">${ICONS.chevronLeft}</button>
       <button class="glass-btn right" data-heart="${esc(item.id)}" data-heart-vi="${vi}">${ICONS.heartLg(inWishlist)}</button>
+
+      ${item.variants.length > 1 ? (() => {
+        const total = item.variants.length;
+
+        // For < 15 variants: render ALL items with circular positioning
+        // For 15+ variants: use windowed approach with 5 visible items
+        if (useAnimations) {
+          // Render ALL variants for smooth circular orbit animation
+          return `
+      <div class="variant-orbit-container">
+        <button class="variant-orbit-chevron variant-orbit-chevron-left" aria-label="Previous variant">‹</button>
+
+        <div class="variant-orbit-track variant-orbit-track--circular" data-count="${total}" data-selected="${vi}">
+          ${item.variants.map((v, idx) => {
+            const isCenter = idx === vi;
+            const isWishlisted = state.wishlists.lists.some(list =>
+              list.items.some(wi => wi.id === item.id && wi.variantIdx === idx)
+            );
+            return `<div class="variant-orbit-item${isCenter ? ' variant-orbit-item--active' : ''}"
+              data-variant-orbit="${idx}"
+              data-bg="${thumbBgs[idx % thumbBgs.length]}">
+              ${isWishlisted ? '<div class="variant-orbit-heart-dot">♥</div>' : ''}
+              <img src="${esc(v.image)}" alt="${esc(v.name)}" loading="lazy"
+                onerror="this.style.display='none';this.parentNode.querySelector('.variant-orbit-fallback').style.display='flex';">
+              <div class="variant-orbit-fallback" style="display:none;">📦</div>
+              ${isCenter ? `<span class="variant-orbit-label">${esc(v.name)}</span>` : ''}
+            </div>`;
+          }).join('')}
+        </div>
+
+        <button class="variant-orbit-chevron variant-orbit-chevron-right" aria-label="Next variant">›</button>
+
+        <div class="variant-orbit-dots">
+          ${item.variants.map((_, idx) =>
+            `<div class="variant-orbit-dot${idx === vi ? ' variant-orbit-dot--active' : ''}"></div>`
+          ).join('')}
+        </div>
+
+        <div class="variant-orbit-hint">← swipe to rotate →</div>
+      </div>`;
+        } else {
+          // Windowed approach for 15+ variants
+          const windowSize = Math.min(5, total);
+          const halfWindow = Math.floor(windowSize / 2);
+          const visibleIndices = [];
+          for (let i = -halfWindow; i <= halfWindow; i++) {
+            const idx = ((vi + i) % total + total) % total;
+            visibleIndices.push(idx);
+          }
+          const uniqueVisible = [...new Set(visibleIndices)];
+
+          return `
+      <div class="variant-orbit-container variant-orbit-container--instant">
+        <button class="variant-orbit-chevron variant-orbit-chevron-left" aria-label="Previous variant">‹</button>
+
+        <div class="variant-orbit-track" data-count="${total}" data-selected="${vi}">
+          ${uniqueVisible.map((idx, pos) => {
+            const v = item.variants[idx];
+            const isCenter = idx === vi;
+            const isWishlisted = state.wishlists.lists.some(list =>
+              list.items.some(wi => wi.id === item.id && wi.variantIdx === idx)
+            );
+            return `<div class="variant-orbit-item${isCenter ? ' variant-orbit-item--active' : ''}"
+              data-variant-orbit="${idx}"
+              data-orbit-pos="${pos}"
+              data-bg="${thumbBgs[idx % thumbBgs.length]}">
+              ${isWishlisted ? '<div class="variant-orbit-heart-dot">♥</div>' : ''}
+              <img src="${esc(v.image)}" alt="${esc(v.name)}" loading="lazy"
+                onerror="this.style.display='none';this.parentNode.querySelector('.variant-orbit-fallback').style.display='flex';">
+              <div class="variant-orbit-fallback" style="display:none;">📦</div>
+              ${isCenter ? `<span class="variant-orbit-label">${esc(v.name)}</span>` : ''}
+            </div>`;
+          }).join('')}
+        </div>
+
+        <button class="variant-orbit-chevron variant-orbit-chevron-right" aria-label="Next variant">›</button>
+
+        <div class="variant-orbit-progress">
+          <div class="variant-orbit-progress-fill" style="width:${((vi + 1) / total) * 100}%"></div>
+          <span class="variant-orbit-progress-text">${vi + 1} / ${total}</span>
+        </div>
+
+        <div class="variant-orbit-hint">← swipe to rotate →</div>
+      </div>`;
+        }
+      })() : `
+      <div class="detail-single-variant">
+        ${variant.image ? `<img src="${esc(variant.image)}" onerror="this.outerHTML='<span class=emoji-fallback>📦</span>'" alt="">` : '<span class="emoji-fallback">📦</span>'}
+      </div>`}
     </div>
 
-    <div class="detail-title" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
-      <h2 class="heading-lg" style="line-height:1.25">${esc(item.name)}</h2>
-      <div class="detail-rating">
-        <span style="font-size:14px">⭐</span>
-        <span style="font-size:13px;font-weight:700">${reviewData.avgRating}</span>
+    <div class="detail-content">
+      <div class="detail-title-row">
+        <div class="detail-title-left">
+          <h2 class="heading-lg">${esc(item.name)}</h2>
+          <span class="text-secondary detail-variant-name">${esc(variant.name)}</span>
+        </div>
+        <div class="detail-title-right">
+          <div class="detail-rating">
+            <span>⭐</span>
+            <span class="detail-rating-value">${reviewData.avgRating}</span>
+          </div>
+          ${item.variants.length > 1 ? `
+          <button class="variant-drawer-trigger" data-action="open-variant-drawer">
+            <span>☰</span> All ${item.variants.length}
+          </button>` : ''}
+        </div>
       </div>
-    </div>
 
-    ${item.variants.length > 1 ? `
-    <div class="variant-carousel-wrapper" id="variant-wrapper">
-      <button class="variant-arrow left" id="variant-arrow-left"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-      <div class="variant-carousel hide-scrollbar" id="variant-scroll">
-        ${item.variants.map((v, i) => `
-          <button class="variant-pill ${i === vi ? 'active' : ''}" data-variant="${i}">${esc(v.name)}</button>
-        `).join('')}
+      <div class="tag-pills">
+        ${(item.tags || []).slice(0, 8).map(t => `<span class="tag-pill">${esc(t)}</span>`).join('')}
       </div>
-      <button class="variant-arrow right" id="variant-arrow-right"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></button>
-    </div>` : ''}
 
-    <div class="tag-pills">
-      ${(item.tags || []).slice(0, 8).map(t => `<span class="tag-pill">${esc(t)}</span>`).join('')}
+      ${item.hhaSet && item.hhaSet !== 'None' ? `
+      <div class="detail-set-card">
+        <div class="detail-set-icon">🪴</div>
+        <div class="detail-set-info">
+          <div class="detail-set-name">${esc(item.hhaSet)} series</div>
+          <div class="detail-set-count">Part of a set</div>
+        </div>
+        <button class="detail-set-add-btn" data-set="${esc(item.hhaSet)}">+ Add set</button>
+      </div>
+      ` : ''}
+
+      <div class="details-card" id="detail-fields">
+        <div class="detail-section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <span class="label-upper">Details</span>
+          ${secondaryFields.length > 0 && !state.detailsExpanded ? `<span class="detail-more-hint">${secondaryFields.length} more fields</span>` : ''}
+        </div>
+
+        ${primaryFields.map(renderFieldRow).join('')}
+
+        ${secondaryFields.length > 0 ? `
+        <div class="detail-fields-collapsible${state.detailsExpanded ? ' detail-fields-collapsible--open' : ''}">
+          ${secondaryFields.map(renderFieldRow).join('')}
+        </div>
+
+        <button class="detail-expand-toggle" data-action="toggle-details">
+          <span class="detail-expand-arrow${state.detailsExpanded ? ' detail-expand-arrow--flipped' : ''}">▾</span>
+          ${state.detailsExpanded ? 'Show less' : 'Show all details'}
+        </button>
+        ` : ''}
+      </div>
+
+      ${reviewData.html}
+
+      ${similarHtml}
     </div>
-
-    <div class="details-card" id="detail-fields">
-      <h4 class="label-upper" style="margin-bottom:16px">Details</h4>
-      ${detailFields.map(([label, val], i) => `
-        <div class="detail-row">
-          <span class="detail-label">${esc(label)}</span>
-          <span class="detail-value">${esc(String(val))}</span>
-        </div>`).join('')}
-    </div>
-
-    ${reviewData.html}
-
-    ${similarHtml}
 
     <div class="sticky-cta" id="detail-cta">
       <button class="cta-btn-secondary" id="detail-add-to-list" data-list-item="${esc(item.id)}" data-list-vi="${vi}">
@@ -480,6 +628,38 @@ async function renderDetail() {
         <button class="cta-btn" id="detail-add-cart" ${cartFull ? 'disabled' : ''}>
           🛒 Add to Cart
         </button>
+      </div>
+    </div>
+
+    <div class="variant-drawer-backdrop${state.variantDrawerOpen ? ' variant-drawer-backdrop--open' : ''}" data-action="close-variant-drawer"></div>
+    <div class="variant-drawer${state.variantDrawerOpen ? ' variant-drawer--open' : ''}">
+      <div class="variant-drawer-handle"></div>
+      <div class="variant-drawer-header">
+        <span class="label-upper">All Variants</span>
+        <span class="text-secondary">${item.variants.length} variants</span>
+      </div>
+      <div class="variant-drawer-table-header">
+        <span></span><span>NAME</span><span>CLR 1</span><span>CLR 2</span><span>HEX</span>
+      </div>
+      <div class="variant-drawer-scroll">
+        ${item.variants.map((v, idx) => {
+          const isSel = idx === vi;
+          const isWish = state.wishlists.lists.some(list =>
+            list.items.some(wi => wi.id === item.id && wi.variantIdx === idx)
+          );
+          return `<button class="variant-drawer-row${isSel ? ' variant-drawer-row--selected' : ''}" data-drawer-variant="${idx}">
+            <div class="variant-drawer-thumb" style="background:${thumbBgs[idx % thumbBgs.length]}">
+              <img src="${esc(v.image)}" alt="${esc(v.name)}" loading="lazy"
+                onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+              <span style="display:none;font-size:16px;">📦</span>
+              ${isWish ? '<div class="variant-drawer-heart-dot">♥</div>' : ''}
+            </div>
+            <span class="variant-drawer-name">${esc(v.name)}</span>
+            <span class="variant-drawer-color">${esc(v.color1 || '-')}</span>
+            <span class="variant-drawer-color">${esc(v.color2 || '-')}</span>
+            <button class="hex-copy-badge" data-hex="${esc(v.hexVariated || v.hex || item.hexBase)}">${esc((v.hexVariated || v.hex || item.hexBase).slice(-4).toUpperCase())}</button>
+          </button>`;
+        }).join('')}
       </div>
     </div>
   </div>`;
@@ -1288,33 +1468,64 @@ function updateDetailVariant() {
   const heroImg = document.getElementById('detail-hero-img');
   if (heroImg && variant.image) heroImg.src = variant.image;
 
-  // Update variant pill active states
+  // Update variant pill active states (for backwards compat)
   app.querySelectorAll('[data-variant]').forEach(btn => {
     btn.classList.toggle('active', parseInt(btn.dataset.variant) === vi);
   });
 
-  // Update detail fields
-  const detailFields = [
-    ['Hex ID', item.hexBase],
-    ['Hex ID (Variated)', variant.hexVariated || variant.hex || item.hexBase],
-    ['Size', item.size],
-    ['Catalog', item.catalog],
-    ['HHA Concepts', [item.hhaConcept1, item.hhaConcept2].filter(Boolean).join(', ')],
-    ['HHA Series', item.hhaSeries],
-    ['HHA Set', item.hhaSet],
-    ['Styles', (item.tags || []).filter(t => ['active','cool','cute','elegant','gorgeous','simple'].includes(t)).join(', ')],
-    ['Colors', [variant.color1, variant.color2].filter(Boolean).join(', ')],
-    ['DIY', item.diy],
-  ].filter(([, v]) => v && v !== 'NA');
+  // Update detail fields with new collapsible structure
+  const allFields = [
+    ['Hex ID', item.hexBase, 'hex'],
+    ['Size', item.size, 'text'],
+    ['Hex ID (Variated)', variant.hexVariated || variant.hex || item.hexBase, 'hex'],
+    ['Catalog', item.catalog, 'text'],
+    ['HHA Concepts', [item.hhaConcept1, item.hhaConcept2].filter(Boolean).join(', '), 'text'],
+    ['HHA Series', item.hhaSeries, 'text'],
+    ['HHA Set', item.hhaSet, 'text'],
+    ['Styles', (item.tags || []).filter(t => ['active','cool','cute','elegant','gorgeous','simple'].includes(t)).join(', '), 'text'],
+    ['Colors', [variant.color1, variant.color2].filter(Boolean).join(', '), 'text'],
+    ['DIY', item.diy, 'text'],
+  ].filter(([, v]) => v && v !== 'NA' && v !== 'None');
+
+  const primaryFields = allFields.filter(([label]) => label === 'Hex ID' || label === 'Size');
+  const secondaryFields = allFields.filter(([label]) => label !== 'Hex ID' && label !== 'Size');
+
+  const renderFieldRow = ([label, val, type]) => {
+    if (type === 'hex') {
+      return `<div class="detail-field-row">
+        <span class="detail-field-label">${esc(label)}</span>
+        <button class="hex-copy-badge" data-hex="${esc(val)}">${esc(val)}</button>
+      </div>`;
+    }
+    return `<div class="detail-field-row">
+      <span class="detail-field-label">${esc(label)}</span>
+      <span class="detail-field-value">${esc(String(val))}</span>
+    </div>`;
+  };
 
   const fieldsEl = document.getElementById('detail-fields');
   if (fieldsEl) {
-    fieldsEl.innerHTML = `<h4 class="label-upper" style="margin-bottom:16px">Details</h4>
-      ${detailFields.map(([label, val]) => `
-        <div class="detail-row">
-          <span class="detail-label">${esc(label)}</span>
-          <span class="detail-value">${esc(String(val))}</span>
-        </div>`).join('')}`;
+    fieldsEl.innerHTML = `
+      <div class="detail-section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <span class="label-upper">Details</span>
+        ${secondaryFields.length > 0 && !state.detailsExpanded ? `<span class="detail-more-hint">${secondaryFields.length} more fields</span>` : ''}
+      </div>
+
+      ${primaryFields.map(renderFieldRow).join('')}
+
+      ${secondaryFields.length > 0 ? `
+      <div class="detail-fields-collapsible${state.detailsExpanded ? ' detail-fields-collapsible--open' : ''}">
+        ${secondaryFields.map(renderFieldRow).join('')}
+      </div>
+
+      <button class="detail-expand-toggle" data-action="toggle-details">
+        <span class="detail-expand-arrow${state.detailsExpanded ? ' detail-expand-arrow--flipped' : ''}">▾</span>
+        ${state.detailsExpanded ? 'Show less' : 'Show all details'}
+      </button>
+      ` : ''}`;
+
+    // Re-attach toggle details and hex copy events
+    attachDetailFieldEvents();
   }
 
   // Update CTA buttons
@@ -1340,8 +1551,11 @@ function updateDetailVariant() {
     if (detailAddCart) detailAddCart.addEventListener('click', () => {
       const qty = parseInt(document.getElementById('detail-qty-cart')?.textContent) || 0;
       const count = qty < 1 ? 1 : qty;
-      const heroImg = document.getElementById('detail-hero-img');
-      if (heroImg) _flyAnimRect = heroImg.getBoundingClientRect();
+      // Find fly animation source: active orbit item, single variant image, or hero container
+      const orbitImg = document.querySelector('.variant-orbit-item--active img');
+      const singleImg = document.querySelector('.detail-single-variant img');
+      const flySource = orbitImg || singleImg || document.getElementById('detail-hero');
+      if (flySource) _flyAnimRect = flySource.getBoundingClientRect();
       for (let i = 0; i < count; i++) {
         addToCart({
           id: item.id,
@@ -1370,6 +1584,53 @@ function updateDetailVariant() {
   }
 }
 
+// Helper to attach events for detail field toggles and hex copy badges
+function attachDetailFieldEvents() {
+  // Toggle details expand/collapse
+  document.querySelectorAll('[data-action="toggle-details"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.detailsExpanded = !state.detailsExpanded;
+      const container = document.querySelector('.detail-fields-collapsible');
+      if (container) container.classList.toggle('detail-fields-collapsible--open', state.detailsExpanded);
+      const arrow = btn.querySelector('.detail-expand-arrow');
+      if (arrow) arrow.classList.toggle('detail-expand-arrow--flipped', state.detailsExpanded);
+      const textNode = btn.childNodes[btn.childNodes.length - 1];
+      if (textNode && textNode.nodeType === 3) {
+        textNode.textContent = state.detailsExpanded ? 'Show less' : 'Show all details';
+      }
+      const hint = document.querySelector('.detail-more-hint');
+      if (hint) hint.style.display = state.detailsExpanded ? 'none' : '';
+    });
+  });
+
+  // Hex copy badges
+  attachHexCopyEvents();
+}
+
+function attachHexCopyEvents() {
+  document.querySelectorAll('.hex-copy-badge').forEach(badge => {
+    badge.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const hex = badge.dataset.hex;
+      navigator.clipboard.writeText(hex).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = hex; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+        document.body.removeChild(ta);
+      });
+      badge.classList.add('hex-copy-badge--copied');
+      const originalText = badge.textContent;
+      badge.textContent = '✓ Copied!';
+      hapticTick();
+      NookSounds.play('hexCopy');
+      setTimeout(() => {
+        badge.classList.remove('hex-copy-badge--copied');
+        badge.textContent = originalText;
+      }, 1400);
+    });
+  });
+}
+
 // ─── Detail Qty Events Helper ───
 function attachDetailQtyEvents() {
   document.querySelectorAll('[data-detail-qty-plus]').forEach(btn => {
@@ -1394,6 +1655,327 @@ function attachDetailQtyEvents() {
         if (cur > 0) span.textContent = cur - 1;
       }
     });
+  });
+}
+
+// ─── Variant Orbit: position items ───
+function positionOrbitItems(selectedIdx) {
+  const track = document.querySelector('.variant-orbit-track');
+  if (!track) return;
+  const items = track.querySelectorAll('.variant-orbit-item');
+  const count = items.length;
+  if (count === 0) return;
+
+  const isCircular = track.classList.contains('variant-orbit-track--circular');
+
+  if (isCircular) {
+    // True circular positioning for < 15 variants (like mockup)
+    const angleStep = 360 / count;
+    const radiusX = 100; // horizontal spread
+    const radiusZ = 60;  // depth
+
+    items.forEach((el) => {
+      const idx = parseInt(el.dataset.variantOrbit, 10);
+      const relativeIdx = ((idx - selectedIdx) % count + count) % count;
+      const angle = relativeIdx * angleStep;
+      const radian = (angle * Math.PI) / 180;
+
+      const x = Math.sin(radian) * radiusX;
+      const z = Math.cos(radian) * radiusZ;
+      const normalizedZ = (z + radiusZ) / (2 * radiusZ); // 0 (back) to 1 (front)
+
+      const scale = 0.45 + normalizedZ * 0.55;
+      const opacity = 0.3 + normalizedZ * 0.7;
+      const blur = Math.max(0, (1 - normalizedZ) * 12);
+      const brightness = 0.6 + normalizedZ * 0.4;
+      const isFront = relativeIdx === 0;
+
+      el.style.transform = `translateX(${x}px) scale(${scale})`;
+      el.style.zIndex = Math.round(normalizedZ * 100);
+      el.style.opacity = isFront ? 1 : opacity;
+      el.style.filter = isFront ? 'none' : `blur(${blur}px) brightness(${brightness})`;
+      el.style.width = isFront ? '120px' : '100px';
+      el.style.height = isFront ? '120px' : '100px';
+      el.style.boxShadow = isFront
+        ? '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)'
+        : '0 2px 8px rgba(0,0,0,0.06)';
+      el.style.border = isFront
+        ? '2.5px solid rgba(106,130,62,0.4)'
+        : '1.5px solid rgba(255,255,255,0.5)';
+      el.style.background = el.dataset.bg;
+
+      // Update active class and label visibility
+      el.classList.toggle('variant-orbit-item--active', isFront);
+      const label = el.querySelector('.variant-orbit-label');
+      if (label) label.style.display = isFront ? '' : 'none';
+    });
+  } else {
+    // Fixed 5-position mode for 15+ variants (windowed)
+    const positions = [
+      { x: -120, scale: 0.55, z: 10, opacity: 0.5, blur: 6 },   // far-left
+      { x: -65, scale: 0.75, z: 30, opacity: 0.75, blur: 2 },   // left
+      { x: 0, scale: 1.0, z: 100, opacity: 1, blur: 0 },        // center
+      { x: 65, scale: 0.75, z: 30, opacity: 0.75, blur: 2 },    // right
+      { x: 120, scale: 0.55, z: 10, opacity: 0.5, blur: 6 },    // far-right
+    ];
+
+    items.forEach((el) => {
+      const pos = parseInt(el.dataset.orbitPos, 10);
+      const isCenter = el.classList.contains('variant-orbit-item--active');
+
+      let posIdx;
+      if (count === 5) {
+        posIdx = pos;
+      } else if (count === 3) {
+        posIdx = pos + 1;
+      } else if (count === 2) {
+        posIdx = pos === 0 ? 1 : 3;
+      } else {
+        posIdx = 2;
+      }
+
+      const p = positions[posIdx] || positions[2];
+
+      el.style.transform = `translateX(${p.x}px) scale(${p.scale})`;
+      el.style.zIndex = p.z;
+      el.style.opacity = p.opacity;
+      el.style.filter = isCenter ? 'none' : `blur(${p.blur}px) brightness(0.95)`;
+      el.style.width = isCenter ? '120px' : '90px';
+      el.style.height = isCenter ? '90px' : '90px';
+      el.style.boxShadow = isCenter
+        ? '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)'
+        : '0 2px 8px rgba(0,0,0,0.06)';
+      el.style.border = isCenter
+        ? '2.5px solid rgba(106,130,62,0.4)'
+        : '1.5px solid rgba(255,255,255,0.5)';
+      el.style.background = el.dataset.bg;
+    });
+  }
+}
+
+function initOrbitSwipe() {
+  const track = document.querySelector('.variant-orbit-track');
+  if (!track) return;
+  let startX = null;
+  let delta = 0;
+
+  track.addEventListener('pointerdown', (e) => { startX = e.clientX; track.style.cursor = 'grabbing'; });
+  track.addEventListener('pointermove', (e) => {
+    if (startX === null) return;
+    delta = e.clientX - startX;
+  });
+  const endSwipe = () => {
+    if (startX === null) return;
+    const count = state.itemDetail.variants.length;
+    if (delta > 40) {
+      state.selectedVariantIdx = (state.selectedVariantIdx - 1 + count) % count;
+      hapticTick();
+      updateOrbitAndDetail();
+    } else if (delta < -40) {
+      state.selectedVariantIdx = (state.selectedVariantIdx + 1) % count;
+      hapticTick();
+      updateOrbitAndDetail();
+    }
+    startX = null; delta = 0; track.style.cursor = 'grab';
+  };
+  track.addEventListener('pointerup', endSwipe);
+  track.addEventListener('pointerleave', endSwipe);
+}
+
+function hapticTick() {
+  if (navigator.vibrate) navigator.vibrate(8);
+}
+
+// Surgical update: reposition orbit items + update detail fields + hero bg
+function updateOrbitAndDetail() {
+  const item = state.itemDetail;
+  const vi = state.selectedVariantIdx;
+  const total = item.variants.length;
+  const useCircular = total < 15;
+
+  const track = document.querySelector('.variant-orbit-track');
+  if (track) {
+    if (useCircular) {
+      // Circular mode: all items already rendered, just update selected state
+      track.dataset.selected = vi;
+      track.querySelectorAll('[data-variant-orbit]').forEach(el => {
+        const idx = parseInt(el.dataset.variantOrbit, 10);
+        const isCenter = idx === vi;
+        el.classList.toggle('variant-orbit-item--active', isCenter);
+        // Add/update label
+        let label = el.querySelector('.variant-orbit-label');
+        if (isCenter) {
+          if (!label) {
+            label = document.createElement('span');
+            label.className = 'variant-orbit-label';
+            el.appendChild(label);
+          }
+          label.textContent = item.variants[idx].name;
+          label.style.display = '';
+        } else if (label) {
+          label.style.display = 'none';
+        }
+      });
+    } else {
+      // Windowed mode for 15+ variants: rebuild visible window
+      const windowSize = Math.min(5, total);
+      const halfWindow = Math.floor(windowSize / 2);
+      const visibleIndices = [];
+      for (let i = -halfWindow; i <= halfWindow; i++) {
+        const idx = ((vi + i) % total + total) % total;
+        visibleIndices.push(idx);
+      }
+      const uniqueVisible = [...new Set(visibleIndices)];
+
+      track.innerHTML = uniqueVisible.map((idx, pos) => {
+        const v = item.variants[idx];
+        const isCenter = idx === vi;
+        const isWishlisted = state.wishlists.lists.some(list =>
+          list.items.some(wi => wi.id === item.id && wi.variantIdx === idx)
+        );
+        return `<div class="variant-orbit-item${isCenter ? ' variant-orbit-item--active' : ''}"
+          data-variant-orbit="${idx}"
+          data-orbit-pos="${pos}"
+          data-bg="${thumbBgs[idx % thumbBgs.length]}">
+          ${isWishlisted ? '<div class="variant-orbit-heart-dot">♥</div>' : ''}
+          <img src="${esc(v.image)}" alt="${esc(v.name)}" loading="lazy"
+            onerror="this.style.display='none';this.parentNode.querySelector('.variant-orbit-fallback').style.display='flex';">
+          <div class="variant-orbit-fallback" style="display:none;">📦</div>
+          ${isCenter ? `<span class="variant-orbit-label">${esc(v.name)}</span>` : ''}
+        </div>`;
+      }).join('');
+      track.dataset.selected = vi;
+
+      // Re-attach click handlers to new orbit items
+      track.querySelectorAll('[data-variant-orbit]').forEach(el => {
+        el.addEventListener('click', () => {
+          const newIdx = parseInt(el.dataset.variantOrbit, 10);
+          if (newIdx !== state.selectedVariantIdx) {
+            state.selectedVariantIdx = newIdx;
+            hapticTick();
+            updateOrbitAndDetail();
+          }
+        });
+      });
+    }
+  }
+
+  positionOrbitItems(vi);
+  updateDetailVariant(); // updates hero image, fields, CTA, heart state
+
+  // Update dots (for < 15 variants)
+  document.querySelectorAll('.variant-orbit-dot').forEach((dot, i) => {
+    dot.classList.toggle('variant-orbit-dot--active', i === vi);
+  });
+
+  // Update progress bar (for 15+ variants)
+  const progressFill = document.querySelector('.variant-orbit-progress-fill');
+  const progressText = document.querySelector('.variant-orbit-progress-text');
+  if (progressFill) progressFill.style.width = `${((vi + 1) / total) * 100}%`;
+  if (progressText) progressText.textContent = `${vi + 1} / ${total}`;
+
+  // Update variant name in title area
+  const variantNameEl = document.querySelector('.detail-variant-name');
+  if (variantNameEl) {
+    variantNameEl.textContent = item.variants[vi].name;
+  }
+
+  // Update drawer row selection
+  document.querySelectorAll('.variant-drawer-row').forEach((row, i) => {
+    row.classList.toggle('variant-drawer-row--selected', i === vi);
+  });
+
+  // Transition hero background color
+  const hero = document.getElementById('detail-hero');
+  if (hero) {
+    hero.style.background = data.getItemBg(vi);
+  }
+
+  NookSounds.play('variantSwitch');
+}
+
+function playDetailEntrance() {
+  // Stagger orbit items spiraling in
+  const orbitItems = document.querySelectorAll('.variant-orbit-item');
+  orbitItems.forEach((el, i) => {
+    el.style.opacity = '0';
+    el.style.transform = 'scale(0) translateX(0)';
+    setTimeout(() => {
+      el.style.transition = 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+      positionOrbitItems(state.selectedVariantIdx);
+    }, 80 + i * 60);
+  });
+
+  // Stagger content sections
+  const sections = document.querySelectorAll('.detail-content > *');
+  sections.forEach((el, i) => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px)';
+    setTimeout(() => {
+      el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+      el.style.opacity = '1';
+      el.style.transform = 'translateY(0)';
+    }, 350 + i * 100);
+  });
+}
+
+function initDetailParallax() {
+  const isDesktop = window.innerWidth >= 768;
+
+  if (isDesktop) {
+    const hero = document.querySelector('.detail-hero');
+    if (!hero) return;
+    hero.addEventListener('mousemove', (e) => {
+      const rect = hero.getBoundingClientRect();
+      const x = ((e.clientX - rect.left - rect.width / 2) / rect.width) * 12;
+      const y = ((e.clientY - rect.top - rect.height / 2) / rect.height) * 8;
+      const active = document.querySelector('.variant-orbit-item--active');
+      if (active) {
+        const img = active.querySelector('img');
+        if (img) img.style.transform = `translate(${x}px, ${y}px)`;
+      }
+    });
+  } else {
+    window.addEventListener('deviceorientation', (e) => {
+      const x = Math.max(-12, Math.min(12, (e.gamma || 0) * 0.4));
+      const y = Math.max(-8, Math.min(8, (e.beta || 0) * 0.25 - 10));
+      const active = document.querySelector('.variant-orbit-item--active');
+      if (active) {
+        const img = active.querySelector('img');
+        if (img) img.style.transform = `translate(${x}px, ${y}px)`;
+      }
+    });
+  }
+}
+
+// Update orbit heart dots after wishlist changes
+function refreshOrbitHeartDots() {
+  if (!state.itemDetail) return;
+  document.querySelectorAll('.variant-orbit-item').forEach((el) => {
+    const variantIdx = parseInt(el.dataset.variantOrbit, 10);
+    const isWish = state.wishlists.lists.some(list =>
+      list.items.some(wi => wi.id === state.itemDetail.id && wi.variantIdx === variantIdx)
+    );
+    const existing = el.querySelector('.variant-orbit-heart-dot');
+    if (isWish && !existing) {
+      el.insertAdjacentHTML('afterbegin', '<div class="variant-orbit-heart-dot">♥</div>');
+    } else if (!isWish && existing) {
+      existing.remove();
+    }
+  });
+  // Also update drawer heart dots
+  document.querySelectorAll('.variant-drawer-row').forEach((row, idx) => {
+    const thumb = row.querySelector('.variant-drawer-thumb');
+    if (!thumb) return;
+    const isWish = state.wishlists.lists.some(list =>
+      list.items.some(wi => wi.id === state.itemDetail.id && wi.variantIdx === idx)
+    );
+    const existing = thumb.querySelector('.variant-drawer-heart-dot');
+    if (isWish && !existing) {
+      thumb.insertAdjacentHTML('beforeend', '<div class="variant-drawer-heart-dot">♥</div>');
+    } else if (!isWish && existing) {
+      existing.remove();
+    }
   });
 }
 
@@ -1832,8 +2414,11 @@ function attachEvents() {
       const variant = state.itemDetail.variants[vi] || state.itemDetail.variants[0];
       const qty = parseInt(document.getElementById('detail-qty-cart')?.textContent) || 0;
       const count = qty < 1 ? 1 : qty;
-      const heroImg = document.getElementById('detail-hero-img');
-      if (heroImg) _flyAnimRect = heroImg.getBoundingClientRect();
+      // Find fly animation source: active orbit item, single variant image, or hero container
+      const orbitImg = document.querySelector('.variant-orbit-item--active img');
+      const singleImg = document.querySelector('.detail-single-variant img');
+      const flySource = orbitImg || singleImg || document.getElementById('detail-hero');
+      if (flySource) _flyAnimRect = flySource.getBoundingClientRect();
       for (let i = 0; i < count; i++) {
         addToCart({
           id: state.itemDetail.id,
@@ -1882,6 +2467,109 @@ function attachEvents() {
   if (state.page === 'detail' && state._detailScrollY !== undefined) {
     window.scrollTo(0, state._detailScrollY);
     state._detailScrollY = undefined;
+  }
+
+  // ─── Variant Orbit Carousel Events ───
+  // Orbit chevrons
+  document.querySelectorAll('.variant-orbit-chevron-left').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const count = state.itemDetail.variants.length;
+      state.selectedVariantIdx = (state.selectedVariantIdx - 1 + count) % count;
+      hapticTick();
+      updateOrbitAndDetail();
+    });
+  });
+  document.querySelectorAll('.variant-orbit-chevron-right').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const count = state.itemDetail.variants.length;
+      state.selectedVariantIdx = (state.selectedVariantIdx + 1) % count;
+      hapticTick();
+      updateOrbitAndDetail();
+    });
+  });
+
+  // Orbit item direct click
+  document.querySelectorAll('.variant-orbit-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const idx = parseInt(el.dataset.variantOrbit);
+      if (idx !== state.selectedVariantIdx) {
+        state.selectedVariantIdx = idx;
+        hapticTick();
+        updateOrbitAndDetail();
+      }
+    });
+  });
+
+  // Variant drawer open/close
+  document.querySelectorAll('[data-action="open-variant-drawer"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelector('.variant-drawer')?.classList.add('variant-drawer--open');
+      document.querySelector('.variant-drawer-backdrop')?.classList.add('variant-drawer-backdrop--open');
+    });
+  });
+  document.querySelectorAll('[data-action="close-variant-drawer"]').forEach(el => {
+    el.addEventListener('click', () => {
+      document.querySelector('.variant-drawer')?.classList.remove('variant-drawer--open');
+      document.querySelector('.variant-drawer-backdrop')?.classList.remove('variant-drawer-backdrop--open');
+    });
+  });
+
+  // Variant drawer row clicks
+  document.querySelectorAll('.variant-drawer-row').forEach(row => {
+    row.addEventListener('click', (e) => {
+      // Don't close drawer if clicking hex copy badge
+      if (e.target.closest('.hex-copy-badge')) return;
+      const idx = parseInt(row.dataset.drawerVariant);
+      state.selectedVariantIdx = idx;
+      hapticTick();
+      updateOrbitAndDetail();
+      document.querySelector('.variant-drawer')?.classList.remove('variant-drawer--open');
+      document.querySelector('.variant-drawer-backdrop')?.classList.remove('variant-drawer-backdrop--open');
+    });
+  });
+
+  // Toggle details expand/collapse
+  document.querySelectorAll('[data-action="toggle-details"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.detailsExpanded = !state.detailsExpanded;
+      const container = document.querySelector('.detail-fields-collapsible');
+      if (container) container.classList.toggle('detail-fields-collapsible--open', state.detailsExpanded);
+      const arrow = btn.querySelector('.detail-expand-arrow');
+      if (arrow) arrow.classList.toggle('detail-expand-arrow--flipped', state.detailsExpanded);
+      const textNode = btn.childNodes[btn.childNodes.length - 1];
+      if (textNode && textNode.nodeType === 3) {
+        textNode.textContent = state.detailsExpanded ? 'Show less' : 'Show all details';
+      }
+      const hint = document.querySelector('.detail-more-hint');
+      if (hint) hint.style.display = state.detailsExpanded ? 'none' : '';
+    });
+  });
+
+  // Add Full Set button
+  document.querySelectorAll('.detail-set-add-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.textContent = '✓ Added!';
+      btn.classList.add('detail-set-add-btn--added');
+      hapticTick();
+      NookSounds.play('addToCart');
+      setTimeout(() => { btn.textContent = '+ Add set'; btn.classList.remove('detail-set-add-btn--added'); }, 2000);
+    });
+  });
+
+  // Hex copy badges
+  attachHexCopyEvents();
+
+  // Initialize orbit positions + swipe after detail page render
+  if (state.page === 'detail' && state.itemDetail && state.itemDetail.variants.length > 1) {
+    positionOrbitItems(state.selectedVariantIdx);
+    initOrbitSwipe();
+  }
+
+  // Play entrance animation for detail page on fresh page load
+  if (state.page === 'detail' && state.itemDetail && state._pageEnter) {
+    playDetailEntrance();
+    initDetailParallax();
+    state._pageEnter = false;
   }
 
   // Cart duplicate by index (with pop animation)
@@ -2531,6 +3219,11 @@ async function toggleWishlist(itemId, variantIdx = 0) {
 
   state._heartPulse = { id: itemId, vi: variantIdx };
   await render();
+
+  // Update orbit heart dots if on detail page
+  if (state.page === 'detail' && state.itemDetail) {
+    refreshOrbitHeartDots();
+  }
 }
 
 function getCartTotal() {
@@ -2714,6 +3407,8 @@ async function loadItemDetail(itemId) {
   _reviewCache = { itemId: null, data: null }; // clear reviews cache for new item
   state.similarScrollLeft = 0; // reset similar carousel scroll for new item
   state._detailScrollY = undefined; // prevent restoring old scroll position
+  state.detailsExpanded = false; // reset collapsible details
+  state.variantDrawerOpen = false; // reset variant drawer
   state.itemsViewed++;
   render(); // Show loading
   window.scrollTo(0, 0);

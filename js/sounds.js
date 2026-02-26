@@ -221,6 +221,12 @@ const NookSounds = (() => {
       softOsc(587, t + 0.3, 0.3, 0.1);
       softOsc(784, t + 0.42, 0.4, 0.1);
     },
+    hexCopy() {
+      const t = ctx.currentTime;
+      softOsc(880, t, 0.06, 0.12);
+      softBend(880, 1320, t, 0.08, 0.1);
+      softNoise(t, 0.02, 0.04);
+    },
   };
 
   function play(name) {
