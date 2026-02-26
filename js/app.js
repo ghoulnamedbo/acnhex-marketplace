@@ -4027,8 +4027,8 @@ function attachEvents() {
         const registrations = await navigator.serviceWorker.getRegistrations();
         await Promise.all(registrations.map(reg => reg.unregister()));
       }
-      // Hard refresh (bypass cache)
-      location.reload(true);
+      // Navigate to home page (clears hash) and hard refresh
+      window.location.href = window.location.pathname;
     }
   });
 
