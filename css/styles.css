@@ -613,7 +613,7 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
 
 /* New hero with orbit carousel inside */
 .detail-hero-orbit {
-  min-height: 260px;
+  min-height: 340px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -621,11 +621,12 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   position: relative;
   overflow: hidden;
   box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-  padding: 20px 0;
+  padding: 30px 0;
+  touch-action: pan-y pinch-zoom;
 }
 .detail-hero-orbit .variant-orbit-container {
   margin: 0;
-  padding: 60px 0 0;
+  padding: 40px 0 0;
 }
 .detail-single-variant {
   display: flex;
@@ -1356,6 +1357,100 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
 .detail-qty-row { display: flex; gap: 10px; align-items: center; }
 .detail-qty-row .cta-btn,
 .detail-qty-row .cta-btn-secondary { flex: 1; }
+
+/* ─── Detail Page Cart Button (Home-style) ─── */
+.detail-cart-btn-wrap {
+  position: relative;
+  height: 56px;
+  width: 100%;
+}
+
+.detail-add-cart-btn {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 18px;
+  border: none;
+  background: linear-gradient(135deg, var(--pines), var(--willow));
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: var(--shadow-cta);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.detail-add-cart-btn:hover:not(:disabled) {
+  box-shadow: 0 6px 12px rgba(106,130,62,0.25), 0 12px 32px rgba(106,130,62,0.4);
+  transform: translateY(-1px);
+}
+.detail-add-cart-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.detail-add-cart-btn.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.95);
+}
+
+.detail-qty-counter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  border-radius: 18px;
+  background: var(--pines);
+  box-shadow: var(--shadow-cta);
+  opacity: 0;
+  transform: scale(0.95);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.detail-qty-counter.visible {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.detail-qty-counter-btn {
+  width: 64px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+  border-radius: 18px;
+}
+.detail-qty-counter-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.15);
+}
+.detail-qty-counter-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.detail-qty-counter-val {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  min-width: 40px;
+  text-align: center;
+}
 
 /* ─── Wishlist Toast ─── */
 .wishlist-toast {
@@ -3666,8 +3761,8 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
 .variant-orbit-track {
   position: relative;
   width: 100%;
-  max-width: 340px;
-  height: 120px;
+  max-width: 400px;
+  height: 180px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3678,7 +3773,7 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
 
 /* Circular mode: slightly more height for full orbit */
 .variant-orbit-track--circular {
-  height: 130px;
+  height: 190px;
 }
 
 .variant-orbit-item {
@@ -3789,9 +3884,9 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
 
 .variant-orbit-dots {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   justify-content: center;
-  margin-top: 6px;
+  margin-top: 16px;
 }
 
 .variant-orbit-dot {
@@ -3815,7 +3910,7 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   height: 6px;
   background: var(--border);
   border-radius: 3px;
-  margin: 6px auto 0;
+  margin: 16px auto 0;
 }
 
 .variant-orbit-progress-fill {
@@ -3841,10 +3936,10 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
 
 .variant-orbit-hint {
   position: relative;
-  margin-top: 16px;
-  font-size: 9px;
+  margin-top: 20px;
+  font-size: 10px;
   color: var(--text-secondary);
-  opacity: 0.35;
+  opacity: 0.4;
 }
 
 /* ── Collapsible Details ── */
@@ -3937,7 +4032,7 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   backdrop-filter: blur(0px);
   -webkit-backdrop-filter: blur(0px);
   pointer-events: none;
-  transition: all 0.35s ease;
+  transition: all 0.3s ease-out;
 }
 
 .variant-drawer-backdrop--open {
@@ -3951,14 +4046,14 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   position: fixed;
   bottom: 0;
   left: 50%;
-  transform: translateX(-50%) translateY(110%);
+  transform: translateX(-50%) translateY(100%);
   width: 100%;
   max-width: 600px;
   background: #fff;
   border-radius: 24px 24px 0 0;
   box-shadow: 0 -4px 32px rgba(0,0,0,0.12);
   z-index: 999;
-  transition: transform 0.4s cubic-bezier(.34,1.56,.64,1);
+  transition: transform 0.35s cubic-bezier(.22,1,.36,1);
   max-height: 65vh;
   display: flex;
   flex-direction: column;

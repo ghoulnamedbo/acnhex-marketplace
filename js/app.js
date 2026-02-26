@@ -78,6 +78,8 @@ const state = {
   // Detail page V2
   detailsExpanded: false,
   variantDrawerOpen: false,
+  // Saved detail state for tab switching
+  _savedDetailState: null,
 };
 
 const app = document.getElementById('app');
@@ -134,9 +136,9 @@ function findItemList(id, variantIdx = 0) {
 }
 
 let toastTimer = null;
-function showWishlistToast(itemId, variantIdx, listName) {
+function showWishlistToast(itemId, variantIdx, listName, isRemoval = false) {
   clearTimeout(toastTimer);
-  state.wishlistToast = { itemId, variantIdx, listName };
+  state.wishlistToast = { itemId, variantIdx, listName, isRemoval };
   toastTimer = setTimeout(() => {
     state.wishlistToast = null;
     const el = document.getElementById('wl-toast');
@@ -417,6 +419,7 @@ async function renderDetail() {
   const bg = data.getItemBg(0);
   const inWishlist = isInWishlist(item.id, vi);
   const cartFull = getCartTotal() >= 40;
+  const qtyInCart = state.cart.filter(c => c.id === item.id && c.variantIdx === vi).length;
   let reviewData;
   if (_reviewCache.itemId === item.id && _reviewCache.data) {
     reviewData = _reviewCache.data;
@@ -619,15 +622,15 @@ async function renderDetail() {
       <button class="cta-btn-secondary" id="detail-add-to-list" data-list-item="${esc(item.id)}" data-list-vi="${vi}">
         📋 Add to List
       </button>
-      <div class="detail-qty-row">
-        <div class="qty-control">
-          <button class="qty-btn" data-detail-qty-minus="cart">−</button>
-          <span class="qty-value" id="detail-qty-cart">0</span>
-          <button class="qty-btn" data-detail-qty-plus="cart">+</button>
-        </div>
-        <button class="cta-btn" id="detail-add-cart" ${cartFull ? 'disabled' : ''}>
-          🛒 Add to Cart
+      <div class="detail-cart-btn-wrap" data-cart-item-id="${esc(item.id)}" data-cart-vi="${vi}">
+        <button class="detail-add-cart-btn${qtyInCart > 0 ? ' hidden' : ''}" id="detail-add-cart" ${cartFull ? 'disabled' : ''}>
+          ${ICONS.plus} Add to Cart
         </button>
+        <div class="detail-qty-counter${qtyInCart > 0 ? ' visible' : ''}">
+          <button class="detail-qty-counter-btn" data-detail-qty-minus>−</button>
+          <span class="detail-qty-counter-val" id="detail-qty-cart">${qtyInCart}</span>
+          <button class="detail-qty-counter-btn" data-detail-qty-plus ${cartFull ? 'disabled' : ''}>+</button>
+        </div>
       </div>
     </div>
 
@@ -657,7 +660,7 @@ async function renderDetail() {
             <span class="variant-drawer-name">${esc(v.name)}</span>
             <span class="variant-drawer-color">${esc(v.color1 || '-')}</span>
             <span class="variant-drawer-color">${esc(v.color2 || '-')}</span>
-            <button class="hex-copy-badge" data-hex="${esc(v.hexVariated || v.hex || item.hexBase)}">${esc((v.hexVariated || v.hex || item.hexBase).slice(-4).toUpperCase())}</button>
+            <span class="hex-copy-badge" data-hex="${esc(v.hexVariated || v.hex || item.hexBase)}">${esc((v.hexVariated || v.hex || item.hexBase).slice(-4).toUpperCase())}</span>
           </button>`;
         }).join('')}
       </div>
@@ -1463,6 +1466,7 @@ function updateDetailVariant() {
   const variant = item.variants[vi] || item.variants[0];
   const inWishlist = isInWishlist(item.id, vi);
   const cartFull = getCartTotal() >= 40;
+  const qtyInCart = state.cart.filter(c => c.id === item.id && c.variantIdx === vi).length;
 
   // Update hero image
   const heroImg = document.getElementById('detail-hero-img');
@@ -1535,39 +1539,34 @@ function updateDetailVariant() {
       <button class="cta-btn-secondary" id="detail-add-to-list" data-list-item="${esc(item.id)}" data-list-vi="${vi}">
         📋 Add to List
       </button>
-      <div class="detail-qty-row">
-        <div class="qty-control">
-          <button class="qty-btn" data-detail-qty-minus="cart">−</button>
-          <span class="qty-value" id="detail-qty-cart">0</span>
-          <button class="qty-btn" data-detail-qty-plus="cart">+</button>
-        </div>
-        <button class="cta-btn" id="detail-add-cart" ${cartFull ? 'disabled' : ''}>
-          🛒 Add to Cart
+      <div class="detail-cart-btn-wrap" data-cart-item-id="${esc(item.id)}" data-cart-vi="${vi}">
+        <button class="detail-add-cart-btn${qtyInCart > 0 ? ' hidden' : ''}" id="detail-add-cart" ${cartFull ? 'disabled' : ''}>
+          ${ICONS.plus} Add to Cart
         </button>
+        <div class="detail-qty-counter${qtyInCart > 0 ? ' visible' : ''}">
+          <button class="detail-qty-counter-btn" data-detail-qty-minus>−</button>
+          <span class="detail-qty-counter-val" id="detail-qty-cart">${qtyInCart}</span>
+          <button class="detail-qty-counter-btn" data-detail-qty-plus ${cartFull ? 'disabled' : ''}>+</button>
+        </div>
       </div>`;
     // Re-attach CTA events
     attachDetailQtyEvents();
     const detailAddCart = document.getElementById('detail-add-cart');
     if (detailAddCart) detailAddCart.addEventListener('click', () => {
-      const qty = parseInt(document.getElementById('detail-qty-cart')?.textContent) || 0;
-      const count = qty < 1 ? 1 : qty;
       // Find fly animation source: active orbit item, single variant image, or hero container
       const orbitImg = document.querySelector('.variant-orbit-item--active img');
       const singleImg = document.querySelector('.detail-single-variant img');
       const flySource = orbitImg || singleImg || document.getElementById('detail-hero');
       if (flySource) _flyAnimRect = flySource.getBoundingClientRect();
-      for (let i = 0; i < count; i++) {
-        addToCart({
-          id: item.id,
-          name: item.name,
-          variant: variant.name,
-          variantIdx: vi,
-          hex: variant.hexVariated || variant.hex || item.hexBase,
-          img: variant.image || item.image,
-        });
-      }
-      const span = document.getElementById('detail-qty-cart');
-      if (span) span.textContent = '0';
+      addToCart({
+        id: item.id,
+        name: item.name,
+        variant: variant.name,
+        variantIdx: vi,
+        hex: variant.hexVariated || variant.hex || item.hexBase,
+        img: variant.image || item.image,
+      });
+      updateDetailCartBtnState();
     });
     const detailListBtn = document.getElementById('detail-add-to-list');
     if (detailListBtn) detailListBtn.addEventListener('click', () => {
@@ -1577,7 +1576,7 @@ function updateDetailVariant() {
   }
 
   // Update heart button in hero
-  const heartBtn = app.querySelector('.detail-hero [data-heart]');
+  const heartBtn = app.querySelector('.detail-hero-orbit [data-heart]');
   if (heartBtn) {
     heartBtn.dataset.heartVi = vi;
     heartBtn.innerHTML = ICONS.heartLg(inWishlist);
@@ -1633,29 +1632,74 @@ function attachHexCopyEvents() {
 
 // ─── Detail Qty Events Helper ───
 function attachDetailQtyEvents() {
+  // Detail qty plus - adds item to cart
   document.querySelectorAll('[data-detail-qty-plus]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const type = btn.dataset.detailQtyPlus;
-      const span = document.getElementById('detail-qty-' + type);
-      if (span) {
-        const cur = parseInt(span.textContent) || 0;
-        const max = type === 'cart' ? 40 - getCartTotal() : 40;
-        if (cur < max) span.textContent = cur + 1;
-      }
+      if (!state.itemDetail) return;
+      const vi = state.selectedVariantIdx;
+      const variant = state.itemDetail.variants[vi] || state.itemDetail.variants[0];
+      const cartFull = getCartTotal() >= 40;
+      if (cartFull) return;
+
+      // Find fly animation source
+      const orbitImg = document.querySelector('.variant-orbit-item--active img');
+      const singleImg = document.querySelector('.detail-single-variant img');
+      const flySource = orbitImg || singleImg || document.getElementById('detail-hero');
+      if (flySource) _flyAnimRect = flySource.getBoundingClientRect();
+
+      addToCart({
+        id: state.itemDetail.id,
+        name: state.itemDetail.name,
+        variant: variant.name,
+        variantIdx: vi,
+        hex: variant.hexVariated || variant.hex || state.itemDetail.hexBase,
+        img: variant.image || state.itemDetail.image,
+      });
+      updateDetailCartBtnState();
     });
   });
+
+  // Detail qty minus - removes item from cart
   document.querySelectorAll('[data-detail-qty-minus]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const type = btn.dataset.detailQtyMinus;
-      const span = document.getElementById('detail-qty-' + type);
-      if (span) {
-        const cur = parseInt(span.textContent) || 0;
-        if (cur > 0) span.textContent = cur - 1;
+      if (!state.itemDetail) return;
+      const vi = state.selectedVariantIdx;
+      // Find and remove one item from cart
+      const idx = state.cart.findIndex(c => c.id === state.itemDetail.id && c.variantIdx === vi);
+      if (idx !== -1) {
+        state.cart.splice(idx, 1);
+        storage.setCart(state.cart);
+        NookSounds.play('removeItem');
       }
+      updateDetailCartBtnState();
     });
   });
+}
+
+// ─── Update Detail Cart Button State ───
+function updateDetailCartBtnState() {
+  if (!state.itemDetail) return;
+  const vi = state.selectedVariantIdx;
+  const qtyInCart = state.cart.filter(c => c.id === state.itemDetail.id && c.variantIdx === vi).length;
+  const cartFull = getCartTotal() >= 40;
+
+  const addBtn = document.getElementById('detail-add-cart');
+  const counter = document.querySelector('.detail-qty-counter');
+  const valSpan = document.getElementById('detail-qty-cart');
+  const plusBtn = document.querySelector('[data-detail-qty-plus]');
+
+  if (addBtn) {
+    addBtn.classList.toggle('hidden', qtyInCart > 0);
+    addBtn.disabled = cartFull;
+  }
+  if (counter) counter.classList.toggle('visible', qtyInCart > 0);
+  if (valSpan) valSpan.textContent = qtyInCart;
+  if (plusBtn) plusBtn.disabled = cartFull;
+
+  // Update cart badge
+  updateAllCartBtnStates();
 }
 
 // ─── Variant Orbit: position items ───
@@ -1671,8 +1715,8 @@ function positionOrbitItems(selectedIdx) {
   if (isCircular) {
     // True circular positioning for < 15 variants (like mockup)
     const angleStep = 360 / count;
-    const radiusX = 100; // horizontal spread
-    const radiusZ = 60;  // depth
+    const radiusX = 130; // horizontal spread (was 100)
+    const radiusZ = 75;  // depth (was 60)
 
     items.forEach((el) => {
       const idx = parseInt(el.dataset.variantOrbit, 10);
@@ -1694,8 +1738,8 @@ function positionOrbitItems(selectedIdx) {
       el.style.zIndex = Math.round(normalizedZ * 100);
       el.style.opacity = isFront ? 1 : opacity;
       el.style.filter = isFront ? 'none' : `blur(${blur}px) brightness(${brightness})`;
-      el.style.width = isFront ? '120px' : '100px';
-      el.style.height = isFront ? '120px' : '100px';
+      el.style.width = isFront ? '160px' : '120px';
+      el.style.height = isFront ? '160px' : '120px';
       el.style.boxShadow = isFront
         ? '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)'
         : '0 2px 8px rgba(0,0,0,0.06)';
@@ -1712,11 +1756,11 @@ function positionOrbitItems(selectedIdx) {
   } else {
     // Fixed 5-position mode for 15+ variants (windowed)
     const positions = [
-      { x: -120, scale: 0.55, z: 10, opacity: 0.5, blur: 6 },   // far-left
-      { x: -65, scale: 0.75, z: 30, opacity: 0.75, blur: 2 },   // left
+      { x: -160, scale: 0.55, z: 10, opacity: 0.5, blur: 6 },   // far-left (was -120)
+      { x: -85, scale: 0.75, z: 30, opacity: 0.75, blur: 2 },   // left (was -65)
       { x: 0, scale: 1.0, z: 100, opacity: 1, blur: 0 },        // center
-      { x: 65, scale: 0.75, z: 30, opacity: 0.75, blur: 2 },    // right
-      { x: 120, scale: 0.55, z: 10, opacity: 0.5, blur: 6 },    // far-right
+      { x: 85, scale: 0.75, z: 30, opacity: 0.75, blur: 2 },    // right (was 65)
+      { x: 160, scale: 0.55, z: 10, opacity: 0.5, blur: 6 },    // far-right (was 120)
     ];
 
     items.forEach((el) => {
@@ -1740,8 +1784,8 @@ function positionOrbitItems(selectedIdx) {
       el.style.zIndex = p.z;
       el.style.opacity = p.opacity;
       el.style.filter = isCenter ? 'none' : `blur(${p.blur}px) brightness(0.95)`;
-      el.style.width = isCenter ? '120px' : '90px';
-      el.style.height = isCenter ? '90px' : '90px';
+      el.style.width = isCenter ? '160px' : '110px';
+      el.style.height = isCenter ? '160px' : '110px';
       el.style.boxShadow = isCenter
         ? '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)'
         : '0 2px 8px rgba(0,0,0,0.06)';
@@ -1755,12 +1799,21 @@ function positionOrbitItems(selectedIdx) {
 
 function initOrbitSwipe() {
   const track = document.querySelector('.variant-orbit-track');
+  const hero = document.querySelector('.detail-hero-orbit');
   if (!track) return;
+
+  // Use hero container for larger swipe area, fallback to track
+  const swipeTarget = hero || track;
   let startX = null;
   let delta = 0;
 
-  track.addEventListener('pointerdown', (e) => { startX = e.clientX; track.style.cursor = 'grabbing'; });
-  track.addEventListener('pointermove', (e) => {
+  swipeTarget.addEventListener('pointerdown', (e) => {
+    // Ignore swipes starting on buttons
+    if (e.target.closest('.glass-btn') || e.target.closest('.variant-orbit-chevron')) return;
+    startX = e.clientX;
+    track.style.cursor = 'grabbing';
+  });
+  swipeTarget.addEventListener('pointermove', (e) => {
     if (startX === null) return;
     delta = e.clientX - startX;
   });
@@ -1778,8 +1831,8 @@ function initOrbitSwipe() {
     }
     startX = null; delta = 0; track.style.cursor = 'grab';
   };
-  track.addEventListener('pointerup', endSwipe);
-  track.addEventListener('pointerleave', endSwipe);
+  swipeTarget.addEventListener('pointerup', endSwipe);
+  swipeTarget.addEventListener('pointerleave', endSwipe);
 }
 
 function hapticTick() {
@@ -1983,6 +2036,11 @@ function refreshOrbitHeartDots() {
 function renderWishlistToast() {
   if (!state.wishlistToast) return '';
   const t = state.wishlistToast;
+  if (t.isRemoval) {
+    return `<div class="wishlist-toast" id="wl-toast">
+      <span>Removed from <strong>${esc(t.listName)}</strong></span>
+    </div>`;
+  }
   return `<div class="wishlist-toast" id="wl-toast">
     <span>Saved to <strong>${esc(t.listName)}</strong></span>
     <button class="toast-change-btn" id="toast-change">Change</button>
@@ -2082,14 +2140,34 @@ function attachEvents() {
       const target = btn.dataset.nav;
       state.adPageViews++;
       if (target === 'catalog') {
-        // Preserve existing home page state — don't reset items/category or search
-        state.page = 'catalog';
-        state._pageEnter = true;
-        render();
-        window.scrollTo(0, state.scrollY || 0);
+        // If we have saved detail state, restore to detail page
+        if (state._savedDetailState) {
+          state.page = 'detail';
+          state.selectedItemId = state._savedDetailState.itemId;
+          state.selectedVariantIdx = state._savedDetailState.variantIdx;
+          state.itemDetail = state._savedDetailState.itemDetail;
+          state._savedDetailState = null;
+          state._pageEnter = true;
+          render();
+        } else {
+          // Normal catalog restore
+          state.page = 'catalog';
+          state._pageEnter = true;
+          render();
+          window.scrollTo(0, state.scrollY || 0);
+        }
       } else {
-        // Save scroll position when leaving catalog (including search view)
-        if (state.page === 'catalog') state.scrollY = window.scrollY;
+        // Save detail state when leaving detail page for another tab
+        if (state.page === 'detail' && state.itemDetail) {
+          state._savedDetailState = {
+            itemId: state.selectedItemId,
+            variantIdx: state.selectedVariantIdx,
+            itemDetail: state.itemDetail,
+          };
+        } else if (state.page === 'catalog') {
+          // Save scroll position when leaving catalog
+          state.scrollY = window.scrollY;
+        }
         state.page = target;
         if (target === 'wishlist') state.viewingListId = null;
         state._pageEnter = true;
@@ -2364,6 +2442,7 @@ function attachEvents() {
       state.page = 'catalog';
       state.itemDetail = null;
       state.detailHistory = [];
+      state._savedDetailState = null; // Clear saved detail state on explicit exit
       state.searchOpen = true;
       state.searchQuery = state.savedSearch.query;
       state.searchResults = state.savedSearch.results;
@@ -2379,6 +2458,7 @@ function attachEvents() {
       state.page = 'catalog';
       state.itemDetail = null;
       state.previousPage = null;
+      state._savedDetailState = null; // Clear saved detail state on explicit exit
       state._pageEnter = true;
       await render();
       window.scrollTo(0, state.scrollY);
@@ -2406,31 +2486,26 @@ function attachEvents() {
   // Detail qty +/- buttons
   attachDetailQtyEvents();
 
-  // Detail add to cart (with qty)
+  // Detail add to cart (single add like home page)
   const detailAddCart = document.getElementById('detail-add-cart');
   if (detailAddCart) detailAddCart.addEventListener('click', () => {
     if (state.itemDetail) {
       const vi = state.selectedVariantIdx;
       const variant = state.itemDetail.variants[vi] || state.itemDetail.variants[0];
-      const qty = parseInt(document.getElementById('detail-qty-cart')?.textContent) || 0;
-      const count = qty < 1 ? 1 : qty;
       // Find fly animation source: active orbit item, single variant image, or hero container
       const orbitImg = document.querySelector('.variant-orbit-item--active img');
       const singleImg = document.querySelector('.detail-single-variant img');
       const flySource = orbitImg || singleImg || document.getElementById('detail-hero');
       if (flySource) _flyAnimRect = flySource.getBoundingClientRect();
-      for (let i = 0; i < count; i++) {
-        addToCart({
-          id: state.itemDetail.id,
-          name: state.itemDetail.name,
-          variant: variant.name,
-          variantIdx: vi,
-          hex: variant.hexVariated || variant.hex || state.itemDetail.hexBase,
-          img: variant.image || state.itemDetail.image,
-        });
-      }
-      const span = document.getElementById('detail-qty-cart');
-      if (span) span.textContent = '0';
+      addToCart({
+        id: state.itemDetail.id,
+        name: state.itemDetail.name,
+        variant: variant.name,
+        variantIdx: vi,
+        hex: variant.hexVariated || variant.hex || state.itemDetail.hexBase,
+        img: variant.image || state.itemDetail.image,
+      });
+      updateDetailCartBtnState();
     }
   });
 
@@ -3179,6 +3254,7 @@ async function toggleWishlist(itemId, variantIdx = 0) {
     });
     storage.setWishlists(state.wishlists);
     NookSounds.play('heartRemove');
+    showWishlistToast(itemId, variantIdx, 'Loved Items', true);
   } else {
     // Add to Loved Items by default (single instance only)
     const loved = state.wishlists.lists.find(l => l.id === '__loved__');
@@ -3217,13 +3293,48 @@ async function toggleWishlist(itemId, variantIdx = 0) {
     return;
   }
 
+  // Surgical update for detail page to avoid full re-render (fixes double-tap issue)
+  if (state.page === 'detail' && state.itemDetail) {
+    const filled = !wasIn;
+    // Update hero heart button
+    const heroHeart = app.querySelector('.detail-hero-orbit [data-heart]');
+    if (heroHeart) {
+      heroHeart.innerHTML = ICONS.heartLg(filled);
+      heroHeart.classList.add('pulse');
+      heroHeart.addEventListener('animationend', () => heroHeart.classList.remove('pulse'), { once: true });
+    }
+    // Update similar items hearts
+    app.querySelectorAll(`.similar-card-heart[data-heart="${itemId}"]`).forEach(btn => {
+      const vi = parseInt(btn.dataset.heartVi) || 0;
+      if (vi === variantIdx) {
+        btn.innerHTML = ICONS.heart(filled);
+        btn.classList.add('pulse');
+        btn.addEventListener('animationend', () => btn.classList.remove('pulse'), { once: true });
+      }
+    });
+    // Update orbit heart dots
+    refreshOrbitHeartDots();
+    // Show toast
+    const existingToast = document.getElementById('wl-toast');
+    if (existingToast) existingToast.remove();
+    if (state.wishlistToast) {
+      app.insertAdjacentHTML('beforeend', renderWishlistToast());
+      const toastChange = document.getElementById('toast-change');
+      if (toastChange) toastChange.addEventListener('click', () => {
+        const t = state.wishlistToast;
+        if (t) {
+          state.listPickerItem = { id: t.itemId, variantIdx: t.variantIdx };
+          clearTimeout(toastTimer);
+          state.wishlistToast = null;
+          render();
+        }
+      });
+    }
+    return;
+  }
+
   state._heartPulse = { id: itemId, vi: variantIdx };
   await render();
-
-  // Update orbit heart dots if on detail page
-  if (state.page === 'detail' && state.itemDetail) {
-    refreshOrbitHeartDots();
-  }
 }
 
 function getCartTotal() {
