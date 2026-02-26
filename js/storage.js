@@ -15,6 +15,7 @@ const KEYS = {
   adsFloating: 'acnhex_ads_floating',
   cookieDismissed: 'acnhex_cookie_dismissed',
   seenExportInfo: 'acnhex_seen_export_info',
+  theme: 'acnhex_theme',
 };
 
 function get(key, fallback) {
@@ -48,6 +49,9 @@ export function setWishlists(data) { set(KEYS.wishlists, data); }
 
 export function getSeenExportInfo() { return get(KEYS.seenExportInfo, false); }
 export function setSeenExportInfo(v) { set(KEYS.seenExportInfo, v); }
+
+export function getTheme() { return get(KEYS.theme, 'system'); }
+export function setTheme(t) { set(KEYS.theme, t); }
 
 export function clearAll() {
   Object.values(KEYS).forEach(k => localStorage.removeItem(k));

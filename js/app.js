@@ -3,6 +3,7 @@ import * as data from './data.js';
 import * as reviews from './reviews.js';
 import * as ads from './ads.js';
 import NookSounds from './sounds.js';
+import { esc } from './utils.js';
 
 // ─── SVG Icons ───
 const ICONS = {
@@ -32,6 +33,7 @@ const state = {
   viewingListId: null,
   wishlistToast: null,
   listPickerItem: null,
+  movePickerItem: null, // { itemId, variantIdx, sourceListId, itemIndex }
   setPickerItems: null,
   setPickerName: null,
   prefix: storage.getPrefix(),
@@ -88,9 +90,159 @@ const state = {
   seenExportInfo: storage.getSeenExportInfo(),
   // Emoji picker
   emojiPickerFor: null,
+  // Theme
+  theme: storage.getTheme(),
 };
 
 const app = document.getElementById('app');
+
+// ─── Theme Management ───
+function applyTheme(theme) {
+  let effectiveTheme = theme;
+  if (theme === 'system') {
+    effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  document.documentElement.setAttribute('data-theme', effectiveTheme === 'dark' ? 'dark' : '');
+}
+
+function initTheme() {
+  applyTheme(state.theme);
+  // Listen for system theme changes
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (state.theme === 'system') {
+      applyTheme('system');
+    }
+  });
+}
+
+// Apply theme immediately (before DOM content loads fully)
+initTheme();
+
+// ─── Hash-Based Routing ───
+let _hashUpdatePending = false; // Prevent hashchange listener from triggering during programmatic updates
+
+function updateHash() {
+  // Build hash from current state
+  let hash = '#/';
+  if (state.page === 'catalog') {
+    hash = '#/catalog';
+  } else if (state.page === 'detail' && state.selectedItemId) {
+    hash = `#/detail/${state.selectedItemId}`;
+    if (state.selectedVariantIdx > 0) {
+      hash += `/${state.selectedVariantIdx}`;
+    }
+  } else if (state.page === 'cart') {
+    hash = '#/cart';
+  } else if (state.page === 'wishlist') {
+    if (state.viewingListId) {
+      hash = `#/wishlist/${state.viewingListId}`;
+    } else {
+      hash = '#/wishlist';
+    }
+  } else if (state.page === 'settings') {
+    hash = '#/settings';
+  } else if (state.page === 'info') {
+    hash = '#/info';
+  }
+
+  // Only update if different to avoid history spam
+  if (window.location.hash !== hash) {
+    _hashUpdatePending = true;
+    window.location.hash = hash;
+    // Reset flag after a tick
+    setTimeout(() => { _hashUpdatePending = false; }, 0);
+  }
+}
+
+async function parseHashAndNavigate() {
+  const hash = window.location.hash || '#/';
+  const parts = hash.replace('#/', '').split('/').filter(Boolean);
+  const route = parts[0] || 'catalog';
+
+  // Don't navigate if already on the same page (with same params)
+  if (route === 'catalog' && state.page === 'catalog' && !state.viewingListId) return false;
+  if (route === 'cart' && state.page === 'cart') return false;
+  if (route === 'settings' && state.page === 'settings') return false;
+  if (route === 'info' && state.page === 'info') return false;
+
+  switch (route) {
+    case 'catalog':
+    case '':
+      state.page = 'catalog';
+      state.viewingListId = null;
+      state._pageEnter = true;
+      return true;
+
+    case 'detail':
+      const itemId = parts[1];
+      const variantIdx = parseInt(parts[2]) || 0;
+      if (itemId) {
+        // Check if we're already viewing this item+variant
+        if (state.page === 'detail' && state.selectedItemId === itemId && state.selectedVariantIdx === variantIdx) {
+          return false;
+        }
+        state.page = 'detail';
+        state.selectedItemId = itemId;
+        state.selectedVariantIdx = variantIdx;
+        state.itemDetail = null;
+        state.similarScrollLeft = 0;
+        state._detailScrollY = undefined;
+        state.detailsExpanded = false;
+        state.variantDrawerOpen = false;
+        state._pageEnter = true;
+        // Load the item detail
+        state.itemDetail = await data.getItemDetail(itemId);
+        return true;
+      }
+      // Invalid detail route, fall back to catalog
+      state.page = 'catalog';
+      state._pageEnter = true;
+      return true;
+
+    case 'cart':
+      state.page = 'cart';
+      state._pageEnter = true;
+      return true;
+
+    case 'wishlist':
+      state.page = 'wishlist';
+      const listId = parts[1];
+      if (listId && state.wishlists) {
+        // Verify the list exists
+        const listExists = state.wishlists.lists.some(l => l.id === listId);
+        state.viewingListId = listExists ? listId : null;
+      } else {
+        state.viewingListId = null;
+      }
+      state._pageEnter = true;
+      return true;
+
+    case 'settings':
+      state.page = 'settings';
+      state._pageEnter = true;
+      return true;
+
+    case 'info':
+      state.page = 'info';
+      state._pageEnter = true;
+      return true;
+
+    default:
+      // Unknown route, go to catalog
+      state.page = 'catalog';
+      state._pageEnter = true;
+      return true;
+  }
+}
+
+// Listen for browser back/forward
+window.addEventListener('hashchange', async () => {
+  if (_hashUpdatePending) return; // Ignore programmatic hash updates
+  const navigated = await parseHashAndNavigate();
+  if (navigated) {
+    render();
+  }
+});
 
 // ─── Wishlists Init & Helpers ───
 const EMOJIS = [
@@ -217,12 +369,6 @@ function showToast(message) {
 
 function getTotalWishlistItems() {
   return state.wishlists.lists.reduce((sum, l) => sum + l.items.length, 0);
-}
-
-function esc(str) {
-  const d = document.createElement('div');
-  d.textContent = str;
-  return d.innerHTML;
 }
 
 // ─── Navigation ───
@@ -1135,6 +1281,7 @@ async function renderWishlistDetail() {
             </div>
             <div style="display:flex;gap:4px;flex-shrink:0">
               <button class="wl-action-btn wl-cart-btn" data-wl-add data-wl-id="${esc(item.id)}" data-wl-vi="${vi}" data-wl-name="${esc(item.n)}" data-wl-variant="${esc(item.v1)}" data-wl-hex="${esc(item.hex)}" data-wl-img="${esc(item.img || '')}">+</button>
+              <button class="wl-action-btn wl-move-btn" data-move-list-idx="${idx}" title="Move to another list">↗</button>
               <button class="wl-action-btn wl-remove-btn" data-remove-list-idx="${idx}">✕</button>
             </div>
           </div>`;
@@ -1226,6 +1373,25 @@ function renderSettings() {
           <input type="range" id="soundVolume" class="sound-slider" min="0" max="1" step="0.05" value="${state.soundVolume}" ${state.soundEnabled ? '' : 'disabled'}>
           <span style="font-size:11px;color:var(--text-secondary)">🔊</span>
           <span id="volumeLabel" class="volume-label">${Math.round(state.soundVolume * 100)}%</span>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <h4 class="label-upper" style="margin-bottom:14px">🌙 Appearance</h4>
+        <p class="text-secondary" style="font-size:11px;margin-bottom:14px">Choose your preferred theme for the app.</p>
+        <div class="theme-options">
+          <button class="theme-btn ${state.theme === 'light' ? 'active' : ''}" data-theme="light">
+            <span class="theme-icon">☀️</span>
+            <span class="theme-label">Light</span>
+          </button>
+          <button class="theme-btn ${state.theme === 'dark' ? 'active' : ''}" data-theme="dark">
+            <span class="theme-icon">🌙</span>
+            <span class="theme-label">Dark</span>
+          </button>
+          <button class="theme-btn ${state.theme === 'system' ? 'active' : ''}" data-theme="system">
+            <span class="theme-icon">💻</span>
+            <span class="theme-label">System</span>
+          </button>
         </div>
       </div>
 
@@ -1323,7 +1489,7 @@ function renderInfo() {
     <div class="app-footer">
       <div class="app-footer-icon">🍃</div>
       <p style="font-size:16px;font-weight:700;margin-bottom:2px;color:var(--palm-leaf)">ACNHEX Market</p>
-      <p style="font-size:10px;color:var(--text-light);margin-bottom:4px">Version 1.0.0</p>
+      <p style="font-size:10px;color:var(--text-light);margin-bottom:4px">Version 2.0.8</p>
       <p style="font-size:10px;color:var(--text-light)">A community tool for ACNH players</p>
     </div>
   </div>`;
@@ -1711,6 +1877,9 @@ function updateDetailVariant() {
     heartBtn.dataset.heartVi = vi;
     heartBtn.innerHTML = ICONS.heartLg(inWishlist);
   }
+
+  // Update URL hash with new variant
+  updateHash();
 }
 
 // Helper to attach events for detail field toggles and hex copy badges
@@ -2075,6 +2244,9 @@ function updateOrbitAndDetail() {
   }
 
   NookSounds.play('variantSwitch');
+
+  // Update URL hash with new variant
+  updateHash();
 }
 
 function playDetailEntrance() {
@@ -2171,6 +2343,16 @@ function renderWishlistToast() {
       <span>Removed from <strong>${esc(t.listName)}</strong></span>
     </div>`;
   }
+  if (t.action === 'move') {
+    return `<div class="wishlist-toast" id="wl-toast">
+      <span>Moved to <strong>${esc(t.listName)}</strong></span>
+    </div>`;
+  }
+  if (t.action === 'full') {
+    return `<div class="wishlist-toast" id="wl-toast">
+      <span><strong>${esc(t.listName)}</strong> is full</span>
+    </div>`;
+  }
   return `<div class="wishlist-toast" id="wl-toast">
     <span>Saved to <strong>${esc(t.listName)}</strong></span>
     <button class="toast-change-btn" id="toast-change">Change</button>
@@ -2198,6 +2380,30 @@ function renderListPicker() {
       </div>
       <button class="cta-btn-secondary" id="create-list-from-picker" style="margin-bottom:12px;width:100%">+ New List</button>
       <button class="search-close-btn" id="close-list-picker" style="width:100%">Done</button>
+    </div>
+  </div>`;
+}
+
+// ─── Move Picker Modal (move item to another list) ───
+function renderMovePicker() {
+  if (!state.movePickerItem) return '';
+  const item = state.movePickerItem;
+  const sourceListId = item.sourceListId;
+  return `<div class="modal-overlay" id="move-picker-overlay">
+    <div class="modal-card">
+      <h2 style="font-size:16px;font-weight:700;margin-bottom:16px;color:var(--palm-leaf)">Move to List</h2>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch">
+        ${state.wishlists.lists.filter(list => list.id !== sourceListId).map(list => {
+          const inThis = list.items.some(w => w.id === item.itemId && w.variantIdx === item.variantIdx);
+          const full = list.cap !== null && list.items.length >= list.cap;
+          const isLoved = list.id === '__loved__';
+          return `<button class="list-pick-btn ${full ? 'greyed' : ''}" data-move-to-list="${esc(list.id)}" ${full ? 'disabled' : ''}>
+            <span>${esc(list.name)}</span>
+            <span style="font-size:10px;color:var(--text-light)">${list.items.length}${list.cap ? '/' + list.cap : ''}${inThis ? ' · already in list' : ''}</span>
+          </button>`;
+        }).join('')}
+      </div>
+      <button class="search-close-btn" id="close-move-picker" style="width:100%">Cancel</button>
     </div>
   </div>`;
 }
@@ -2318,7 +2524,7 @@ async function render() {
     case 'settings': content = renderSettings(); break;
     case 'info': content = renderInfo(); break;
   }
-  app.innerHTML = `<div id="ptr-indicator" class="ptr-indicator"></div>` + content + renderNav() + renderModal() + renderSearch() + renderWishlistToast() + renderListPicker() + renderSetPicker() + renderExportModal() + renderImportModal() + renderEmojiPicker() + ads.renderActivePopup(state.activePopup) + ads.renderAdToast(state.adToastVisible) + ads.renderFloatingNotif(state.floatingNotif);
+  app.innerHTML = `<div id="ptr-indicator" class="ptr-indicator"></div>` + content + renderNav() + renderModal() + renderSearch() + renderWishlistToast() + renderListPicker() + renderMovePicker() + renderSetPicker() + renderExportModal() + renderImportModal() + renderEmojiPicker() + ads.renderActivePopup(state.activePopup) + ads.renderAdToast(state.adToastVisible) + ads.renderFloatingNotif(state.floatingNotif);
   attachEvents();
 
   // Apply entrance animations only on page/category navigation
@@ -2359,6 +2565,9 @@ async function render() {
 
   // Load thumbnail images for wishlist overview
   loadWishlistThumbs();
+
+  // Update URL hash to reflect current state
+  updateHash();
 }
 
 // Load item images for wishlist thumbnail strip
@@ -2488,7 +2697,7 @@ function attachEvents() {
     card.addEventListener('click', (e) => {
       if (e.target.closest('[data-heart]') || e.target.closest('[data-add-cart]') ||
           e.target.closest('.remove-btn') || e.target.closest('.wishlist-add-btn') ||
-          e.target.closest('[data-remove-list-idx]')) return;
+          e.target.closest('[data-remove-list-idx]') || e.target.closest('[data-move-list-idx]')) return;
       // If clicking a similar item from a detail page, push current item to history stack
       if (state.page === 'detail' && state.itemDetail && card.closest('.similar-section')) {
         state.detailHistory.push({
@@ -3042,6 +3251,97 @@ function attachEvents() {
         render();
       }
     });
+  });
+
+  // Move item to another list - open move picker
+  app.querySelectorAll('[data-move-list-idx]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.moveListIdx);
+      const list = state.wishlists.lists.find(l => l.id === state.viewingListId);
+      if (list && idx >= 0 && idx < list.items.length) {
+        const item = list.items[idx];
+        state.movePickerItem = {
+          itemId: item.id,
+          variantIdx: item.variantIdx || 0,
+          sourceListId: state.viewingListId,
+          itemIndex: idx,
+        };
+        render();
+      }
+    });
+  });
+
+  // Move picker - select destination list
+  app.querySelectorAll('[data-move-to-list]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const destListId = btn.dataset.moveToList;
+      if (!state.movePickerItem) return;
+
+      const sourceList = state.wishlists.lists.find(l => l.id === state.movePickerItem.sourceListId);
+      const destList = state.wishlists.lists.find(l => l.id === destListId);
+      if (!sourceList || !destList) return;
+
+      // Check destination capacity
+      if (destList.cap !== null && destList.items.length >= destList.cap) {
+        state.wishlistToast = { listId: destListId, listName: destList.name, action: 'full' };
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          state.wishlistToast = null;
+          const el = document.getElementById('wl-toast');
+          if (el) el.remove();
+        }, 3000);
+        state.movePickerItem = null;
+        render();
+        return;
+      }
+
+      // Get item data before removing
+      const itemData = sourceList.items[state.movePickerItem.itemIndex];
+      if (!itemData) return;
+
+      // Remove from source list
+      sourceList.items.splice(state.movePickerItem.itemIndex, 1);
+
+      // Add to destination list (if not already there)
+      const alreadyInDest = destList.items.some(w => w.id === itemData.id && w.variantIdx === (itemData.variantIdx || 0));
+      if (!alreadyInDest) {
+        destList.items.push({
+          id: itemData.id,
+          variantIdx: itemData.variantIdx || 0,
+          addedAt: Date.now(),
+        });
+      }
+
+      storage.setWishlists(state.wishlists);
+      hapticTick();
+      NookSounds.play('addToList');
+      state.wishlistToast = { listId: destListId, listName: destList.name, action: 'move' };
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        state.wishlistToast = null;
+        const el = document.getElementById('wl-toast');
+        if (el) el.remove();
+      }, 3000);
+
+      state.movePickerItem = null;
+      render();
+    });
+  });
+
+  // Close move picker
+  const closeMovePickerBtn = document.getElementById('close-move-picker');
+  if (closeMovePickerBtn) closeMovePickerBtn.addEventListener('click', () => {
+    state.movePickerItem = null;
+    render();
+  });
+  // Also close on overlay click
+  const movePickerOverlay = document.getElementById('move-picker-overlay');
+  if (movePickerOverlay) movePickerOverlay.addEventListener('click', (e) => {
+    if (e.target === movePickerOverlay) {
+      state.movePickerItem = null;
+      render();
+    }
   });
 
   // View list detail
@@ -3632,6 +3932,19 @@ function attachEvents() {
       storage.setLoadMode(state.loadMode);
       app.querySelectorAll('[data-settings-load]').forEach(b => {
         b.classList.toggle('active', b.dataset.settingsLoad === state.loadMode);
+      });
+    });
+  });
+
+  // Theme toggle
+  app.querySelectorAll('[data-theme]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const newTheme = btn.dataset.theme;
+      state.theme = newTheme;
+      storage.setTheme(newTheme);
+      applyTheme(newTheme);
+      app.querySelectorAll('[data-theme]').forEach(b => {
+        b.classList.toggle('active', b.dataset.theme === newTheme);
       });
     });
   });
@@ -4272,10 +4585,17 @@ function initScrollTracking() {
 async function init() {
   app.innerHTML = `<div class="loading" style="padding-top:40vh"><div class="spinner"></div><p class="text-secondary">Loading catalog...</p></div>`;
   await data.loadCatalog();
-  // Start with random picks as the default homepage view
-  state.isRandom = true;
-  state.randomUsedIndices = new Set();
-  state.randomItems = await data.getRandomExpandedItems(50, state.randomUsedIndices);
+
+  // Parse URL hash to determine initial navigation state
+  const hashNavigated = await parseHashAndNavigate();
+
+  // Only set up random items if we're on catalog page (default or hash-routed)
+  if (state.page === 'catalog') {
+    state.isRandom = true;
+    state.randomUsedIndices = new Set();
+    state.randomItems = await data.getRandomExpandedItems(50, state.randomUsedIndices);
+  }
+
   state._pageEnter = true;
   render();
   initPullToRefresh();

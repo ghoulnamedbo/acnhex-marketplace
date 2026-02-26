@@ -9,6 +9,7 @@ const ASSETS = [
   './js/storage.js',
   './js/reviews.js',
   './js/sounds.js',
+  './js/utils.js',
   './data/catalog-index.json',
   './data/villagers.json',
   './data/review-templates.json',
