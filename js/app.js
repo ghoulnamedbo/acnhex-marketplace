@@ -198,6 +198,11 @@ async function renderCatalog() {
     state.loadedCount = items.length;
   }
 
+  // Render search section if search is active
+  if (state.searchOpen) {
+    return renderCatalogWithSearch();
+  }
+
   return `<div class="page">
     <div class="app-header">
       <div>
@@ -287,6 +292,67 @@ async function renderCatalog() {
     ${items.length < total && !isRandom && state.loadMode === 'batch' ? `<button class="load-more-btn" id="load-more">Load More</button>` : ''}
     ${items.length < total && !isRandom && state.loadMode === 'scroll' ? `<div id="scroll-sentinel" style="height:1px"></div>` : ''}
     ${isRandom && items.length < total ? `<div id="scroll-sentinel" style="height:1px"></div>` : ''}
+  </div>`;
+}
+
+// ─── Catalog with Integrated Search ───
+function renderCatalogWithSearch() {
+  const results = state.searchResults || { items: [], total: 0 };
+  const hasFilters = state.searchFilterTags.length > 0;
+  const hasQuery = state.searchQuery || hasFilters;
+  const tagGroups = data.getAvailableTags();
+
+  return `<div class="page" id="search-page">
+    <div class="search-section">
+      <div class="search-header-row">
+        <div class="search-input-wrap">
+          <div class="search-input-icon">${ICONS.search}</div>
+          <input type="text" class="search-input" id="search-input" placeholder="Search items or tags..." value="${esc(state.searchQuery)}" autofocus>
+        </div>
+        <button class="filter-toggle-btn ${hasFilters ? 'active' : ''}" id="filter-toggle">${ICONS.filter}${hasFilters ? `<span class="filter-badge">${state.searchFilterTags.length}</span>` : ''}</button>
+        <button class="search-close-btn" id="search-close">✕</button>
+      </div>
+      ${state.searchFilterOpen ? `
+      <div class="filter-panel" id="filter-panel">
+        ${Object.entries(tagGroups).map(([group, tags]) => {
+          const prefix = group === 'Color 1 (Primary)' ? 'c1:' : group === 'Color 2 (Secondary)' ? 'c2:' : '';
+          return `<div class="filter-group">
+            <h4 class="filter-group-label">${esc(group)}</h4>
+            <div class="filter-tags">
+              ${tags.map(t => {
+                const tagVal = prefix + t;
+                return `<button class="filter-tag ${state.searchFilterTags.includes(tagVal) ? 'active' : ''}" data-filter-tag="${esc(tagVal)}">${esc(t)}</button>`;
+              }).join('')}
+            </div>
+          </div>`;
+        }).join('')}
+        ${hasFilters ? `<button class="filter-clear-btn" id="filter-clear">Clear all filters</button>` : ''}
+      </div>` : ''}
+      ${hasFilters ? `
+        <div class="active-filters hide-scrollbar">
+          ${state.searchFilterTags.map(t => {
+            const label = t.startsWith('c1:') ? `${t.slice(3)} (1)` : t.startsWith('c2:') ? `${t.slice(3)} (2)` : t;
+            return `<button class="active-filter-pill" data-remove-filter="${esc(t)}">${esc(label)} ✕</button>`;
+          }).join('')}
+        </div>` : ''}
+    </div>
+    <div id="search-results">
+      ${hasQuery ? `
+        <div style="padding:16px 24px 8px;display:flex;justify-content:space-between;align-items:center">
+          <p class="text-secondary">${results.total} result${results.total !== 1 ? 's' : ''}${state.searchQuery ? ` for "${esc(state.searchQuery)}"` : ''}${hasFilters ? ` (${state.searchFilterTags.length} filter${state.searchFilterTags.length !== 1 ? 's' : ''})` : ''}</p>
+        </div>
+        <div class="item-grid">
+          ${results.items.map((item, idx) => renderItemCard(item, idx)).join('')}
+        </div>
+        ${results.items.length < results.total ? '<div id="search-scroll-sentinel" style="height:1px"></div>' : ''}
+      ` : `
+        <div class="empty-state">
+          <p class="empty-emoji">🔍</p>
+          <p class="empty-title">Search by name or tags</p>
+          <p class="empty-text">Try "chair", "blue", "elegant", or "DIY"</p>
+        </div>
+      `}
+    </div>
   </div>`;
 }
 
@@ -985,48 +1051,10 @@ function renderModal() {
   </div>`;
 }
 
-// ─── Search Overlay ───
+// ─── Search Overlay (now integrated into catalog page) ───
 function renderSearch() {
-  if (!state.searchOpen) return '';
-  const results = state.searchResults || { items: [], total: 0 };
-  const hasFilters = state.searchFilterTags.length > 0;
-  const hasQuery = state.searchQuery || hasFilters;
-  const tagGroups = data.getAvailableTags();
-
-  return `<div class="search-overlay" id="search-overlay">
-    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
-      <div style="position:relative;flex:1">
-        <div style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-light)">${ICONS.search}</div>
-        <input type="text" class="search-input" id="search-input" placeholder="Search items or tags..." value="${esc(state.searchQuery)}" autofocus>
-      </div>
-      <button class="filter-toggle-btn ${hasFilters ? 'active' : ''}" id="filter-toggle">${ICONS.filter}${hasFilters ? `<span class="filter-badge">${state.searchFilterTags.length}</span>` : ''}</button>
-      <button class="search-close-btn" id="search-close">✕</button>
-    </div>
-    ${state.searchFilterOpen ? `
-    <div class="filter-panel" id="filter-panel">
-      ${Object.entries(tagGroups).map(([group, tags]) => {
-        const prefix = group === 'Color 1 (Primary)' ? 'c1:' : group === 'Color 2 (Secondary)' ? 'c2:' : '';
-        return `<div class="filter-group">
-          <h4 class="filter-group-label">${esc(group)}</h4>
-          <div class="filter-tags">
-            ${tags.map(t => {
-              const tagVal = prefix + t;
-              return `<button class="filter-tag ${state.searchFilterTags.includes(tagVal) ? 'active' : ''}" data-filter-tag="${esc(tagVal)}">${esc(t)}</button>`;
-            }).join('')}
-          </div>
-        </div>`;
-      }).join('')}
-      ${hasFilters ? `<button class="filter-clear-btn" id="filter-clear">Clear all filters</button>` : ''}
-    </div>` : ''}
-    ${hasFilters ? `
-      <div class="active-filters hide-scrollbar">
-        ${state.searchFilterTags.map(t => {
-          const label = t.startsWith('c1:') ? `${t.slice(3)} (1)` : t.startsWith('c2:') ? `${t.slice(3)} (2)` : t;
-          return `<button class="active-filter-pill" data-remove-filter="${esc(t)}">${esc(label)} ✕</button>`;
-        }).join('')}
-      </div>` : ''}
-    <div id="search-results">${renderSearchResultsHTML()}</div>
-  </div>`;
+  // Search is now rendered inline in the catalog page via renderCatalogWithSearch()
+  return '';
 }
 
 // ─── Search Results HTML ───
@@ -1035,8 +1063,10 @@ function renderSearchResultsHTML() {
   const hasFilters = state.searchFilterTags.length > 0;
   const hasQuery = state.searchQuery || hasFilters;
   if (hasQuery) {
-    return `<p class="text-secondary" style="margin-bottom:16px">${results.total} result${results.total !== 1 ? 's' : ''}${state.searchQuery ? ` for "${esc(state.searchQuery)}"` : ''}${hasFilters ? ` (${state.searchFilterTags.length} filter${state.searchFilterTags.length !== 1 ? 's' : ''})` : ''}</p>
-      <div class="item-grid">
+    return `<div style="padding:16px 24px 8px">
+        <p class="text-secondary">${results.total} result${results.total !== 1 ? 's' : ''}${state.searchQuery ? ` for "${esc(state.searchQuery)}"` : ''}${hasFilters ? ` (${state.searchFilterTags.length} filter${state.searchFilterTags.length !== 1 ? 's' : ''})` : ''}</p>
+      </div>
+      <div class="item-grid" style="padding:0 24px">
         ${results.items.map((item, idx) => renderItemCard(item, idx)).join('')}
       </div>
       ${results.items.length < results.total ? '<div id="search-scroll-sentinel" style="height:1px"></div>' : ''}`;
@@ -1130,13 +1160,12 @@ async function loadMoreSearchResults() {
 function attachSearchScrollObserver() {
   const sentinel = document.getElementById('search-scroll-sentinel');
   if (!sentinel) return;
-  const scrollRoot = sentinel.closest('.search-overlay');
   const observer = new IntersectionObserver((entries) => {
     if (entries[0].isIntersecting) {
       observer.disconnect();
       loadMoreSearchResults();
     }
-  }, { root: scrollRoot, rootMargin: '200px' });
+  }, { root: null, rootMargin: '200px' });
   observer.observe(sentinel);
 }
 
@@ -1181,12 +1210,9 @@ function attachSearchResultEvents() {
         results: state.searchResults,
         filterTags: [...state.searchFilterTags],
         filterOpen: state.searchFilterOpen,
-        overlayScrollY: document.getElementById('search-overlay')?.scrollTop || 0
+        scrollY: window.scrollY || 0
       };
       state.previousPage = 'search';
-      state.searchOpen = false;
-      state.searchQuery = '';
-      state.searchResults = null;
       state.page = 'detail';
       state._pageEnter = true;
       loadItemDetail(card.dataset.item);
@@ -1440,17 +1466,15 @@ function attachEvents() {
       const target = btn.dataset.nav;
       state.adPageViews++;
       if (target === 'catalog') {
-        // Preserve existing home page state — don't reset items/category
+        // Preserve existing home page state — don't reset items/category or search
         state.page = 'catalog';
-        state.searchOpen = false;
         state._pageEnter = true;
         render();
         window.scrollTo(0, state.scrollY || 0);
       } else {
-        // Save scroll position when leaving catalog
+        // Save scroll position when leaving catalog (including search view)
         if (state.page === 'catalog') state.scrollY = window.scrollY;
         state.page = target;
-        state.searchOpen = false;
         if (target === 'wishlist') state.viewingListId = null;
         state._pageEnter = true;
         render();
@@ -1516,7 +1540,7 @@ function attachEvents() {
 
   // Item cards (catalog/wishlist — NOT inside search overlay)
   app.querySelectorAll('[data-item]').forEach(card => {
-    if (card.closest('.search-overlay')) return; // handled by attachSearchResultEvents
+    if (card.closest('#search-page')) return; // handled by attachSearchResultEvents
     card.addEventListener('click', (e) => {
       if (e.target.closest('[data-heart]') || e.target.closest('[data-add-cart]') ||
           e.target.closest('.remove-btn') || e.target.closest('.wishlist-add-btn') ||
@@ -1544,9 +1568,9 @@ function attachEvents() {
     });
   });
 
-  // Heart buttons (skip search overlay — handled by attachSearchResultEvents)
+  // Heart buttons (skip search page — handled by attachSearchResultEvents)
   app.querySelectorAll('[data-heart]').forEach(btn => {
-    if (btn.closest('.search-overlay')) return;
+    if (btn.closest('#search-page')) return;
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const vi = parseInt(btn.dataset.heartVi) || 0;
@@ -1554,9 +1578,9 @@ function attachEvents() {
     });
   });
 
-  // Add to cart buttons (skip search overlay)
+  // Add to cart buttons (skip search page)
   app.querySelectorAll('[data-add-cart]').forEach(btn => {
-    if (btn.closest('.search-overlay')) return;
+    if (btn.closest('#search-page')) return;
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const card = btn.closest('[data-item]');
@@ -1636,9 +1660,9 @@ function attachEvents() {
   const filterToggle = document.getElementById('filter-toggle');
   if (filterToggle) filterToggle.addEventListener('click', () => {
     state.searchFilterOpen = !state.searchFilterOpen;
-    // Re-render search overlay without full page render to keep keyboard open
-    const overlay = document.getElementById('search-overlay');
-    if (overlay) {
+    // Re-render search page without full page render to keep keyboard open
+    const searchPage = document.getElementById('search-page');
+    if (searchPage) {
       const savedQuery = document.getElementById('search-input')?.value || '';
       state.searchQuery = savedQuery;
       render();
@@ -1698,13 +1722,12 @@ function attachEvents() {
       state.searchResults = state.savedSearch.results;
       state.searchFilterTags = state.savedSearch.filterTags;
       state.searchFilterOpen = state.savedSearch.filterOpen;
-      const savedOverlayScroll = state.savedSearch.overlayScrollY;
+      const savedScrollY = state.savedSearch.scrollY || 0;
       state.savedSearch = null;
       state.previousPage = null;
       state._pageEnter = true;
       await render();
-      const overlay = document.getElementById('search-overlay');
-      if (overlay) overlay.scrollTop = savedOverlayScroll;
+      window.scrollTo(0, savedScrollY);
     } else {
       state.page = 'catalog';
       state.itemDetail = null;

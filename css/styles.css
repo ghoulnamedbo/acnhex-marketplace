@@ -1099,12 +1099,19 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   margin-top: 20px;
 }
 
-/* ─── Search Overlay ─── */
-.search-overlay {
-  position: fixed; inset: 0; z-index: 150;
-  background: var(--bg); padding: 24px;
-  overflow-y: auto; overflow-x: hidden;
-  box-sizing: border-box;
+/* ─── Search Section (Integrated) ─── */
+.search-section {
+  padding: 24px 24px 0;
+}
+.search-header-row {
+  display: flex; gap: 8px; align-items: center; margin-bottom: 12px;
+}
+.search-input-wrap {
+  position: relative; flex: 1;
+}
+.search-input-icon {
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  color: var(--text-light); pointer-events: none;
 }
 .search-input {
   width: 100%; padding: 14px 16px 14px 44px; border-radius: 14px;
@@ -1113,12 +1120,6 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   background: var(--card); box-sizing: border-box;
 }
 .search-input:focus { border-color: var(--pines); }
-.search-close {
-  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-  background: none; border: none; cursor: pointer; color: var(--text-light);
-  font-size: 18px; font-family: var(--font); font-weight: 700; padding: 8px;
-}
-.search-overlay .item-grid { padding: 0; }
 .search-close-btn {
   width: 44px; height: 44px; border-radius: 14px; flex-shrink: 0;
   background: var(--card); border: 1px solid var(--border);
@@ -1126,6 +1127,7 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   cursor: pointer; color: var(--text-light);
   font-size: 18px; font-family: var(--font); font-weight: 700;
 }
+#search-page .item-grid { padding: 0 24px; }
 
 /* ─── Search Filters ─── */
 .filter-toggle-btn {
@@ -1515,15 +1517,6 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
 }
 .modal-card {
   animation: modalSlideUp 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-/* ─── Search Overlay Slide ─── */
-@keyframes searchSlideDown {
-  from { opacity: 0; transform: translateY(-12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.search-overlay {
-  animation: searchSlideDown 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 /* ─── Toast Entrance (enhanced existing) ─── */
@@ -3465,7 +3458,7 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   .details-card { margin-left: 16px; margin-right: 16px; padding: 20px 16px; }
   .reviews-card { margin-left: 16px; margin-right: 16px; padding: 20px 16px; }
   .detail-title { padding: 20px 16px 0; }
-  .search-overlay { padding: 16px; }
+  .search-section { padding: 16px 16px 0; }
   .app-footer { padding: 32px 16px 0; }
 
   /* Ensure item grid doesn't overflow at 320px */
