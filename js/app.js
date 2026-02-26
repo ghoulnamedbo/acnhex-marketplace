@@ -361,6 +361,8 @@ function renderItemCard(item, idx) {
   const vi = item.variantIdx ?? 0;
   const inWishlist = isInWishlist(item.id, vi);
   const cartFull = getCartTotal() >= 40;
+  const qtyInCart = getCartQtyForItem(item.id, vi);
+  const showCounter = qtyInCart > 0;
   return `<div class="item-card" data-item="${esc(item.id)}" data-vi="${vi}">
     <div class="item-thumb" style="background:${bg}">
       ${item.img ? `<img src="${esc(item.img)}" loading="lazy" onerror="this.outerHTML='<span class=emoji-fallback>📦</span>'" alt="">` : '<span class="emoji-fallback">📦</span>'}
@@ -372,9 +374,16 @@ function renderItemCard(item, idx) {
         <span class="item-variant">${esc(item.v1)}</span>
         <span class="hex-badge">${esc(item.hex)}</span>
       </div>
-      <button class="add-cart-btn" data-add-cart="${esc(item.id)}" ${cartFull ? 'disabled' : ''}>
-        ${ICONS.plus} Add
-      </button>
+      <div class="cart-btn-wrap" data-cart-item-id="${esc(item.id)}" data-cart-vi="${vi}">
+        <button class="add-cart-btn${showCounter ? ' hidden' : ''}" data-add-cart="${esc(item.id)}" ${cartFull ? 'disabled' : ''}>
+          ${ICONS.plus} Add
+        </button>
+        <div class="qty-counter${showCounter ? ' visible' : ''}">
+          <button class="qty-counter-btn" data-qty-minus="${esc(item.id)}" data-qty-vi="${vi}">−</button>
+          <span class="qty-counter-val">${qtyInCart}</span>
+          <button class="qty-counter-btn" data-qty-plus="${esc(item.id)}" data-qty-vi="${vi}" ${cartFull ? 'disabled' : ''}>+</button>
+        </div>
+      </div>
     </div>
   </div>`;
 }
@@ -1237,6 +1246,31 @@ function attachSearchResultEvents() {
       else if (thumb) _flyAnimRect = thumb.getBoundingClientRect();
       else _flyAnimRect = btn.getBoundingClientRect();
       addToCartFromIndex(btn.dataset.addCart, vi);
+      updateAllCartBtnStates();
+    });
+  });
+  container.querySelectorAll('[data-qty-plus]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const itemId = btn.dataset.qtyPlus;
+      const vi = parseInt(btn.dataset.qtyVi) || 0;
+      const card = btn.closest('[data-item]');
+      const img = card && card.querySelector('.item-thumb img');
+      const thumb = card && card.querySelector('.item-thumb');
+      if (img) _flyAnimRect = img.getBoundingClientRect();
+      else if (thumb) _flyAnimRect = thumb.getBoundingClientRect();
+      else _flyAnimRect = btn.getBoundingClientRect();
+      addToCartFromIndex(itemId, vi);
+      updateAllCartBtnStates();
+    });
+  });
+  container.querySelectorAll('[data-qty-minus]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const itemId = btn.dataset.qtyMinus;
+      const vi = parseInt(btn.dataset.qtyVi) || 0;
+      removeOneFromCart(itemId, vi);
+      updateAllCartBtnStates();
     });
   });
 }
@@ -1592,6 +1626,37 @@ function attachEvents() {
       else if (thumb) _flyAnimRect = thumb.getBoundingClientRect();
       else _flyAnimRect = btn.getBoundingClientRect();
       addToCartFromIndex(btn.dataset.addCart, vi);
+      updateAllCartBtnStates();
+    });
+  });
+
+  // Quantity counter plus buttons (skip search page)
+  app.querySelectorAll('[data-qty-plus]').forEach(btn => {
+    if (btn.closest('#search-page')) return;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const itemId = btn.dataset.qtyPlus;
+      const vi = parseInt(btn.dataset.qtyVi) || 0;
+      const card = btn.closest('[data-item]');
+      const img = card && card.querySelector('.item-thumb img');
+      const thumb = card && card.querySelector('.item-thumb');
+      if (img) _flyAnimRect = img.getBoundingClientRect();
+      else if (thumb) _flyAnimRect = thumb.getBoundingClientRect();
+      else _flyAnimRect = btn.getBoundingClientRect();
+      addToCartFromIndex(itemId, vi);
+      updateAllCartBtnStates();
+    });
+  });
+
+  // Quantity counter minus buttons (skip search page)
+  app.querySelectorAll('[data-qty-minus]').forEach(btn => {
+    if (btn.closest('#search-page')) return;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const itemId = btn.dataset.qtyMinus;
+      const vi = parseInt(btn.dataset.qtyVi) || 0;
+      removeOneFromCart(itemId, vi);
+      updateAllCartBtnStates();
     });
   });
 
@@ -2470,6 +2535,54 @@ async function toggleWishlist(itemId, variantIdx = 0) {
 
 function getCartTotal() {
   return state.cart.length;
+}
+
+function getCartQtyForItem(itemId, variantIdx) {
+  return state.cart.filter(c => c.id === itemId && c.variantIdx === variantIdx).length;
+}
+
+function removeOneFromCart(itemId, variantIdx) {
+  const idx = state.cart.findIndex(c => c.id === itemId && c.variantIdx === variantIdx);
+  if (idx !== -1) {
+    state.cart.splice(idx, 1);
+    storage.setCart(state.cart);
+    NookSounds.play('removeItem');
+  }
+}
+
+function updateAllCartBtnStates() {
+  // Update all visible cart button wrappers to reflect current cart state
+  document.querySelectorAll('.cart-btn-wrap').forEach(wrap => {
+    const itemId = wrap.dataset.cartItemId;
+    const vi = parseInt(wrap.dataset.cartVi) || 0;
+    const qty = getCartQtyForItem(itemId, vi);
+    const addBtn = wrap.querySelector('.add-cart-btn');
+    const counter = wrap.querySelector('.qty-counter');
+    const valSpan = wrap.querySelector('.qty-counter-val');
+    const plusBtn = wrap.querySelector('[data-qty-plus]');
+    const cartFull = getCartTotal() >= 40;
+
+    if (qty > 0) {
+      addBtn.classList.add('hidden');
+      counter.classList.add('visible');
+      valSpan.textContent = qty;
+    } else {
+      addBtn.classList.remove('hidden');
+      counter.classList.remove('visible');
+    }
+
+    // Disable add/plus buttons when cart is full
+    addBtn.disabled = cartFull;
+    if (plusBtn) plusBtn.disabled = cartFull;
+  });
+
+  // Update cart badge
+  const badge = document.querySelector('.nav-badge');
+  if (badge) {
+    const total = getCartTotal();
+    badge.textContent = total;
+    badge.style.display = total > 0 ? 'flex' : 'none';
+  }
 }
 
 function addToCartFromIndex(itemId, variantIdx = 0) {

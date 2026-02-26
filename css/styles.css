@@ -508,22 +508,84 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   padding: 3px 8px; border-radius: 6px; font-weight: 700;
   letter-spacing: 0.02em;
 }
+/* ─── Cart Button Container ─── */
+.cart-btn-wrap {
+  position: relative;
+  width: 100%;
+  height: 36px;
+}
 .add-cart-btn {
+  position: absolute;
+  inset: 0;
   width: 100%; padding: 10px; border-radius: 12px; border: none;
   background: var(--pines); color: #fff;
   font-size: 11px; font-weight: 700; cursor: pointer;
   font-family: var(--font); display: flex; align-items: center;
   justify-content: center; gap: 4px;
-  box-shadow: var(--shadow-btn); transition: all 0.2s ease;
+  box-shadow: var(--shadow-btn);
+  transition: opacity 0.25s ease, transform 0.25s ease;
 }
-.add-cart-btn:hover:not(.added):not(:disabled) {
+.add-cart-btn:hover:not(:disabled) {
   box-shadow: var(--shadow-cta); transform: translateY(-1px);
 }
-.add-cart-btn.added {
-  background: var(--border); color: var(--text-secondary);
-  box-shadow: none;
-}
 .add-cart-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+.add-cart-btn.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8);
+}
+
+/* ─── Quantity Counter ─── */
+.qty-counter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  border-radius: 12px;
+  background: var(--pines);
+  box-shadow: var(--shadow-btn);
+  opacity: 0;
+  transform: scale(0.8);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.qty-counter.visible {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+.qty-counter-btn {
+  width: 36px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+  border-radius: 12px;
+}
+.qty-counter-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.15);
+}
+.qty-counter-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.qty-counter-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  min-width: 24px;
+  text-align: center;
+}
 
 /* ─── Load More ─── */
 .load-more-btn {
