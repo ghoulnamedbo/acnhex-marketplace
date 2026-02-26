@@ -2090,13 +2090,14 @@ function renderSetPicker() {
       <h2 style="font-size:16px;font-weight:700;margin-bottom:8px;color:var(--palm-leaf)">Save ${esc(setName)} Series</h2>
       <p style="font-size:12px;color:var(--text-light);margin-bottom:16px">${state.setPickerItems.length} items will be added</p>
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch">
-        ${state.wishlists.lists.filter(l => l.id !== '__loved__').map(list => {
+        ${state.wishlists.lists.map(list => {
+          const isLoved = list.id === '__loved__';
           const full = list.cap !== null && list.items.length >= list.cap;
           const remaining = list.cap ? list.cap - list.items.length : Infinity;
           const canAdd = Math.min(state.setPickerItems.length, remaining);
-          return `<button class="list-pick-btn" data-set-pick-list="${esc(list.id)}" ${full ? 'disabled' : ''}>
+          return `<button class="list-pick-btn ${isLoved ? 'greyed' : ''}" data-set-pick-list="${esc(list.id)}" ${full || isLoved ? 'disabled' : ''}>
             <span>${esc(list.name)}</span>
-            <span style="font-size:10px;color:var(--text-light)">${list.items.length}${list.cap ? '/' + list.cap : ''}${canAdd < state.setPickerItems.length ? ' · can add ' + canAdd : ''}</span>
+            <span style="font-size:10px;color:var(--text-light)">${list.items.length}${list.cap ? '/' + list.cap : ''}${!isLoved && canAdd < state.setPickerItems.length ? ' · can add ' + canAdd : ''}</span>
           </button>`;
         }).join('')}
       </div>
@@ -2654,37 +2655,52 @@ function attachEvents() {
     });
   });
 
-  // Add Set to Cart button
+  // Add Set to Cart button (with sequential fly animations)
   document.querySelectorAll('[data-set-cart]').forEach(btn => {
     btn.addEventListener('click', async () => {
       const setName = btn.dataset.setCart;
       btn.classList.add('detail-set-action-btn--loading');
 
       const setItems = await data.getItemsBySet(setName);
+
+      // Capture button rect for fly animation source
+      const btnRect = btn.getBoundingClientRect();
       let addedCount = 0;
+      let delay = 0;
 
       for (const item of setItems) {
-        if (getCartTotal() >= 40) break;
-        // Add first variant of each item
+        if (getCartTotal() + addedCount >= 40) break;
         const v = item.variants[0];
-        addToCart({
-          id: item.id,
-          name: item.name,
-          variant: v.name,
-          variantIdx: 0,
-          hex: v.hexVariated || v.hex || item.hexBase,
-          img: v.image || item.image,
-        });
+
+        // Schedule each item with staggered delay for sequential fly effect
+        ((itemData, d) => {
+          setTimeout(() => {
+            _flyAnimRect = btnRect;  // Set fly source before each add
+            addToCart({
+              id: itemData.id,
+              name: itemData.name,
+              variant: itemData.v.name,
+              variantIdx: 0,
+              hex: itemData.v.hexVariated || itemData.v.hex || itemData.hexBase,
+              img: itemData.v.image || itemData.image,
+            });
+          }, d);
+        })({ id: item.id, name: item.name, v, hexBase: item.hexBase, image: item.image }, delay);
+
+        delay += 100;  // 100ms between each fly animation
         addedCount++;
       }
 
-      btn.classList.remove('detail-set-action-btn--loading');
-      if (addedCount > 0) {
-        btn.classList.add('detail-set-action-btn--added');
-        hapticTick();
-        NookSounds.play('addToCart');
-        setTimeout(() => btn.classList.remove('detail-set-action-btn--added'), 1500);
-      }
+      // Show success after all items scheduled
+      setTimeout(() => {
+        btn.classList.remove('detail-set-action-btn--loading');
+        if (addedCount > 0) {
+          btn.classList.add('detail-set-action-btn--added');
+          hapticTick();
+          NookSounds.play('addToCart');
+          setTimeout(() => btn.classList.remove('detail-set-action-btn--added'), 1500);
+        }
+      }, delay);
     });
   });
 
@@ -2997,7 +3013,7 @@ function attachEvents() {
       }
 
       if (addedCount > 0) {
-        storage.saveWishlists(state.wishlists);
+        storage.setWishlists(state.wishlists);
         hapticTick();
         NookSounds.play('addToList');
         state.wishlistToast = { listId, listName: list.name, action: 'add' };
@@ -3009,44 +3025,27 @@ function attachEvents() {
     });
   });
 
-  // Create new list from set picker
+  // Create new list from set picker (matches original list picker styling)
   const createFromSetPicker = document.getElementById('create-list-from-set-picker');
   if (createFromSetPicker) createFromSetPicker.addEventListener('click', () => {
-    const modal = createFromSetPicker.closest('.modal-card');
-    createFromSetPicker.style.display = 'none';
-    const inp = document.createElement('input');
-    inp.type = 'text';
-    inp.placeholder = 'New list name';
-    inp.className = 'modal-input';
-    inp.style.marginBottom = '12px';
-    modal.insertBefore(inp, createFromSetPicker);
+    // Replace button with styled inline form (matching original list picker)
+    createFromSetPicker.outerHTML = `<div style="display:flex;gap:8px;margin-bottom:12px" id="set-picker-list-form">
+      <input type="text" id="set-picker-list-input" class="prefix-input" placeholder="List name..." autofocus style="flex:1;width:auto;margin:0">
+      <button class="preset-btn active" id="set-picker-list-confirm" style="width:auto;padding:0 18px;font-size:18px">✓</button>
+    </div>`;
 
+    const inp = document.getElementById('set-picker-list-input');
     const doCreate = () => {
-      const name = inp.value.trim();
+      const name = (inp.value || '').trim();
       if (!name) return;
-      const newId = 'list_' + Date.now();
-      const newList = { id: newId, name, items: [], cap: null };
-
-      // Add set items to the new list
-      const items = state.setPickerItems || [];
-      for (const item of items) {
-        newList.items.push({
-          id: item.id,
-          variantIdx: item.variantIdx,
-          addedAt: Date.now(),
-        });
-      }
-
-      state.wishlists.lists.push(newList);
-      storage.saveWishlists(state.wishlists);
-      hapticTick();
-      NookSounds.play('addToList');
-      state.wishlistToast = { listId: newId, listName: name, action: 'add' };
-      state.setPickerItems = null;
-      state.setPickerName = null;
+      // Create new list WITHOUT auto-adding items (user clicks list to add)
+      state.wishlists.lists.push({ id: Date.now().toString(36), name, cap: 40, items: [] });
+      storage.setWishlists(state.wishlists);
+      // Re-render to show new list in picker (keep modal open)
       render();
     };
 
+    document.getElementById('set-picker-list-confirm').addEventListener('click', doCreate);
     inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') doCreate(); });
     inp.focus();
   });
