@@ -1275,6 +1275,240 @@ function renderPastOrders() {
     </div>`;
 }
 
+// ─── Share Wishlist as Image ───
+async function generateWishlistImage(list, entries, loadedImages) {
+  const itemSize = 80;
+  const labelHeight = 28;
+  const cellHeight = itemSize + labelHeight;
+  const cellWidth = 110;
+  const maxItemsPerRow = 5;
+  const padding = 24;
+  const headerHeight = 70;
+  const footerHeight = 40;
+  const columnGap = 24;
+  const orderLabelHeight = 32;
+
+  // Split entries into orders of 40
+  const orders = [];
+  for (let i = 0; i < entries.length; i += 40) {
+    orders.push(entries.slice(i, i + 40));
+  }
+
+  // Calculate actual items per row (fit to content, max 5)
+  const actualItemsPerRow = Math.min(entries.length, maxItemsPerRow);
+
+  // Calculate dimensions for each order column
+  const getOrderHeight = (order) => {
+    const rows = Math.ceil(order.length / maxItemsPerRow);
+    return orderLabelHeight + (rows * cellHeight) + 10;
+  };
+
+  const maxOrderHeight = Math.max(...orders.map(getOrderHeight));
+  const columnWidth = actualItemsPerRow * cellWidth;
+  const totalWidth = padding * 2 + (orders.length * columnWidth) + ((orders.length - 1) * columnGap);
+  const totalHeight = headerHeight + maxOrderHeight + footerHeight;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = totalWidth * 2;
+  canvas.height = totalHeight * 2;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+
+  // Background
+  ctx.fillStyle = '#faf7f2';
+  ctx.fillRect(0, 0, totalWidth, totalHeight);
+
+  // Header background
+  ctx.fillStyle = '#6a823e';
+  ctx.fillRect(0, 0, totalWidth, headerHeight);
+
+  // Header text
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 12px "Space Mono", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('✦ ACNHEX Market ✦', totalWidth / 2, 18);
+
+  // List name
+  ctx.font = 'bold 16px "Space Mono", monospace';
+  const listTitle = `${list.emoji || '📋'} ${list.name}`;
+  ctx.fillText(listTitle.length > 30 ? listTitle.slice(0, 30) + '...' : listTitle, totalWidth / 2, 42);
+
+  // Item count
+  ctx.font = '10px "Space Mono", monospace';
+  ctx.fillStyle = 'rgba(255,255,255,0.8)';
+  const orderText = orders.length > 1 ? ` · ${orders.length} orders` : '';
+  ctx.fillText(`${entries.length} item${entries.length !== 1 ? 's' : ''}${orderText}`, totalWidth / 2, 58);
+
+  // Draw each order column
+  orders.forEach((order, orderIdx) => {
+    const colX = padding + orderIdx * (columnWidth + columnGap);
+    const colY = headerHeight + 8;
+
+    // Order label (if multiple orders)
+    if (orders.length > 1) {
+      ctx.fillStyle = '#364023';
+      ctx.font = 'bold 11px "Space Mono", monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(`Order ${orderIdx + 1} of ${orders.length}`, colX, colY + 14);
+
+      // Perforated separator line
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = '#b8b0a4';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(colX, colY + 24);
+      ctx.lineTo(colX + columnWidth - 16, colY + 24);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Draw items
+    const gridStartY = colY + (orders.length > 1 ? orderLabelHeight : 8);
+
+    order.forEach((item, idx) => {
+      const row = Math.floor(idx / maxItemsPerRow);
+      const col = idx % maxItemsPerRow;
+
+      // Calculate how many items are in this row for centering
+      const rowStart = row * maxItemsPerRow;
+      const itemsInThisRow = Math.min(maxItemsPerRow, order.length - rowStart);
+      const rowOffset = (actualItemsPerRow - itemsInThisRow) * cellWidth / 2;
+
+      const x = colX + rowOffset + col * cellWidth;
+      const y = gridStartY + row * cellHeight;
+
+      // Draw perforated lines between items
+      ctx.setLineDash([3, 3]);
+      ctx.strokeStyle = '#d1cac0';
+      ctx.lineWidth = 1;
+
+      // Right border (except last in row)
+      if (col < itemsInThisRow - 1) {
+        ctx.beginPath();
+        ctx.moveTo(x + cellWidth - 8, y + 4);
+        ctx.lineTo(x + cellWidth - 8, y + cellHeight - 4);
+        ctx.stroke();
+      }
+
+      // Bottom border (except last row of this order)
+      const isLastRow = row === Math.ceil(order.length / maxItemsPerRow) - 1;
+      if (!isLastRow) {
+        ctx.beginPath();
+        ctx.moveTo(x + 4, y + cellHeight - 2);
+        ctx.lineTo(x + cellWidth - 12, y + cellHeight - 2);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+
+      // Draw image (no background, just the item)
+      const img = loadedImages[item.id + '_' + item._vi];
+      if (img) {
+        const imgX = x + (cellWidth - itemSize) / 2;
+        ctx.drawImage(img, imgX, y, itemSize, itemSize);
+      }
+
+      // Hex code + variant label beneath (truncate hex to last 4 chars)
+      const vi = item._vi;
+      const varLabel = vi === 0 ? 'og' : `v${vi}`;
+      const shortHex = item.hex.slice(-4);
+
+      ctx.fillStyle = '#6a823e';
+      ctx.font = 'bold 10px "Space Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(shortHex, x + cellWidth / 2, y + itemSize + 12);
+
+      ctx.fillStyle = '#9a9484';
+      ctx.font = '9px "Space Mono", monospace';
+      ctx.fillText(varLabel, x + cellWidth / 2, y + itemSize + 24);
+    });
+  });
+
+  // Footer
+  const footerY = totalHeight - footerHeight + 8;
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = '#b8b0a4';
+  ctx.beginPath();
+  ctx.moveTo(padding, footerY);
+  ctx.lineTo(totalWidth - padding, footerY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = '#9a9484';
+  ctx.font = '9px "Space Mono", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Generated by ACNHEX Market · ' + new Date().toLocaleDateString(), totalWidth / 2, footerY + 18);
+
+  return canvas.toDataURL('image/png');
+}
+
+async function shareWishlistAsImage() {
+  const list = state.wishlists.lists.find(l => l.id === state.viewingListId);
+  if (!list || list.items.length === 0) {
+    showToast('Add items first');
+    return;
+  }
+
+  showToast('📸 Generating image...');
+
+  // Build entries like renderWishlistDetail does
+  const entries = [];
+  for (const w of list.items) {
+    const detail = await data.getItemDetail(w.id);
+    if (!detail) continue;
+    const vi = w.variantIdx || 0;
+    const variant = detail.variants[vi] || detail.variants[0];
+    entries.push({
+      id: detail.id,
+      n: detail.name,
+      v1: variant.name,
+      hex: variant.hex,
+      img: variant.image,
+      _vi: vi,
+    });
+  }
+
+  if (entries.length === 0) {
+    showToast('No items to share');
+    return;
+  }
+
+  // Preload images
+  const loadedImages = {};
+  await Promise.all(entries.map(item => {
+    return new Promise((resolve) => {
+      if (!item.img) { resolve(); return; }
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => { loadedImages[item.id + '_' + item._vi] = img; resolve(); };
+      img.onerror = () => resolve();
+      img.src = item.img;
+    });
+  }));
+
+  const dataUrl = await generateWishlistImage(list, entries, loadedImages);
+
+  // Try native share if available, otherwise download
+  if (navigator.share && navigator.canShare) {
+    try {
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], `${list.name}-wishlist.png`, { type: 'image/png' });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: `${list.name} - ACNHEX Market` });
+        return;
+      }
+    } catch (e) {
+      // Fall through to download
+    }
+  }
+
+  // Download fallback
+  const link = document.createElement('a');
+  link.download = `${list.name.replace(/[^a-z0-9]/gi, '-')}-wishlist.png`;
+  link.href = dataUrl;
+  link.click();
+  showToast('📸 Image downloaded!');
+}
+
 // ─── Daily Pick Helper ───
 const DAILY_PICK_QUIPS = [
   "Tom Nook's pick of the day!",
@@ -1526,6 +1760,7 @@ async function renderWishlistDetail() {
     ${entries.length > 0 && list.id !== '__loved__' ? `
     <div style="padding:0 20px 10px;display:flex;gap:6px;flex-wrap:wrap">
       <button class="export-btn" id="export-list-btn">📤 Export List</button>
+      <button class="export-btn share-image-btn" id="share-image-btn">📸 Share as Image</button>
     </div>` : ''}
 
     ${entries.length === 0 ? `
@@ -4394,6 +4629,10 @@ function attachEvents() {
     state.showExportModal = true;
     render();
   });
+
+  // Share as image button
+  const shareImageBtn = document.getElementById('share-image-btn');
+  if (shareImageBtn) shareImageBtn.addEventListener('click', shareWishlistAsImage);
 
   // Wishlist group selection system - Item checkbox clicks
   const wishlistContainer = document.getElementById('wishlist-items-container');
