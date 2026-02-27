@@ -94,6 +94,10 @@ const state = {
   theme: storage.getTheme(),
   // Recently viewed items
   recentlyViewed: storage.getRecentlyViewed(),
+  // Wishlist group selection (not persisted - resets on navigation)
+  wishlistSelected: new Set(),
+  // For moving selected items between lists
+  _movingFromList: null,
 };
 
 const app = document.getElementById('app');
@@ -946,6 +950,11 @@ async function renderDetail() {
           </button>`;
         }).join('')}
       </div>
+      <div class="variant-drawer-footer">
+        <button class="variant-drawer-add-all-btn" id="add-all-variants-to-list">
+          <span>💚</span> Add all ${item.variants.length} variants to list
+        </button>
+      </div>
     </div>
   </div>`;
 }
@@ -1252,8 +1261,7 @@ async function renderWishlist() {
             </div>
             <div style="flex:1;min-width:0">
               <p style="font-size:13px;font-weight:700;margin-bottom:2px;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(list.name)}</p>
-              <p style="font-size:10px;color:var(--text-secondary)">${list.items.length}${list.cap ? ' / ' + list.cap : ''} items</p>
-              ${list.cap && list.items.length > 0 ? `<div class="wl-progress-track"><div class="wl-progress-fill" style="width:${(list.items.length / list.cap * 100)}%"></div></div>` : ''}
+              <p style="font-size:10px;color:var(--text-secondary)">${list.items.length} items${list.items.length > 40 ? ` · ${Math.ceil(list.items.length / 40)} orders` : ''}</p>
               ${thumbItems.length > 0 ? `
               <div class="wl-thumb-strip">
                 ${thumbItems.map((it, i) => `<div class="wl-thumb" style="background:${data.getItemBg(i)}" data-thumb-item="${esc(it.id)}" data-thumb-vi="${it.variantIdx || 0}"></div>`).join('')}
@@ -1262,6 +1270,7 @@ async function renderWishlist() {
             </div>
             ${list.id !== '__loved__' ? `
               <div style="display:flex;gap:4px;flex-shrink:0">
+                <button class="wl-rename-btn" data-rename-list="${esc(list.id)}" title="Rename list">✏</button>
                 <button class="wl-dup-btn" data-dup-list="${esc(list.id)}" title="Duplicate list">⧉</button>
                 <button class="remove-btn" data-delete-list="${esc(list.id)}">${ICONS.trash}</button>
               </div>` : '<div style="color:var(--text-light);font-size:14px;flex-shrink:0">›</div>'}
@@ -1297,6 +1306,17 @@ async function renderWishlistDetail() {
   lastRenderedListHexes = entries.map(e => e.hex);
 
   const listEmoji = list.emoji || (list.id === '__loved__' ? '💚' : '📋');
+  const orderCount = Math.ceil(entries.length / 40);
+  const itemCountText = entries.length === 0 ? '0 items' :
+    orderCount > 1 ? `${entries.length} items · ${orderCount} orders` : `${entries.length} items`;
+
+  // Group entries into chunks of 40 for display
+  const groups = [];
+  for (let i = 0; i < entries.length; i += 40) {
+    groups.push(entries.slice(i, i + 40));
+  }
+
+  const selectedCount = state.wishlistSelected.size;
 
   return `<div class="page">
     <div style="padding:16px 20px 14px;display:flex;align-items:flex-start;gap:12px">
@@ -1307,14 +1327,13 @@ async function renderWishlistDetail() {
             <span style="font-size:18px">${listEmoji}</span>
             <h2 style="font-size:20px;font-weight:700;color:var(--palm-leaf);letter-spacing:-0.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(list.name)}</h2>
           </div>
-          <p style="font-size:10px;color:var(--text-secondary);margin-top:2px">${entries.length}${list.cap ? ' / ' + list.cap : ''} items</p>
+          <p style="font-size:10px;color:var(--text-secondary);margin-top:2px">${itemCountText}</p>
         </div>
       </div>
     </div>
 
     ${entries.length > 0 && list.id !== '__loved__' ? `
     <div style="padding:0 20px 10px;display:flex;gap:6px;flex-wrap:wrap">
-      <button class="export-btn" id="add-all-to-cart">🛒 Add All</button>
       <button class="export-btn" id="export-list-btn">📤 Export List</button>
     </div>` : ''}
 
@@ -1325,28 +1344,50 @@ async function renderWishlistDetail() {
         <div style="font-size:11px;color:var(--text-secondary);margin-top:6px;line-height:1.6">Browse the catalog and tap the heart<br>to add items to this list.</div>
         <button class="cta-btn" id="start-browsing-btn" style="margin-top:20px;padding:12px 24px;border-radius:50px">Start Browsing</button>
       </div>` : `
-      <div style="padding:0 12px 20px">
-        ${entries.map((item, idx) => {
-          const vi = item._vi || 0;
-          return `<div class="wishlist-detail-row" data-item="${esc(item.id)}" data-vi="${vi}">
-            <div style="width:50px;height:50px;border-radius:12px;background:${data.getItemBg(idx)};flex-shrink:0;display:flex;align-items:center;justify-content:center">
-              ${item.img ? `<img src="${esc(item.img)}" style="width:38px;height:38px;object-fit:contain" onerror="this.outerHTML='📦'" alt="">` : '📦'}
-            </div>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:12px;font-weight:700;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(item.n)}</div>
-              <div style="font-size:10px;color:var(--text-secondary);display:flex;align-items:center;gap:6px;margin-top:2px">
-                ${esc(item.v1)}
-                <span style="font-size:9px;font-weight:700;background:var(--tag-bg);color:var(--pines);padding:1px 6px;border-radius:50px">${esc(item.hex.slice(-4))}</span>
-              </div>
-            </div>
-            <div style="display:flex;gap:4px;flex-shrink:0">
-              <button class="wl-action-btn wl-cart-btn" data-wl-add data-wl-id="${esc(item.id)}" data-wl-vi="${vi}" data-wl-name="${esc(item.n)}" data-wl-variant="${esc(item.v1)}" data-wl-hex="${esc(item.hex)}" data-wl-img="${esc(item.img || '')}">+</button>
-              <button class="wl-action-btn wl-move-btn" data-move-list-idx="${idx}" title="Move to another list">↗</button>
-              <button class="wl-action-btn wl-remove-btn" data-remove-list-idx="${idx}">✕</button>
-            </div>
-          </div>`;
+      <div style="padding:0 12px 20px" id="wishlist-items-container">
+        ${groups.map((group, groupIdx) => {
+          const startIdx = groupIdx * 40;
+          const endIdx = startIdx + group.length;
+          const allInGroupSelected = group.every((_, i) => state.wishlistSelected.has(startIdx + i));
+
+          return `
+            ${groupIdx > 0 ? '<div class="wishlist-order-split"></div>' : ''}
+            ${groups.length > 1 ? `
+            <div class="wishlist-group-header">
+              <div class="wishlist-check ${allInGroupSelected ? 'on' : 'off'}" data-group-check="${groupIdx}">${allInGroupSelected ? '✓' : ''}</div>
+              <span class="wishlist-group-badge">G${groupIdx + 1}</span>
+              <span class="wishlist-group-title">Order ${groupIdx + 1} of ${groups.length}</span>
+              <span class="wishlist-group-range">Items ${startIdx + 1}–${endIdx} · ${group.length} items</span>
+            </div>` : ''}
+            ${group.map((item, localIdx) => {
+              const globalIdx = startIdx + localIdx;
+              const vi = item._vi || 0;
+              const isSelected = state.wishlistSelected.has(globalIdx);
+              return `<div class="wishlist-detail-row ${isSelected ? 'selected' : ''}" data-item="${esc(item.id)}" data-vi="${vi}" data-global-idx="${globalIdx}">
+                <div class="wishlist-check ${isSelected ? 'on' : 'off'}" data-item-check="${globalIdx}">${isSelected ? '✓' : ''}</div>
+                <div class="wishlist-detail-thumb" style="background:${data.getItemBg(globalIdx)}">
+                  ${item.img ? `<img src="${esc(item.img)}" style="width:38px;height:38px;object-fit:contain" onerror="this.outerHTML='📦'" alt="">` : '📦'}
+                </div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:12px;font-weight:700;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(item.n)}</div>
+                  <div style="font-size:10px;color:var(--text-secondary);display:flex;align-items:center;gap:6px;margin-top:2px">
+                    ${esc(item.v1)}
+                    <span style="font-size:9px;font-weight:700;background:var(--tag-bg);color:var(--pines);padding:1px 6px;border-radius:50px">${esc(item.hex.slice(-4))}</span>
+                  </div>
+                </div>
+              </div>`;
+            }).join('')}
+          `;
         }).join('')}
       </div>
+
+      ${selectedCount > 0 ? `
+      <div class="wishlist-select-bar" id="wishlist-select-bar">
+        <span class="wishlist-select-count">${selectedCount} selected</span>
+        <button class="wishlist-select-move" id="wl-select-move">↗ Move</button>
+        <button class="wishlist-select-delete" id="wl-select-delete">🗑 Delete</button>
+        <button class="wishlist-select-cart" id="wl-select-cart">🛒 Add to Cart</button>
+      </div>` : ''}
 
       ${list.id !== '__loved__' ? `
       <!-- Receipt / Bot Command Section -->
@@ -1355,17 +1396,31 @@ async function renderWishlistDetail() {
           <span style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--bg);padding:0 8px;font-size:9px;color:var(--text-light)">✂ tear here</span>
         </div>
         <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-          <span style="font-size:11px;font-weight:700;color:var(--palm-leaf);text-transform:uppercase;letter-spacing:0.1em">Bot Command</span>
+          <span style="font-size:11px;font-weight:700;color:var(--palm-leaf);text-transform:uppercase;letter-spacing:0.1em">Bot Command${entries.length > 40 ? 's' : ''}</span>
           <span style="font-size:10px;color:var(--text-secondary)">${entries.length} items</span>
         </div>
-        <div class="receipt-block" id="copy-list-order">
-          <div class="receipt-tape"></div>
-          <div class="receipt-barcode">${Array.from({length:30}, () => `<span style="width:${Math.random()>.5?3:1.5}px"></span>`).join('')}</div>
-          <div style="font-size:9px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">SHIP TO: Discord</div>
-          ${entries.map(item => `<div class="receipt-item"><span>• ${esc(item.n)}</span><span class="hex">${esc(item.hex.slice(-4))}</span></div>`).join('')}
-          <div class="receipt-cmd">${esc(state.prefix)}order ${entries.map(e => e.hex).join(', ')}</div>
-          <div style="text-align:center;margin-top:8px;font-size:9px;color:var(--text-secondary);cursor:pointer">📋 tap to copy</div>
-        </div>
+        ${entries.length > 40 ? `
+        <div style="background:var(--tag-bg);border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+          <span style="font-size:14px">📦</span>
+          <span style="font-size:11px;color:var(--palm-leaf)">Split into ${Math.ceil(entries.length / 40)} orders (40-item bot limit per order)</span>
+        </div>` : ''}
+        ${(() => {
+          const chunks = [];
+          for (let i = 0; i < entries.length; i += 40) {
+            chunks.push(entries.slice(i, i + 40));
+          }
+          return chunks.map((chunk, chunkIdx) => `
+            <div class="receipt-block copy-list-order-chunk" data-chunk-idx="${chunkIdx}" ${chunks.length === 1 ? 'id="copy-list-order"' : ''} style="${chunkIdx > 0 ? 'margin-top:12px' : ''}">
+              <div class="receipt-tape"></div>
+              ${chunks.length > 1 ? `<div style="font-size:10px;font-weight:700;color:var(--pines);text-align:center;margin-bottom:6px">Order ${chunkIdx + 1} of ${chunks.length}</div>` : ''}
+              <div class="receipt-barcode">${Array.from({length:30}, () => `<span style="width:${Math.random()>.5?3:1.5}px"></span>`).join('')}</div>
+              <div style="font-size:9px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">SHIP TO: Discord</div>
+              ${chunk.map(item => `<div class="receipt-item"><span>• ${esc(item.n)}</span><span class="hex">${esc(item.hex.slice(-4))}</span></div>`).join('')}
+              <div class="receipt-cmd">${esc(state.prefix)}order ${chunk.map(e => e.hex).join(', ')}</div>
+              <div style="text-align:center;margin-top:8px;font-size:9px;color:var(--text-secondary);cursor:pointer">📋 tap to copy</div>
+            </div>
+          `).join('');
+        })()}
         <div style="text-align:center;margin-top:10px;font-size:9px;color:var(--text-light)">✦ NOOK INC. CERTIFIED ✦</div>
       </div>` : ''}`}
   </div>`;
@@ -1967,9 +2022,16 @@ function attachDetailFieldEvents() {
 
 function attachHexCopyEvents() {
   document.querySelectorAll('.hex-copy-badge').forEach(badge => {
+    // Skip if already has listener (prevents double-attach)
+    if (badge.dataset.hexListenerAttached) return;
+    badge.dataset.hexListenerAttached = 'true';
+
     badge.addEventListener('click', (e) => {
       e.stopPropagation();
-      const hex = badge.dataset.hex;
+      // Read data-hex at click time (not closure)
+      const hex = e.currentTarget.getAttribute('data-hex');
+      if (!hex) return;
+
       navigator.clipboard.writeText(hex).catch(() => {
         const ta = document.createElement('textarea');
         ta.value = hex; ta.style.position = 'fixed'; ta.style.left = '-9999px';
@@ -2429,12 +2491,11 @@ function renderListPicker() {
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch">
         ${state.wishlists.lists.map(list => {
           const inThis = list.items.some(w => w.id === item.id && w.variantIdx === item.variantIdx);
-          const full = list.cap !== null && list.items.length >= list.cap;
           const lovedDisabled = item.excludeLoved && list.id === '__loved__';
           const isLoved = list.id === '__loved__';
-          return `<button class="list-pick-btn ${isLoved && inThis ? 'active' : ''} ${lovedDisabled ? 'greyed' : ''}" data-pick-list="${esc(list.id)}" ${full || lovedDisabled ? 'disabled' : ''}>
+          return `<button class="list-pick-btn ${isLoved && inThis ? 'active' : ''} ${lovedDisabled ? 'greyed' : ''}" data-pick-list="${esc(list.id)}" ${lovedDisabled ? 'disabled' : ''}>
             <span>${esc(list.name)}</span>
-            <span style="font-size:10px;color:var(--text-light)">${list.items.length}${list.cap ? '/' + list.cap : ''}${!isLoved && inThis ? ' · has item' : ''}</span>
+            <span style="font-size:10px;color:var(--text-light)">${list.items.length} items${!isLoved && inThis ? ' · has item' : ''}</span>
           </button>`;
         }).join('')}
       </div>
@@ -2455,11 +2516,9 @@ function renderMovePicker() {
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch">
         ${state.wishlists.lists.filter(list => list.id !== sourceListId).map(list => {
           const inThis = list.items.some(w => w.id === item.itemId && w.variantIdx === item.variantIdx);
-          const full = list.cap !== null && list.items.length >= list.cap;
-          const isLoved = list.id === '__loved__';
-          return `<button class="list-pick-btn ${full ? 'greyed' : ''}" data-move-to-list="${esc(list.id)}" ${full ? 'disabled' : ''}>
+          return `<button class="list-pick-btn" data-move-to-list="${esc(list.id)}">
             <span>${esc(list.name)}</span>
-            <span style="font-size:10px;color:var(--text-light)">${list.items.length}${list.cap ? '/' + list.cap : ''}${inThis ? ' · already in list' : ''}</span>
+            <span style="font-size:10px;color:var(--text-light)">${list.items.length} items${inThis ? ' · already in list' : ''}</span>
           </button>`;
         }).join('')}
       </div>
@@ -2472,19 +2531,18 @@ function renderMovePicker() {
 function renderSetPicker() {
   if (!state.setPickerItems || state.setPickerItems.length === 0) return '';
   const setName = state.setPickerName || 'Set';
+  const isMoving = !!state._movingFromList;
+  const title = isMoving ? `Move ${esc(setName)}` : `Save ${esc(setName)} Series`;
   return `<div class="modal-overlay" id="set-picker-overlay">
     <div class="modal-card">
-      <h2 style="font-size:16px;font-weight:700;margin-bottom:8px;color:var(--palm-leaf)">Save ${esc(setName)} Series</h2>
-      <p style="font-size:12px;color:var(--text-light);margin-bottom:16px">${state.setPickerItems.length} items will be added</p>
+      <h2 style="font-size:16px;font-weight:700;margin-bottom:8px;color:var(--palm-leaf)">${title}</h2>
+      <p style="font-size:12px;color:var(--text-light);margin-bottom:16px">${state.setPickerItems.length} items will be ${isMoving ? 'moved' : 'added'}</p>
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch">
         ${state.wishlists.lists.map(list => {
           const isLoved = list.id === '__loved__';
-          const full = list.cap !== null && list.items.length >= list.cap;
-          const remaining = list.cap ? list.cap - list.items.length : Infinity;
-          const canAdd = Math.min(state.setPickerItems.length, remaining);
-          return `<button class="list-pick-btn ${isLoved ? 'greyed' : ''}" data-set-pick-list="${esc(list.id)}" ${full || isLoved ? 'disabled' : ''}>
+          return `<button class="list-pick-btn ${isLoved ? 'greyed' : ''}" data-set-pick-list="${esc(list.id)}" ${isLoved ? 'disabled' : ''}>
             <span>${esc(list.name)}</span>
-            <span style="font-size:10px;color:var(--text-light)">${list.items.length}${list.cap ? '/' + list.cap : ''}${!isLoved && canAdd < state.setPickerItems.length ? ' · can add ' + canAdd : ''}</span>
+            <span style="font-size:10px;color:var(--text-light)">${list.items.length} items</span>
           </button>`;
         }).join('')}
       </div>
@@ -2688,7 +2746,10 @@ function attachEvents() {
           state.scrollY = window.scrollY;
         }
         state.page = target;
-        if (target === 'wishlist') state.viewingListId = null;
+        if (target === 'wishlist') {
+          state.viewingListId = null;
+          state.wishlistSelected.clear(); // Clear selection when entering wishlist overview
+        }
         state._pageEnter = true;
         render();
       }
@@ -2757,7 +2818,8 @@ function attachEvents() {
     card.addEventListener('click', (e) => {
       if (e.target.closest('[data-heart]') || e.target.closest('[data-add-cart]') ||
           e.target.closest('.remove-btn') || e.target.closest('.wishlist-add-btn') ||
-          e.target.closest('[data-remove-list-idx]') || e.target.closest('[data-move-list-idx]')) return;
+          e.target.closest('[data-remove-list-idx]') || e.target.closest('[data-move-list-idx]') ||
+          e.target.closest('.wishlist-check') || e.target.closest('[data-item-check]') || e.target.closest('[data-group-check]')) return;
       // If clicking a similar item from a detail page, push current item to history stack
       if (state.page === 'detail' && state.itemDetail && card.closest('.similar-section')) {
         state.detailHistory.push({
@@ -3138,6 +3200,27 @@ function attachEvents() {
     });
   });
 
+  // Add all variants to list button
+  const addAllVariantsBtn = document.getElementById('add-all-variants-to-list');
+  if (addAllVariantsBtn && state.itemDetail) {
+    addAllVariantsBtn.addEventListener('click', () => {
+      const item = state.itemDetail;
+      // Create entries for all variants
+      state.setPickerItems = item.variants.map((v, idx) => ({
+        id: item.id,
+        name: item.name,
+        variant: v.name,
+        variantIdx: idx,
+        img: v.image || item.image,
+      }));
+      state.setPickerName = `${item.name} (all variants)`;
+      // Close variant drawer
+      document.querySelector('.variant-drawer')?.classList.remove('variant-drawer--open');
+      document.querySelector('.variant-drawer-backdrop')?.classList.remove('variant-drawer-backdrop--open');
+      render();
+    });
+  }
+
   // Toggle details expand/collapse
   document.querySelectorAll('[data-action="toggle-details"]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -3435,6 +3518,7 @@ function attachEvents() {
   const listBack = document.getElementById('list-back');
   if (listBack) listBack.addEventListener('click', () => {
     state.viewingListId = null;
+    state.wishlistSelected.clear(); // Clear selection when leaving detail
     render();
   });
 
@@ -3449,7 +3533,7 @@ function attachEvents() {
     const doCreate = () => {
       const name = (inp.value || '').trim();
       if (name) {
-        state.wishlists.lists.push({ id: Date.now().toString(36), name, emoji: '📋', cap: 40, items: [] });
+        state.wishlists.lists.push({ id: Date.now().toString(36), name, emoji: '📋', cap: null, items: [] });
         storage.setWishlists(state.wishlists);
         NookSounds.play('newList');
       }
@@ -3509,9 +3593,28 @@ function attachEvents() {
     });
   });
 
+  // Rename list button
+  app.querySelectorAll('[data-rename-list]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const listId = btn.dataset.renameList;
+      const list = state.wishlists.lists.find(l => l.id === listId);
+      if (list) {
+        const newName = prompt('Rename list:', list.name);
+        if (newName && newName.trim() && newName.trim() !== list.name) {
+          list.name = newName.trim();
+          storage.setWishlists(state.wishlists);
+          NookSounds.play('click');
+          render();
+          showToast('✏️ List renamed!');
+        }
+      }
+    });
+  });
+
   // Duplicate list button
   app.querySelectorAll('[data-dup-list]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const listId = btn.dataset.dupList;
       const original = state.wishlists.lists.find(l => l.id === listId);
@@ -3520,46 +3623,56 @@ function attachEvents() {
           id: 'list_' + Date.now(),
           name: original.name + ' (copy)',
           emoji: original.emoji,
-          cap: 40,
+          cap: null,
           items: [...original.items],
         };
         state.wishlists.lists.push(newList);
         storage.setWishlists(state.wishlists);
         NookSounds.play('newList');
+        await render();
         showToast('📋 List duplicated!');
-        render();
       }
     });
   });
 
-  // Copy list order (receipt block click)
-  const copyListBtn = document.getElementById('copy-list-order');
-  if (copyListBtn) copyListBtn.addEventListener('click', () => {
-    NookSounds.play('copyCommand');
-    const command = `${state.prefix}order ${lastRenderedListHexes.join(', ')}`;
+  // Copy list order (receipt block click) - handles both single and chunked orders
+  document.querySelectorAll('.copy-list-order-chunk, #copy-list-order').forEach(block => {
+    block.addEventListener('click', () => {
+      NookSounds.play('copyCommand');
 
-    const showCopied = () => {
-      showToast('📦 Copied to clipboard!');
-    };
-    const fallbackCopy = (text) => {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
-      document.body.appendChild(ta);
-      ta.select();
-      try { document.execCommand('copy'); } catch (_) {}
-      document.body.removeChild(ta);
-    };
+      // Get chunk index if this is a chunked order
+      const chunkIdx = parseInt(block.dataset.chunkIdx || '0', 10);
+      const chunkSize = 40;
+      const start = chunkIdx * chunkSize;
+      const end = Math.min(start + chunkSize, lastRenderedListHexes.length);
+      const chunkHexes = lastRenderedListHexes.slice(start, end);
+      const command = `${state.prefix}order ${chunkHexes.join(', ')}`;
+      const totalChunks = Math.ceil(lastRenderedListHexes.length / chunkSize);
 
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(command).then(showCopied).catch(() => {
+      const showCopied = () => {
+        const orderLabel = totalChunks > 1 ? ` (Order ${chunkIdx + 1}/${totalChunks})` : '';
+        showToast(`📦 Copied to clipboard!${orderLabel}`);
+      };
+      const fallbackCopy = (text) => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch (_) {}
+        document.body.removeChild(ta);
+      };
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(command).then(showCopied).catch(() => {
+          fallbackCopy(command);
+          showCopied();
+        });
+      } else {
         fallbackCopy(command);
         showCopied();
-      });
-    } else {
-      fallbackCopy(command);
-      showCopied();
-    }
+      }
+    });
   });
 
   // Toast "Change" button
@@ -3591,8 +3704,7 @@ function attachEvents() {
           list.items.push({ id: item.id, variantIdx: item.variantIdx });
         }
       } else {
-        // Other lists: always add (allow duplicates)
-        if (list.cap !== null && list.items.length >= list.cap) return;
+        // Other lists: always add (allow duplicates, no cap)
         list.items.push({ id: item.id, variantIdx: item.variantIdx });
       }
       storage.setWishlists(state.wishlists);
@@ -3611,7 +3723,7 @@ function attachEvents() {
     const doCreate = () => {
       const name = (inp.value || '').trim();
       if (name) {
-        state.wishlists.lists.push({ id: Date.now().toString(36), name, emoji: '📋', cap: 40, items: [] });
+        state.wishlists.lists.push({ id: Date.now().toString(36), name, emoji: '📋', cap: null, items: [] });
         storage.setWishlists(state.wishlists);
       }
       render();
@@ -3646,11 +3758,19 @@ function attachEvents() {
       const list = state.wishlists.lists.find(l => l.id === listId);
       if (!list) return;
 
+      // If moving to the same list, just clear selection
+      if (state._movingFromList && state._movingFromList === listId) {
+        state.setPickerItems = null;
+        state.setPickerName = null;
+        state._movingFromList = null;
+        state.wishlistSelected.clear();
+        render();
+        return;
+      }
+
       let addedCount = 0;
       for (const item of items) {
-        // Check list capacity
-        if (list.cap !== null && list.items.length >= list.cap) break;
-        // Skip if already in list
+        // Skip if already in list (no cap on wishlists)
         if (list.items.some(w => w.id === item.id && w.variantIdx === item.variantIdx)) continue;
 
         list.items.push({
@@ -3661,11 +3781,29 @@ function attachEvents() {
         addedCount++;
       }
 
+      // If this was a move operation, remove items from source list
+      if (state._movingFromList && addedCount > 0) {
+        const sourceList = state.wishlists.lists.find(l => l.id === state._movingFromList);
+        if (sourceList) {
+          // Get source indices sorted descending for safe removal
+          const sourceIndices = items
+            .filter(item => item.sourceIdx !== undefined)
+            .map(item => item.sourceIdx)
+            .sort((a, b) => b - a);
+
+          for (const idx of sourceIndices) {
+            if (idx >= 0 && idx < sourceList.items.length) {
+              sourceList.items.splice(idx, 1);
+            }
+          }
+        }
+      }
+
       if (addedCount > 0) {
         storage.setWishlists(state.wishlists);
         hapticTick();
         NookSounds.play('addToList');
-        state.wishlistToast = { listId, listName: list.name, action: 'add' };
+        state.wishlistToast = { listId, listName: list.name, action: state._movingFromList ? 'move' : 'add' };
         // Auto-clear toast after 3 seconds
         clearTimeout(toastTimer);
         toastTimer = setTimeout(() => {
@@ -3677,6 +3815,8 @@ function attachEvents() {
 
       state.setPickerItems = null;
       state.setPickerName = null;
+      state._movingFromList = null;
+      state.wishlistSelected.clear();
       render();
     });
   });
@@ -3695,7 +3835,7 @@ function attachEvents() {
       const name = (inp.value || '').trim();
       if (!name) return;
       // Create new list WITHOUT auto-adding items (user clicks list to add)
-      state.wishlists.lists.push({ id: Date.now().toString(36), name, emoji: '📋', cap: 40, items: [] });
+      state.wishlists.lists.push({ id: Date.now().toString(36), name, emoji: '📋', cap: null, items: [] });
       storage.setWishlists(state.wishlists);
       // Re-render to show new list in picker (keep modal open)
       render();
@@ -3711,6 +3851,7 @@ function attachEvents() {
   if (closeSetPicker) closeSetPicker.addEventListener('click', () => {
     state.setPickerItems = null;
     state.setPickerName = null;
+    state._movingFromList = null;
     render();
   });
 
@@ -3720,6 +3861,7 @@ function attachEvents() {
     if (e.target === setPickerOverlay) {
       state.setPickerItems = null;
       state.setPickerName = null;
+      state._movingFromList = null;
       render();
     }
   });
@@ -3731,44 +3873,234 @@ function attachEvents() {
     render();
   });
 
-  // Add All to Cart button (wishlist detail)
-  const addAllToCartBtn = document.getElementById('add-all-to-cart');
-  if (addAllToCartBtn) addAllToCartBtn.addEventListener('click', () => {
+  // Wishlist group selection system - Item checkbox clicks
+  const wishlistContainer = document.getElementById('wishlist-items-container');
+  if (wishlistContainer) {
+    wishlistContainer.addEventListener('click', (e) => {
+      // Handle individual item checkbox
+      const itemCheck = e.target.closest('[data-item-check]');
+      if (itemCheck) {
+        const idx = parseInt(itemCheck.dataset.itemCheck, 10);
+        if (state.wishlistSelected.has(idx)) {
+          state.wishlistSelected.delete(idx);
+        } else {
+          state.wishlistSelected.add(idx);
+        }
+        render();
+        return;
+      }
+
+      // Handle group checkbox
+      const groupCheck = e.target.closest('[data-group-check]');
+      if (groupCheck) {
+        const groupIdx = parseInt(groupCheck.dataset.groupCheck, 10);
+        const list = state.wishlists.lists.find(l => l.id === state.viewingListId);
+        if (!list) return;
+        const startIdx = groupIdx * 40;
+        const endIdx = Math.min(startIdx + 40, list.items.length);
+
+        // Check if all items in group are selected
+        let allSelected = true;
+        for (let i = startIdx; i < endIdx; i++) {
+          if (!state.wishlistSelected.has(i)) {
+            allSelected = false;
+            break;
+          }
+        }
+
+        // Toggle: if all selected, deselect all; otherwise select all
+        for (let i = startIdx; i < endIdx; i++) {
+          if (allSelected) {
+            state.wishlistSelected.delete(i);
+          } else {
+            state.wishlistSelected.add(i);
+          }
+        }
+        render();
+        return;
+      }
+    });
+  }
+
+  // Selection bar - Move button (opens move picker for selected items)
+  const wlSelectMove = document.getElementById('wl-select-move');
+  if (wlSelectMove) wlSelectMove.addEventListener('click', async () => {
     const list = state.wishlists.lists.find(l => l.id === state.viewingListId);
-    if (!list || list.items.length === 0) return;
+    if (!list) return;
+
+    // Collect selected items for the set picker
+    const selectedIndices = Array.from(state.wishlistSelected).sort((a, b) => a - b);
+    const itemsToMove = [];
+
+    for (const idx of selectedIndices) {
+      const item = list.items[idx];
+      if (!item) continue;
+      const detail = await data.getItemDetail(item.id);
+      if (!detail) continue;
+      const vi = item.variantIdx || 0;
+      const variant = detail.variants[vi] || detail.variants[0];
+
+      itemsToMove.push({
+        id: item.id,
+        name: detail.name,
+        variant: variant.name,
+        variantIdx: vi,
+        img: variant.image || detail.image,
+        sourceIdx: idx, // Track source index for removal after move
+      });
+    }
+
+    if (itemsToMove.length === 0) return;
+
+    // Use set picker for moving items
+    state.setPickerItems = itemsToMove;
+    state.setPickerName = `${itemsToMove.length} selected items`;
+    state._movingFromList = state.viewingListId; // Track source list for removal
+    render();
+  });
+
+  // Selection bar - Delete button
+  const wlSelectDelete = document.getElementById('wl-select-delete');
+  if (wlSelectDelete) wlSelectDelete.addEventListener('click', async () => {
+    const list = state.wishlists.lists.find(l => l.id === state.viewingListId);
+    if (!list) return;
+
+    const selectedIndices = Array.from(state.wishlistSelected).sort((a, b) => b - a); // Sort descending for removal
+    const removedCount = selectedIndices.length;
+
+    // Remove items by index (from highest to lowest to preserve indices)
+    for (const idx of selectedIndices) {
+      if (idx >= 0 && idx < list.items.length) {
+        list.items.splice(idx, 1);
+      }
+    }
+
+    storage.setWishlists(state.wishlists);
+    state.wishlistSelected.clear();
+    NookSounds.play('removeItem');
+    const toastMsg = `🗑 Removed ${removedCount} item${removedCount > 1 ? 's' : ''}`;
+    await render();
+    showToast(toastMsg);
+  });
+
+  // Selection bar - Add to Cart button
+  const wlSelectCart = document.getElementById('wl-select-cart');
+  if (wlSelectCart) wlSelectCart.addEventListener('click', async () => {
+    const list = state.wishlists.lists.find(l => l.id === state.viewingListId);
+    if (!list) return;
 
     const remaining = 40 - state.cart.length;
     if (remaining <= 0) {
       NookSounds.play('cartFull');
-      showToast('Cart is full (40 items max)');
+      showToast('Cart is full (40/40)');
       return;
     }
 
-    // Add items to cart (up to remaining space)
-    const toAdd = list.items.slice(0, remaining);
-    let addedCount = 0;
+    // Get selected items sorted by index - limit to first 40 selected, then to cart space
+    const selectedIndices = Array.from(state.wishlistSelected).sort((a, b) => a - b);
+    const totalSelected = selectedIndices.length;
+    const cappedTo40 = selectedIndices.slice(0, 40); // First 40 selected items only
+    const itemsToAdd = cappedTo40.slice(0, remaining); // Then limit to cart space
 
-    for (const item of toAdd) {
-      const detail = data.getIndexItem(item.id);
+    // Collect item data for fly animation
+    const itemsData = [];
+    for (const idx of itemsToAdd) {
+      const item = list.items[idx];
+      if (!item) continue;
+      const detail = await data.getItemDetail(item.id);
       if (!detail) continue;
-      state.cart.push({
+      const vi = item.variantIdx || 0;
+      const variant = detail.variants[vi] || detail.variants[0];
+
+      itemsData.push({
         id: item.id,
-        name: detail.n,
-        variant: detail.v1,
-        variantIdx: item.variantIdx,
-        hex: detail.hex,
-        img: detail.img,
+        name: detail.name,
+        variant: variant.name,
+        variantIdx: vi,
+        hex: variant.hexVariated || variant.hex || detail.hexBase,
+        img: variant.image || detail.image,
+        idx: idx,
       });
-      addedCount++;
     }
 
-    if (addedCount > 0) {
-      storage.setCart(state.cart);
-      NookSounds.play('addToCart');
-      state._cartBounce = true;
-      showToast(`🛒 Added ${addedCount} items to cart`);
-      render();
+    if (itemsData.length === 0) return;
+
+    // Get cart nav button position for fly animation target
+    const cartNavBtn = document.querySelector('[data-nav="cart"]');
+    const cartRect = cartNavBtn ? cartNavBtn.getBoundingClientRect() : null;
+
+    // Animate items flying to cart one by one
+    const flyDelay = Math.min(80, 800 / itemsData.length); // Faster for more items
+
+    for (let i = 0; i < itemsData.length; i++) {
+      const itemData = itemsData[i];
+      const row = document.querySelector(`[data-global-idx="${itemData.idx}"]`);
+
+      if (row && cartRect) {
+        const rowRect = row.getBoundingClientRect();
+
+        // Create fly element
+        const flyEl = document.createElement('div');
+        flyEl.className = 'cart-fly-item';
+        flyEl.innerHTML = itemData.img ?
+          `<img src="${itemData.img}" style="width:100%;height:100%;object-fit:contain;border-radius:8px">` :
+          '📦';
+        flyEl.style.cssText = `
+          position: fixed;
+          left: ${rowRect.left + 30}px;
+          top: ${rowRect.top + 10}px;
+          width: 36px;
+          height: 36px;
+          z-index: 1000;
+          pointer-events: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 20px;
+          background: var(--card);
+          border-radius: 10px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        `;
+        document.body.appendChild(flyEl);
+
+        // Animate to cart - fly and disappear
+        setTimeout(() => {
+          flyEl.style.transition = 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
+          flyEl.style.left = `${cartRect.left + cartRect.width / 2 - 18}px`;
+          flyEl.style.top = `${cartRect.top + cartRect.height / 2 - 18}px`;
+          flyEl.style.transform = 'scale(0)';
+          flyEl.style.opacity = '0';
+        }, 10);
+
+        // Remove element after animation completes
+        setTimeout(() => {
+          flyEl.remove();
+        }, 360);
+      }
+
+      // Add to cart with delay
+      await new Promise(resolve => setTimeout(resolve, flyDelay));
+
+      state.cart.push({
+        id: itemData.id,
+        name: itemData.name,
+        variant: itemData.variant,
+        variantIdx: itemData.variantIdx,
+        hex: itemData.hex,
+        img: itemData.img,
+      });
     }
+
+    storage.setCart(state.cart);
+    NookSounds.play('addToCart');
+    state._cartBounce = true;
+    state.wishlistSelected.clear();
+
+    // Store toast message to show after render
+    const toastMsg = totalSelected > 40 ? '🛒 Added first 40 items selected!' : '🛒 Added to cart!';
+    await render();
+    // Show toast after render completes (so it doesn't get removed)
+    showToast(toastMsg);
   });
 
   // Start Browsing button (empty wishlist state)
@@ -3895,12 +4227,8 @@ function attachEvents() {
       }
       const result = data.lookupByHex(token);
       if (result) {
-        // Cap at 40 items
-        if (resolved.length < 40) {
-          resolved.push(result);
-        } else {
-          skipped++;
-        }
+        // No cap on wishlists - add all resolved items
+        resolved.push(result);
       } else {
         skipped++;
       }
@@ -3916,7 +4244,7 @@ function attachEvents() {
       id: 'imported_' + Date.now(),
       name: 'Imported List',
       emoji: '📥',
-      cap: 40,
+      cap: null,
       items: resolved,
     };
 
@@ -3926,14 +4254,12 @@ function attachEvents() {
 
     // Close modal and show toast
     state.showImportModal = false;
+    const toastMsg = skipped > 0
+      ? `📥 Imported ${resolved.length} items (${skipped} skipped)`
+      : `📥 Imported ${resolved.length} items`;
 
-    if (skipped > 0) {
-      showToast(`📥 Imported ${resolved.length} items (${skipped} skipped)`);
-    } else {
-      showToast(`📥 Imported ${resolved.length} items`);
-    }
-
-    render();
+    await render();
+    showToast(toastMsg);
   });
 
   // Copy command (shipping label click)

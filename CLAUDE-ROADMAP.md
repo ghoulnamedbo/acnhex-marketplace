@@ -221,7 +221,7 @@ These add significant value and fill the biggest gaps in the current app.
 
 #### 2.3 Recently Viewed Items
 
-- [ ] **Status: NOT STARTED**
+- [x] **Status: COMPLETE**
 
 **Problem:** No way to get back to items you recently looked at without searching again.
 
