@@ -249,7 +249,7 @@ These add significant value and fill the biggest gaps in the current app.
 
 #### 2.4 Multi-Order Splitting (40+ Items)
 
-- [ ] **Status: NOT STARTED**
+- [x] **Status: COMPLETE**
 
 **Problem:** The cart hard-caps at 40 items. Users who want more need to manually manage multiple sessions. The 40-item limit is correct (Discord bot constraint), but the app should help users manage it.
 

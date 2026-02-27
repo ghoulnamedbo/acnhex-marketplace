@@ -17,6 +17,7 @@ const KEYS = {
   seenExportInfo: 'acnhex_seen_export_info',
   theme: 'acnhex_theme',
   recentlyViewed: 'acnhex_recent',
+  orderHistory: 'acnhex_order_history',
 };
 
 function get(key, fallback) {
@@ -56,6 +57,9 @@ export function setTheme(t) { set(KEYS.theme, t); }
 
 export function getRecentlyViewed() { return get(KEYS.recentlyViewed, []); }
 export function setRecentlyViewed(items) { set(KEYS.recentlyViewed, items); }
+
+export function getOrderHistory() { return get(KEYS.orderHistory, []); }
+export function setOrderHistory(orders) { set(KEYS.orderHistory, orders); }
 
 export function clearAll() {
   Object.values(KEYS).forEach(k => localStorage.removeItem(k));

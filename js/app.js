@@ -1225,7 +1225,52 @@ function renderCart() {
       <!-- Nook Footer -->
       <div class="nook-footer">✦ NOOK INC. CERTIFIED ✦</div>
     `}
+
+    ${renderPastOrders()}
   </div>`;
+}
+
+// ─── Past Orders Helper ───
+function renderPastOrders() {
+  const history = storage.getOrderHistory();
+  if (history.length === 0) return '';
+
+  return `
+    <div class="past-orders-section">
+      <div class="past-orders-header">
+        <span class="past-orders-title">📜 Past Orders</span>
+        <span class="past-orders-count">${history.length} saved</span>
+      </div>
+      <div class="past-orders-list">
+        ${history.map((order, idx) => {
+          const date = new Date(order.timestamp);
+          const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+          const timeStr = date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+          const itemCount = order.items.length;
+          const thumbItems = order.items.slice(0, 5);
+          const extraCount = order.items.length > 5 ? order.items.length - 5 : 0;
+          return `
+          <div class="past-order-card" data-order-idx="${idx}">
+            <div class="past-order-meta">
+              <span class="past-order-date">${dateStr} at ${timeStr}</span>
+              <span class="past-order-items">${itemCount} item${itemCount !== 1 ? 's' : ''}</span>
+            </div>
+            <div class="past-order-thumbs">
+              ${thumbItems.map((item, i) => `
+                <div class="past-order-thumb" style="background:${data.getItemBg(i)}">
+                  ${item.img ? `<img src="${esc(item.img)}" alt="" onerror="this.outerHTML='📦'">` : '📦'}
+                </div>
+              `).join('')}
+              ${extraCount > 0 ? `<div class="past-order-thumb-extra">+${extraCount}</div>` : ''}
+            </div>
+            <div class="past-order-actions">
+              <button class="past-order-copy-btn" data-copy-order="${idx}" title="Copy command">📋 Copy</button>
+              <button class="past-order-reload-btn" data-reload-order="${idx}" title="Reload to cart">♻ Reload</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
 }
 
 // ─── Wishlist Page ───
@@ -3435,15 +3480,72 @@ function attachEvents() {
     });
   });
 
-  // Clear entire cart
+  // Clear entire cart (save to history first)
   const clearCartBtn = document.getElementById('clear-cart');
   if (clearCartBtn) clearCartBtn.addEventListener('click', () => {
     if (confirm('Clear all items from your cart?')) {
+      // Save current cart to order history before clearing
+      if (state.cart.length > 0) {
+        const prefix = state.prefix;
+        const hexes = state.cart.map(c => c.hex);
+        const command = `${prefix}order ${hexes.join(', ')}`;
+        const snapshot = {
+          items: [...state.cart],
+          timestamp: Date.now(),
+          command: command
+        };
+        const history = storage.getOrderHistory();
+        history.unshift(snapshot); // Add to front
+        // Keep only last 10 orders
+        if (history.length > 10) history.length = 10;
+        storage.setOrderHistory(history);
+      }
       NookSounds.play('clearCart');
       state.cart = [];
       storage.setCart(state.cart);
       render();
     }
+  });
+
+  // Past orders - Copy command
+  app.querySelectorAll('[data-copy-order]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.copyOrder);
+      const history = storage.getOrderHistory();
+      if (idx >= 0 && idx < history.length) {
+        const order = history[idx];
+        try {
+          await navigator.clipboard.writeText(order.command);
+          NookSounds.play('copy');
+          showToast('📋 Command copied!');
+        } catch {
+          showToast('Failed to copy');
+        }
+      }
+    });
+  });
+
+  // Past orders - Reload to cart
+  app.querySelectorAll('[data-reload-order]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.reloadOrder);
+      const history = storage.getOrderHistory();
+      if (idx >= 0 && idx < history.length) {
+        const order = history[idx];
+        // Check if current cart is non-empty and confirm
+        if (state.cart.length > 0) {
+          if (!confirm('This will replace your current cart. Continue?')) return;
+        }
+        // Reload the order items to cart
+        state.cart = [...order.items];
+        storage.setCart(state.cart);
+        NookSounds.play('addToCart');
+        showToast(`♻ Reloaded ${order.items.length} item${order.items.length !== 1 ? 's' : ''}`);
+        render();
+      }
+    });
   });
 
   // Wishlist add-to-cart (uses embedded data attributes for correct variant)
