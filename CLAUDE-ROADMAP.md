@@ -384,7 +384,7 @@ Lower priority, but adds charm and completeness.
 
 #### 4.1 Daily Featured Item ("Nook's Pick")
 
-- [ ] **Status: NOT STARTED**
+- [x] **Status: COMPLETE**
 
 **What to do:**
 - On the catalog home page, add a "Nook's Daily Pick" card above the category carousel.

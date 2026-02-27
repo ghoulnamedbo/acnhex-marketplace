@@ -6059,6 +6059,110 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   background: var(--bg-warm);
 }
 
+/* ── Daily Pick Card ─── */
+.daily-pick-card {
+  background: var(--card);
+  border-radius: 12px;
+  border: 2px solid var(--willow);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.daily-pick-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.daily-pick-card:active {
+  transform: scale(0.98);
+}
+
+.daily-pick-badge {
+  background: linear-gradient(90deg, var(--willow) 0%, var(--pines) 100%);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 12px;
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+
+.daily-pick-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+}
+
+.daily-pick-thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.daily-pick-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.daily-pick-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.daily-pick-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.daily-pick-variant {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.daily-pick-quip {
+  font-size: 10px;
+  color: var(--pines);
+  font-style: italic;
+}
+
+.daily-pick-arrow {
+  font-size: 20px;
+  color: var(--text-light);
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .daily-pick-card {
+  background: var(--card);
+  border-color: var(--pines);
+}
+
+[data-theme="dark"] .daily-pick-badge {
+  background: linear-gradient(90deg, #4e6038 0%, #3e5028 100%);
+}
+
+[data-theme="dark"] .daily-pick-thumb {
+  background: #383d32 !important;
+}
+
+[data-theme="dark"] .daily-pick-quip {
+  color: var(--tag-text);
+}
+
 /* ── Offline Indicator ─── */
 .offline-banner {
   position: fixed;

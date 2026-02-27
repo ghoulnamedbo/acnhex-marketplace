@@ -547,6 +547,8 @@ async function renderCatalog() {
 
     ${await renderRecentlyViewed()}
 
+    ${await renderDailyPick()}
+
     <div style="padding:0 24px;margin-top:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <h3 class="heading-section">Categories</h3>
@@ -1269,6 +1271,78 @@ function renderPastOrders() {
             </div>
           </div>`;
         }).join('')}
+      </div>
+    </div>`;
+}
+
+// ─── Daily Pick Helper ───
+const DAILY_PICK_QUIPS = [
+  "Tom Nook's pick of the day!",
+  "Isabelle recommends this one!",
+  "Trending on the island today!",
+  "A villager favorite!",
+  "Today's hidden gem!",
+  "Blathers would approve!",
+  "Perfect for your island!",
+  "K.K. Slider's choice!",
+  "Hot item alert!",
+  "Nook's Cranny spotlight!"
+];
+
+function getDailyPickSeed() {
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+  // Simple hash function
+  let hash = 0;
+  for (let i = 0; i < dateStr.length; i++) {
+    hash = ((hash << 5) - hash) + dateStr.charCodeAt(i);
+    hash = hash & hash;
+  }
+  return Math.abs(hash);
+}
+
+async function renderDailyPick() {
+  const seed = getDailyPickSeed();
+  const quipIndex = seed % DAILY_PICK_QUIPS.length;
+  const quip = DAILY_PICK_QUIPS[quipIndex];
+
+  // Use getItemDetail with a deterministic item ID from the index
+  const indexItems = data.getCategories();
+  if (!indexItems || indexItems.length === 0) return '';
+
+  // Pick a category and get an item from it
+  const catIdx = seed % indexItems.length;
+  const cat = indexItems[catIdx];
+
+  // Get items from this category
+  const catItems = data.getItemsByCategory(cat.name, 0, 50);
+  if (!catItems.items || catItems.items.length === 0) return '';
+
+  const itemIdx = seed % catItems.items.length;
+  const indexItem = catItems.items[itemIdx];
+
+  // Get full item details
+  const item = await data.getItemDetail(indexItem.id);
+  if (!item || !item.variants || item.variants.length === 0) return '';
+
+  const variantIdx = seed % item.variants.length;
+  const variant = item.variants[variantIdx];
+
+  return `
+    <div class="daily-pick-section" style="padding:0 24px;margin-top:16px">
+      <div class="daily-pick-card" data-daily-pick="${esc(item.id)}" data-daily-vi="${variantIdx}">
+        <div class="daily-pick-badge">🌟 Nook's Daily Pick</div>
+        <div class="daily-pick-content">
+          <div class="daily-pick-thumb" style="background:${data.getItemBg(seed % 6)}">
+            ${variant.image ? `<img src="${esc(variant.image)}" alt="" onerror="this.outerHTML='📦'">` : '📦'}
+          </div>
+          <div class="daily-pick-info">
+            <div class="daily-pick-name">${esc(item.name)}</div>
+            <div class="daily-pick-variant">${esc(variant.name)}</div>
+            <div class="daily-pick-quip">"${esc(quip)}"</div>
+          </div>
+          <div class="daily-pick-arrow">›</div>
+        </div>
       </div>
     </div>`;
 }
@@ -3047,6 +3121,19 @@ function attachEvents() {
       state._pageEnter = true;
       loadItemDetail(card.dataset.item);
     });
+  });
+
+  // Daily Pick card
+  const dailyPick = document.querySelector('[data-daily-pick]');
+  if (dailyPick) dailyPick.addEventListener('click', () => {
+    state.detailHistory = [];
+    state.scrollY = window.scrollY;
+    state.previousPage = 'catalog';
+    state.selectedItemId = dailyPick.dataset.dailyPick;
+    state.selectedVariantIdx = parseInt(dailyPick.dataset.dailyVi) || 0;
+    state.page = 'detail';
+    state._pageEnter = true;
+    loadItemDetail(dailyPick.dataset.dailyPick);
   });
 
   // Heart buttons (skip search page — handled by attachSearchResultEvents)
