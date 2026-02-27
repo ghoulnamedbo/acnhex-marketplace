@@ -333,7 +333,7 @@ These improve usability but aren't critical.
 
 #### 3.2 Offline Indicator
 
-- [ ] **Status: NOT STARTED**
+- [x] **Status: COMPLETE**
 
 **What to do:**
 - Listen to `online` and `offline` window events.
@@ -355,7 +355,7 @@ These improve usability but aren't critical.
 
 #### 3.3 Collection Tracker
 
-- [ ] **Status: NOT STARTED**
+- [x] **Status: COMPLETE**
 
 **What to do:**
 - On the Wishlist overview page, add a "Collection Progress" summary card at the top.

@@ -1273,6 +1273,39 @@ function renderPastOrders() {
     </div>`;
 }
 
+// ─── Collection Progress Helper ───
+function getCollectionProgress() {
+  const categories = data.getCategories();
+  const allWishlistedIds = new Set();
+
+  // Gather all unique item IDs from all wishlists
+  for (const list of state.wishlists.lists) {
+    for (const item of list.items) {
+      allWishlistedIds.add(item.id);
+    }
+  }
+
+  // Count wishlisted items per category
+  const catCounts = {};
+  for (const cat of categories) {
+    catCounts[cat.name] = { total: cat.count, wishlisted: 0, emoji: cat.emoji };
+  }
+
+  // Look up each wishlisted item's category
+  for (const id of allWishlistedIds) {
+    const item = data.getIndexItem(id);
+    if (item && catCounts[item.c]) {
+      catCounts[item.c].wishlisted++;
+    }
+  }
+
+  // Calculate totals
+  const totalItems = categories.reduce((sum, c) => sum + c.count, 0);
+  const totalWishlisted = allWishlistedIds.size;
+
+  return { totalItems, totalWishlisted, catCounts, categories };
+}
+
 // ─── Wishlist Page ───
 let lastRenderedListHexes = [];
 
@@ -1282,6 +1315,9 @@ async function renderWishlist() {
   const lists = state.wishlists.lists;
   const totalItems = getTotalWishlistItems();
 
+  const progress = getCollectionProgress();
+  const overallPct = progress.totalItems > 0 ? ((progress.totalWishlisted / progress.totalItems) * 100).toFixed(1) : 0;
+
   return `<div class="page">
     <div class="page-header" style="padding-bottom:20px;display:flex;justify-content:space-between;align-items:flex-start">
       <div>
@@ -1289,6 +1325,38 @@ async function renderWishlist() {
         <p class="text-secondary">${lists.length} list${lists.length !== 1 ? 's' : ''} · ${totalItems} item${totalItems !== 1 ? 's' : ''}</p>
       </div>
       <button class="import-btn" id="import-list-btn"><span class="emoji">📥</span> Import</button>
+    </div>
+
+    <!-- Collection Progress Card -->
+    <div class="collection-progress-card" style="margin:0 24px 16px">
+      <button class="collection-progress-toggle" id="collection-toggle">
+        <span class="collection-progress-title">📊 Collection Progress</span>
+        <span class="collection-progress-summary">${progress.totalWishlisted} / ${progress.totalItems} (${overallPct}%)</span>
+        <span class="collection-progress-chevron" id="collection-chevron">▼</span>
+      </button>
+      <div class="collection-progress-content" id="collection-content" style="display:none">
+        <div class="collection-overall">
+          <div class="collection-overall-label">Overall Progress</div>
+          <div class="collection-progress-bar">
+            <div class="collection-progress-fill" style="width:${overallPct}%"></div>
+          </div>
+          <div class="collection-overall-stats">${progress.totalWishlisted} of ${progress.totalItems} items</div>
+        </div>
+        <div class="collection-categories">
+          ${progress.categories.map(cat => {
+            const c = progress.catCounts[cat.name];
+            const pct = c.total > 0 ? ((c.wishlisted / c.total) * 100).toFixed(0) : 0;
+            return `
+            <div class="collection-cat-row">
+              <span class="collection-cat-name">${c.emoji} ${esc(cat.name)}</span>
+              <div class="collection-cat-bar">
+                <div class="collection-cat-fill" style="width:${pct}%"></div>
+              </div>
+              <span class="collection-cat-stats">${c.wishlisted}/${c.total}</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
     </div>
 
     ${lists.length === 0 ? `
@@ -3715,6 +3783,18 @@ function attachEvents() {
     state.viewingListId = null;
     state.wishlistSelected.clear(); // Clear selection when leaving detail
     render();
+  });
+
+  // Collection progress toggle
+  const collectionToggle = document.getElementById('collection-toggle');
+  if (collectionToggle) collectionToggle.addEventListener('click', () => {
+    const content = document.getElementById('collection-content');
+    const chevron = document.getElementById('collection-chevron');
+    if (content && chevron) {
+      const isOpen = content.style.display !== 'none';
+      content.style.display = isOpen ? 'none' : 'block';
+      chevron.textContent = isOpen ? '▼' : '▲';
+    }
   });
 
   // Create new list
