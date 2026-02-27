@@ -405,7 +405,7 @@ Lower priority, but adds charm and completeness.
 
 #### 4.2 Export Wishlist as Shareable Image
 
-- [ ] **Status: NOT STARTED**
+- [x] **Status: COMPLETE**
 
 **What to do:**
 - In the wishlist detail view, add a "📸 Share as Image" button alongside the existing Export button.
