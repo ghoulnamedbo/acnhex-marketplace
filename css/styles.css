@@ -421,9 +421,24 @@
 /* Dark theme similar items */
 [data-theme="dark"] .similar-card {
   background: #252820;
-  border: 1px solid rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
-[data-theme="dark"] .similar-match-badge {
+[data-theme="dark"] .similar-card-info {
+  background: transparent;
+}
+[data-theme="dark"] .similar-card-name {
+  color: var(--text-primary);
+}
+[data-theme="dark"] .similar-card-variant {
+  color: var(--text-secondary);
+}
+[data-theme="dark"] .similar-card-hex {
+  background: var(--tag-bg);
+  color: var(--tag-text);
+}
+[data-theme="dark"] .similar-match-badge,
+[data-theme="dark"] .similar-badge {
   background: #2A3320;
   color: #8A9A6A;
 }
@@ -4294,6 +4309,88 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
 .item-grid .nook-interstitial {
   grid-column: 1 / -1;
   max-width: 100%;
+}
+
+/* ─── Recently Viewed Carousel ─── */
+.recent-section {
+  margin-bottom: 8px;
+  animation: similarFadeUp 0.5s ease both;
+}
+.recent-header {
+  margin-bottom: 12px;
+}
+.recent-scroll-wrapper {
+  position: relative;
+}
+.recent-scroll {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+}
+.recent-item-card {
+  flex-shrink: 0;
+  width: 165px;
+  scroll-snap-align: start;
+}
+.recent-item-card .item-info {
+  padding: 12px 12px 14px;
+}
+.recent-item-card .item-thumb {
+  height: 120px;
+}
+/* Recent scroll fade hints */
+.recent-scroll-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 8px;
+  width: 32px;
+  background: linear-gradient(to right, transparent, var(--bg));
+  pointer-events: none;
+  border-radius: 0 16px 16px 0;
+  z-index: 3;
+}
+/* Recent carousel arrows */
+.recent-arrow {
+  display: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  cursor: pointer;
+  z-index: 5;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s, box-shadow 0.15s;
+}
+.recent-arrow:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  color: var(--text-primary);
+}
+.recent-arrow.left { left: -16px; }
+.recent-arrow.right { right: -16px; }
+.recent-arrow.hidden { opacity: 0; pointer-events: none; }
+@media (min-width: 768px) {
+  .recent-arrow { display: flex; }
+  .recent-scroll-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; bottom: 8px;
+    width: 32px;
+    background: linear-gradient(to left, transparent, var(--bg));
+    pointer-events: none;
+    border-radius: 16px 0 0 16px;
+    z-index: 3;
+  }
 }
 
 /* ─── Similar Items Carousel ─── */

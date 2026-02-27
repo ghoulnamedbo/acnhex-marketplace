@@ -434,8 +434,8 @@ Lower priority, but adds charm and completeness.
 
 **What to do:**
 - On the item detail page, for items with 3+ variants, add a "Compare" button near the variant drawer trigger.
-- Tapping it opens a comparison overlay/modal showing 2-4 variant thumbnails side by side with their key attributes (name, color1, color2, hex) in a table.
-- User can tap to add/remove variants from comparison (up to 4).
+- Tapping it opens a comparison overlay/modal showing 2-5 variant thumbnails side by side with their key attributes (name, color1, color2, hex) in a table.
+- User can tap to add/remove variants from comparison (up to 5).
 - Each compared variant has its own "Add to Cart" and "Add to Wishlist" button.
 - This is especially useful for items with 30+ variants where the orbit carousel is hard to compare visually.
 

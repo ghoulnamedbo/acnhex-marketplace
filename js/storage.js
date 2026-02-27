@@ -16,6 +16,7 @@ const KEYS = {
   cookieDismissed: 'acnhex_cookie_dismissed',
   seenExportInfo: 'acnhex_seen_export_info',
   theme: 'acnhex_theme',
+  recentlyViewed: 'acnhex_recent',
 };
 
 function get(key, fallback) {
@@ -52,6 +53,9 @@ export function setSeenExportInfo(v) { set(KEYS.seenExportInfo, v); }
 
 export function getTheme() { return get(KEYS.theme, 'system'); }
 export function setTheme(t) { set(KEYS.theme, t); }
+
+export function getRecentlyViewed() { return get(KEYS.recentlyViewed, []); }
+export function setRecentlyViewed(items) { set(KEYS.recentlyViewed, items); }
 
 export function clearAll() {
   Object.values(KEYS).forEach(k => localStorage.removeItem(k));

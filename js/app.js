@@ -92,6 +92,8 @@ const state = {
   emojiPickerFor: null,
   // Theme
   theme: storage.getTheme(),
+  // Recently viewed items
+  recentlyViewed: storage.getRecentlyViewed(),
 };
 
 const app = document.getElementById('app');
@@ -192,6 +194,8 @@ async function parseHashAndNavigate() {
         state._pageEnter = true;
         // Load the item detail
         state.itemDetail = await data.getItemDetail(itemId);
+        // Track recently viewed
+        trackRecentlyViewed(itemId, variantIdx);
         return true;
       }
       // Invalid detail route, fall back to catalog
@@ -395,6 +399,60 @@ function itemImg(src, bg, size = 'full') {
   return `<img src="${esc(src)}" loading="lazy" onerror="this.style.display='none';this.parentElement.innerHTML='<span class=emoji-fallback>📦</span>'" alt="" style="background:${bgColor}">`;
 }
 
+// ─── Recently Viewed Section ───
+async function renderRecentlyViewed() {
+  if (!state.recentlyViewed || state.recentlyViewed.length === 0) return '';
+
+  // Load item details for each recently viewed item
+  const cards = [];
+  for (const entry of state.recentlyViewed.slice(0, 20)) {
+    try {
+      const item = await data.getItemDetail(entry.id);
+      if (!item) continue;
+      const vi = entry.variantIdx || 0;
+      const variant = item.variants[vi] || item.variants[0];
+      if (!variant) continue;
+
+      const inWL = isInWishlist(entry.id, vi);
+      const hex = variant.hexVariated || variant.hex || item.hexBase;
+      const idx = cards.length;
+      const bg = data.getItemBg(idx);
+
+      // Use same structure as item cards
+      cards.push(`<div class="item-card recent-item-card" data-item="${esc(entry.id)}" data-vi="${vi}">
+        <div class="item-thumb" style="background:${bg}">
+          ${variant.image ? `<img src="${esc(variant.image)}" loading="lazy" onerror="this.outerHTML='<span class=emoji-fallback>📦</span>'" alt="">` : '<span class="emoji-fallback">📦</span>'}
+          <button class="heart-btn" data-heart="${esc(entry.id)}" data-heart-vi="${vi}">${ICONS.heart(inWL)}</button>
+        </div>
+        <div class="item-info">
+          <p class="item-name">${esc(item.name)}</p>
+          <div class="item-meta">
+            <span class="item-variant">${esc(variant.name)}</span>
+            <span class="hex-badge">${esc(hex)}</span>
+          </div>
+        </div>
+      </div>`);
+    } catch (e) {
+      // Skip items that fail to load
+    }
+  }
+
+  if (cards.length === 0) return '';
+
+  return `<div class="recent-section" style="padding:16px 24px 0">
+    <div class="recent-header">
+      <h4 class="label-upper" style="margin:0;display:flex;align-items:center;gap:6px"><span style="font-size:14px">🕐</span> RECENTLY VIEWED</h4>
+    </div>
+    <div class="recent-scroll-wrapper">
+      <button class="recent-arrow left" id="recent-arrow-left">‹</button>
+      <div class="recent-scroll hide-scrollbar" id="recent-scroll">
+        ${cards.join('')}
+      </div>
+      <button class="recent-arrow right" id="recent-arrow-right">›</button>
+    </div>
+  </div>`;
+}
+
 // ─── Catalog Page ───
 async function renderCatalog() {
   const categories = data.getCategories();
@@ -478,6 +536,8 @@ async function renderCatalog() {
         <div class="hero-subtitle">25,000+ ACNH items → Discord bot commands in seconds.</div>
       </div>
     </div>
+
+    ${await renderRecentlyViewed()}
 
     <div style="padding:0 24px;margin-top:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -2997,6 +3057,22 @@ function attachEvents() {
     if (simArrowL) simArrowL.addEventListener('click', () => simScroll.scrollBy({ left: -300, behavior: 'smooth' }));
     if (simArrowR) simArrowR.addEventListener('click', () => simScroll.scrollBy({ left: 300, behavior: 'smooth' }));
   }
+
+  // Recently viewed carousel arrows
+  const recentScroll = document.getElementById('recent-scroll');
+  const recentArrowL = document.getElementById('recent-arrow-left');
+  const recentArrowR = document.getElementById('recent-arrow-right');
+  if (recentScroll) {
+    const updateRecentArrows = () => {
+      if (recentArrowL) recentArrowL.classList.toggle('hidden', recentScroll.scrollLeft <= 4);
+      if (recentArrowR) recentArrowR.classList.toggle('hidden', recentScroll.scrollLeft >= recentScroll.scrollWidth - recentScroll.clientWidth - 4);
+    };
+    recentScroll.addEventListener('scroll', updateRecentArrows, { passive: true });
+    updateRecentArrows();
+    if (recentArrowL) recentArrowL.addEventListener('click', () => recentScroll.scrollBy({ left: -300, behavior: 'smooth' }));
+    if (recentArrowR) recentArrowR.addEventListener('click', () => recentScroll.scrollBy({ left: 300, behavior: 'smooth' }));
+  }
+
   // Restore detail page scroll position (prevents page jump on interactions)
   if (state.page === 'detail' && state._detailScrollY !== undefined) {
     window.scrollTo(0, state._detailScrollY);
@@ -4495,6 +4571,20 @@ function addToCart(entry) {
   }
 }
 
+// ─── Recently Viewed Tracking ───
+function trackRecentlyViewed(id, variantIdx) {
+  const entry = { id, variantIdx, timestamp: Date.now() };
+  // Remove existing entry for this id+variantIdx
+  const filtered = state.recentlyViewed.filter(
+    e => !(e.id === id && e.variantIdx === variantIdx)
+  );
+  // Add to front
+  filtered.unshift(entry);
+  // Limit to 20
+  state.recentlyViewed = filtered.slice(0, 20);
+  storage.setRecentlyViewed(state.recentlyViewed);
+}
+
 async function loadItemDetail(itemId) {
   state.itemDetail = null;
   _similarCache = { itemId: null, matches: null, badgeText: null }; // clear similar items cache for new item
@@ -4508,6 +4598,10 @@ async function loadItemDetail(itemId) {
   window.scrollTo(0, 0);
   state.itemDetail = await data.getItemDetail(itemId);
   state._pageEnter = true;
+
+  // Track recently viewed item
+  trackRecentlyViewed(itemId, state.selectedVariantIdx);
+
   render();
   window.scrollTo(0, 0);
 }
