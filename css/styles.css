@@ -164,16 +164,16 @@
   border: 1px solid #3A3D32;
 }
 [data-theme="dark"] .hero-receipt-banner {
-  background: linear-gradient(160deg, #1a2215 0%, #252d1c 40%, #1f2618 70%, #232b1a 100%);
+  background: linear-gradient(160deg, #252d20 0%, #2e3828 40%, #2a3324 70%, #2c3526 100%);
 }
 
 /* Dark theme receipt card */
 [data-theme="dark"] .receipt {
-  background: #2A2D25;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.3);
+  background: #333830 !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.2);
 }
 [data-theme="dark"] .receipt::before {
-  background: rgba(80,90,70,0.6);
+  background: rgba(90,100,80,0.5);
 }
 [data-theme="dark"] .receipt-header {
   border-color: #3A3D32;
@@ -199,13 +199,6 @@
 }
 [data-theme="dark"] .receipt-cmd-label {
   color: #7A7570;
-}
-[data-theme="dark"] .receipt::after {
-  /* Torn edge - match dark receipt background */
-  background:
-    linear-gradient(135deg, #2A2D25 33.33%, transparent 33.33%) 0 0 / 8px 8px,
-    linear-gradient(225deg, #2A2D25 33.33%, transparent 33.33%) 0 0 / 8px 8px;
-  background-position: top left;
 }
 
 /* Dark theme hero bottom text */
@@ -852,7 +845,7 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
 .receipt {
   width: 240px;
   background: #faf7f2;
-  border-radius: 4px 4px 0 0;
+  border-radius: 8px;
   padding: 18px 18px 20px;
   position: relative;
   box-shadow: 0 4px 20px rgba(0,0,0,0.3), 0 1px 4px rgba(0,0,0,0.15);
@@ -876,16 +869,7 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
 
 /* Torn bottom edge */
 .receipt::after {
-  content: '';
-  position: absolute;
-  bottom: -8px;
-  left: 0;
-  right: 0;
-  height: 8px;
-  background:
-    linear-gradient(135deg, #faf7f2 33.33%, transparent 33.33%) 0 0 / 8px 8px,
-    linear-gradient(225deg, #faf7f2 33.33%, transparent 33.33%) 0 0 / 8px 8px;
-  background-position: top left;
+  display: none;
 }
 
 .receipt-header {
@@ -5936,6 +5920,49 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   background: var(--bg-warm);
   border-color: var(--border);
   box-shadow: 0 1px 0 rgba(0,0,0,0.3);
+}
+
+/* ── Offline Indicator ─── */
+.offline-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  padding: 10px 16px;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  transform: translateY(-100%);
+  transition: transform 0.3s ease;
+  pointer-events: none;
+}
+
+.offline-banner--visible {
+  transform: translateY(0);
+}
+
+.offline-banner--offline {
+  background: linear-gradient(135deg, #D4A853 0%, #C4944A 100%);
+  color: #4A3A20;
+  box-shadow: 0 2px 8px rgba(180, 140, 60, 0.3);
+}
+
+.offline-banner--online {
+  background: linear-gradient(135deg, #6a823e 0%, #5a7234 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(106, 130, 62, 0.3);
+}
+
+[data-theme="dark"] .offline-banner--offline {
+  background: linear-gradient(135deg, #8B7335 0%, #7A6430 100%);
+  color: #F5E6C8;
+}
+
+[data-theme="dark"] .offline-banner--online {
+  background: linear-gradient(135deg, #4e6038 0%, #3e5028 100%);
+  color: #E8E8D8;
 }
 
 /* ── Reduce Motion ─── */

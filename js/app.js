@@ -5413,6 +5413,9 @@ async function init() {
 
   // Initialize keyboard shortcuts
   initKeyboardShortcuts();
+
+  // Initialize offline indicator
+  initOfflineIndicator();
 }
 
 // ─── Keyboard Shortcuts ───
@@ -5508,6 +5511,44 @@ function initKeyboardShortcuts() {
       }
     }
   });
+}
+
+// ─── Offline Indicator ───
+function initOfflineIndicator() {
+  // Create the banner element
+  const banner = document.createElement('div');
+  banner.id = 'offline-banner';
+  banner.className = 'offline-banner';
+  document.body.appendChild(banner);
+
+  let dismissTimer = null;
+
+  function showOffline() {
+    if (dismissTimer) {
+      clearTimeout(dismissTimer);
+      dismissTimer = null;
+    }
+    banner.innerHTML = '📡 You\'re offline — browsing cached data';
+    banner.className = 'offline-banner offline-banner--offline offline-banner--visible';
+  }
+
+  function showOnline() {
+    banner.innerHTML = '✅ Back online';
+    banner.className = 'offline-banner offline-banner--online offline-banner--visible';
+    dismissTimer = setTimeout(() => {
+      banner.classList.remove('offline-banner--visible');
+      dismissTimer = null;
+    }, 2000);
+  }
+
+  // Check initial state
+  if (!navigator.onLine) {
+    showOffline();
+  }
+
+  // Listen for online/offline events
+  window.addEventListener('offline', showOffline);
+  window.addEventListener('online', showOnline);
 }
 
 init();
