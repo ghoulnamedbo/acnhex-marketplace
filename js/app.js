@@ -1560,6 +1560,28 @@ function renderSettings() {
       </div>
 
       <div class="settings-card">
+        <h4 class="label-upper" style="margin-bottom:14px">⌨️ Keyboard Shortcuts</h4>
+        <div class="keyboard-shortcuts-list">
+          <div class="shortcut-row">
+            <span class="shortcut-keys"><kbd>/</kbd> or <kbd>Ctrl</kbd>+<kbd>K</kbd></span>
+            <span class="shortcut-desc">Open search</span>
+          </div>
+          <div class="shortcut-row">
+            <span class="shortcut-keys"><kbd>Esc</kbd></span>
+            <span class="shortcut-desc">Close search / modals</span>
+          </div>
+          <div class="shortcut-row">
+            <span class="shortcut-keys"><kbd>1</kbd>-<kbd>5</kbd></span>
+            <span class="shortcut-desc">Switch tabs</span>
+          </div>
+          <div class="shortcut-row">
+            <span class="shortcut-keys"><kbd>←</kbd> <kbd>→</kbd></span>
+            <span class="shortcut-desc">Prev / next variant</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-card">
         <h4 class="label-upper" style="margin-bottom:14px">🦝 Fake Promos</h4>
         <p class="text-secondary" style="font-size:11px;margin-bottom:14px">Toggle the in-universe Animal Crossing fake ads and promos.</p>
         <div style="display:flex;align-items:center;justify-content:space-between">
@@ -5388,6 +5410,104 @@ async function init() {
 
   // Start the 2-minute browse timer for HHP popup
   startHhpTimer();
+
+  // Initialize keyboard shortcuts
+  initKeyboardShortcuts();
+}
+
+// ─── Keyboard Shortcuts ───
+function initKeyboardShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    // Don't trigger shortcuts when typing in input/textarea
+    const activeEl = document.activeElement;
+    const isTyping = activeEl && (
+      activeEl.tagName === 'INPUT' ||
+      activeEl.tagName === 'TEXTAREA' ||
+      activeEl.isContentEditable
+    );
+
+    // Escape always works (to close things)
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      // Close in priority order: popup > search > variant drawer > sheet modals
+      if (state.activePopup) {
+        state.activePopup = null;
+        render();
+        return;
+      }
+      if (state.searchOpen) {
+        state.searchOpen = false;
+        state.searchQuery = '';
+        state.searchResults = null;
+        state.searchFilterTags = [];
+        state.searchFilterOpen = false;
+        render();
+        return;
+      }
+      if (state.variantDrawerOpen) {
+        state.variantDrawerOpen = false;
+        render();
+        return;
+      }
+      // Check for any sheet modals and close them
+      const sheetModal = document.querySelector('.sheet-modal');
+      if (sheetModal) {
+        const closeBtn = sheetModal.querySelector('[id^="close-"]');
+        if (closeBtn) closeBtn.click();
+        return;
+      }
+      return;
+    }
+
+    // Skip other shortcuts if typing
+    if (isTyping) return;
+
+    // "/" or Ctrl+K → Open search
+    if (e.key === '/' || (e.ctrlKey && e.key === 'k')) {
+      e.preventDefault();
+      state.searchOpen = true;
+      render();
+      // Focus search input after render
+      setTimeout(() => {
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) searchInput.focus();
+      }, 50);
+      return;
+    }
+
+    // 1-5 → Navigate to tabs
+    if (['1', '2', '3', '4', '5'].includes(e.key)) {
+      const pages = ['catalog', 'wishlist', 'cart', 'settings', 'info'];
+      const pageIdx = parseInt(e.key) - 1;
+      if (state.page !== pages[pageIdx]) {
+        state.page = pages[pageIdx];
+        state.viewingListId = null;
+        state.selectedItemId = null;
+        updateHash();
+        render();
+      }
+      return;
+    }
+
+    // ← / → → Previous/next variant on detail page
+    if (state.page === 'detail' && state.itemDetail && state.itemDetail.variants.length > 1) {
+      const count = state.itemDetail.variants.length;
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        state.selectedVariantIdx = (state.selectedVariantIdx - 1 + count) % count;
+        updateHash();
+        render();
+        return;
+      }
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        state.selectedVariantIdx = (state.selectedVariantIdx + 1) % count;
+        updateHash();
+        render();
+        return;
+      }
+    }
+  });
 }
 
 init();

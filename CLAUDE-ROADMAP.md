@@ -276,7 +276,7 @@ These add significant value and fill the biggest gaps in the current app.
 
 #### 2.5 Cart History / Past Orders
 
-- [ ] **Status: NOT STARTED**
+- [x] **Status: COMPLETE**
 
 **Problem:** Once the cart is cleared, it's gone forever. Frequent users lose track of past orders.
 
@@ -308,7 +308,7 @@ These improve usability but aren't critical.
 
 #### 3.1 Keyboard Shortcuts
 
-- [ ] **Status: NOT STARTED**
+- [x] **Status: COMPLETE**
 
 **What to do:**
 - Add a global `keydown` listener for keyboard shortcuts:
