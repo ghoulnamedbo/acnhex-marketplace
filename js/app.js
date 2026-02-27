@@ -98,6 +98,10 @@ const state = {
   wishlistSelected: new Set(),
   // For moving selected items between lists
   _movingFromList: null,
+  // Duplicate picker modal data { targetListId, targetListName, items, duplicates }
+  duplicatePickerData: null,
+  // Saved wishlist list ID when navigating away
+  _savedWishlistListId: null,
 };
 
 const app = document.getElementById('app');
@@ -1364,7 +1368,6 @@ async function renderWishlistDetail() {
               const vi = item._vi || 0;
               const isSelected = state.wishlistSelected.has(globalIdx);
               return `<div class="wishlist-detail-row ${isSelected ? 'selected' : ''}" data-item="${esc(item.id)}" data-vi="${vi}" data-global-idx="${globalIdx}">
-                <div class="wishlist-check ${isSelected ? 'on' : 'off'}" data-item-check="${globalIdx}">${isSelected ? '✓' : ''}</div>
                 <div class="wishlist-detail-thumb" style="background:${data.getItemBg(globalIdx)}">
                   ${item.img ? `<img src="${esc(item.img)}" style="width:38px;height:38px;object-fit:contain" onerror="this.outerHTML='📦'" alt="">` : '📦'}
                 </div>
@@ -1375,6 +1378,7 @@ async function renderWishlistDetail() {
                     <span style="font-size:9px;font-weight:700;background:var(--tag-bg);color:var(--pines);padding:1px 6px;border-radius:50px">${esc(item.hex.slice(-4))}</span>
                   </div>
                 </div>
+                <div class="wishlist-check ${isSelected ? 'on' : 'off'}" data-item-check="${globalIdx}">${isSelected ? '✓' : ''}</div>
               </div>`;
             }).join('')}
           `;
@@ -2540,14 +2544,54 @@ function renderSetPicker() {
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch">
         ${state.wishlists.lists.map(list => {
           const isLoved = list.id === '__loved__';
-          return `<button class="list-pick-btn ${isLoved ? 'greyed' : ''}" data-set-pick-list="${esc(list.id)}" ${isLoved ? 'disabled' : ''}>
+          const isSourceList = isMoving && list.id === state._movingFromList;
+          const isDisabled = isLoved || isSourceList;
+          const disabledReason = isSourceList ? ' · current list' : '';
+          return `<button class="list-pick-btn ${isDisabled ? 'greyed' : ''}" data-set-pick-list="${esc(list.id)}" ${isDisabled ? 'disabled' : ''}>
             <span>${esc(list.name)}</span>
-            <span style="font-size:10px;color:var(--text-light)">${list.items.length} items</span>
+            <span style="font-size:10px;color:var(--text-light)">${list.items.length} items${disabledReason}</span>
           </button>`;
         }).join('')}
       </div>
       <button class="cta-btn-secondary" id="create-list-from-set-picker" style="margin-bottom:12px;width:100%">+ New List</button>
       <button class="search-close-btn" id="close-set-picker" style="width:100%">Cancel</button>
+    </div>
+  </div>`;
+}
+
+// ─── Duplicate Picker Modal (handle duplicates when moving items) ───
+function renderDuplicatePicker() {
+  if (!state.duplicatePickerData) return '';
+  const { targetListName, items, uniqueDupeCount, totalInTarget, sourceDupeCount } = state.duplicatePickerData;
+  const totalCount = items.length;
+  const newCount = totalCount - sourceDupeCount; // non-duplicate items
+
+  // For replace: can only replace as many as exist in target
+  const canReplace = Math.min(sourceDupeCount, totalInTarget);
+  const extrasStayInSource = sourceDupeCount - canReplace;
+
+  return `<div class="modal-overlay" id="duplicate-picker-overlay">
+    <div class="modal-card" style="max-width:340px">
+      <h2 style="font-size:16px;font-weight:700;margin-bottom:8px;color:var(--palm-leaf)">Duplicates Found</h2>
+      <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;line-height:1.5">
+        ${uniqueDupeCount === 1 ? 'An item type' : `${uniqueDupeCount} item types`} already exist in <strong>${esc(targetListName)}</strong>.<br>
+        <span style="font-size:11px">${totalInTarget} in list · ${sourceDupeCount} being moved</span>
+      </p>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+        <button class="cta-btn" id="dupe-keep-separate" style="padding:14px 16px;font-size:12px">
+          <span style="display:block;font-weight:700">Keep Both</span>
+          <span style="display:block;font-size:10px;opacity:0.8;margin-top:2px">Move all ${totalCount} items (allows duplicates)</span>
+        </button>
+        <button class="cta-btn-secondary" id="dupe-replace" style="padding:14px 16px;font-size:12px">
+          <span style="display:block;font-weight:700">Replace Duplicates</span>
+          <span style="display:block;font-size:10px;opacity:0.7;margin-top:2px">Update ${canReplace} existing${newCount > 0 ? ` + add ${newCount} new` : ''}${extrasStayInSource > 0 ? ` (${extrasStayInSource} stay)` : ''}</span>
+        </button>
+        <button class="cta-btn-secondary" id="dupe-skip" style="padding:14px 16px;font-size:12px">
+          <span style="display:block;font-weight:700">Skip Duplicates</span>
+          <span style="display:block;font-size:10px;opacity:0.7;margin-top:2px">${newCount > 0 ? `Only move ${newCount} new items` : 'No new items to move'}${sourceDupeCount > 0 ? ` (${sourceDupeCount} stay)` : ''}</span>
+        </button>
+      </div>
+      <button class="search-close-btn" id="close-duplicate-picker" style="width:100%">Cancel</button>
     </div>
   </div>`;
 }
@@ -2642,7 +2686,7 @@ async function render() {
     case 'settings': content = renderSettings(); break;
     case 'info': content = renderInfo(); break;
   }
-  app.innerHTML = `<div id="ptr-indicator" class="ptr-indicator"></div>` + content + renderNav() + renderModal() + renderSearch() + renderWishlistToast() + renderListPicker() + renderMovePicker() + renderSetPicker() + renderExportModal() + renderImportModal() + renderEmojiPicker() + ads.renderActivePopup(state.activePopup) + ads.renderAdToast(state.adToastVisible) + ads.renderFloatingNotif(state.floatingNotif);
+  app.innerHTML = `<div id="ptr-indicator" class="ptr-indicator"></div>` + content + renderNav() + renderModal() + renderSearch() + renderWishlistToast() + renderListPicker() + renderMovePicker() + renderSetPicker() + renderDuplicatePicker() + renderExportModal() + renderImportModal() + renderEmojiPicker() + ads.renderActivePopup(state.activePopup) + ads.renderAdToast(state.adToastVisible) + ads.renderFloatingNotif(state.floatingNotif);
   attachEvents();
 
   // Apply entrance animations only on page/category navigation
@@ -2695,10 +2739,29 @@ async function loadWishlistThumbs() {
 
   for (const thumb of thumbs) {
     const itemId = thumb.dataset.thumbItem;
-    const indexItem = data.getIndexItem(itemId);
-    if (indexItem && indexItem.img) {
+    const variantIdx = parseInt(thumb.dataset.thumbVi) || 0;
+
+    // Try to get variant-specific image
+    let imgSrc = null;
+    if (variantIdx > 0) {
+      // Need full item detail to get variant image
+      const detail = await data.getItemDetail(itemId);
+      if (detail && detail.variants && detail.variants[variantIdx]) {
+        imgSrc = detail.variants[variantIdx].image || detail.image;
+      }
+    }
+
+    // Fall back to index item image if no variant image found
+    if (!imgSrc) {
+      const indexItem = data.getIndexItem(itemId);
+      if (indexItem && indexItem.img) {
+        imgSrc = indexItem.img;
+      }
+    }
+
+    if (imgSrc) {
       const img = document.createElement('img');
-      img.src = indexItem.img;
+      img.src = imgSrc;
       img.loading = 'lazy';
       img.style.cssText = 'width:24px;height:24px;object-fit:contain';
       img.onerror = () => img.style.display = 'none';
@@ -2744,11 +2807,19 @@ function attachEvents() {
         } else if (state.page === 'catalog') {
           // Save scroll position when leaving catalog
           state.scrollY = window.scrollY;
+        } else if (state.page === 'wishlist' && state.viewingListId) {
+          // Save which list was being viewed when leaving wishlist
+          state._savedWishlistListId = state.viewingListId;
         }
         state.page = target;
         if (target === 'wishlist') {
-          state.viewingListId = null;
-          state.wishlistSelected.clear(); // Clear selection when entering wishlist overview
+          // Restore previously viewed list if coming back to wishlist
+          if (state._savedWishlistListId) {
+            // Verify the list still exists
+            const listExists = state.wishlists && state.wishlists.lists.some(l => l.id === state._savedWishlistListId);
+            state.viewingListId = listExists ? state._savedWishlistListId : null;
+          }
+          // Don't clear selection - let user keep their selection when switching tabs
         }
         state._pageEnter = true;
         render();
@@ -3748,6 +3819,139 @@ function attachEvents() {
     }
   });
 
+  // Helper function to perform move/add with duplicate handling
+  // mode: 'skip' = skip duplicates, 'keep' = allow duplicates, 'replace' = replace existing
+  function performMoveOrAdd(listId, items, dupeMode) {
+    const list = state.wishlists.lists.find(l => l.id === listId);
+    if (!list) return;
+
+    // Snapshot original target list BEFORE any modifications
+    // This ensures we only check duplicates against items that existed before this operation
+    const originalTargetItems = list.items.map((w, idx) => ({
+      id: w.id,
+      variantIdx: w.variantIdx,
+      originalIdx: idx
+    }));
+
+    // Track which source indices were actually moved (for selective removal from source)
+    const movedSourceIndices = [];
+    // Track which original target items have been "used" (for replace mode)
+    const usedOriginalIndices = new Set();
+    let addedCount = 0;
+    let replacedCount = 0;
+
+    if (dupeMode === 'keep') {
+      // Keep mode: add ALL items, allowing duplicates in target
+      for (const item of items) {
+        list.items.push({
+          id: item.id,
+          variantIdx: item.variantIdx,
+          addedAt: Date.now(),
+        });
+        addedCount++;
+        if (item.sourceIdx !== undefined) {
+          movedSourceIndices.push(item.sourceIdx);
+        }
+      }
+    } else if (dupeMode === 'skip') {
+      // Skip mode: only add items that don't ORIGINALLY exist in target
+      // Duplicates stay in source list, but multiple copies of same NEW item all get moved
+      for (const item of items) {
+        // Check against ORIGINAL target items only
+        const existsInOriginal = originalTargetItems.some(w =>
+          w.id === item.id && w.variantIdx === item.variantIdx
+        );
+        if (existsInOriginal) {
+          // Skip - don't add to movedSourceIndices, so it stays in source
+          continue;
+        }
+        list.items.push({
+          id: item.id,
+          variantIdx: item.variantIdx,
+          addedAt: Date.now(),
+        });
+        addedCount++;
+        if (item.sourceIdx !== undefined) {
+          movedSourceIndices.push(item.sourceIdx);
+        }
+      }
+    } else if (dupeMode === 'replace') {
+      // Replace mode: for items that ORIGINALLY exist in target, update them in-place
+      // Extra source copies beyond original target count stay in source
+      for (const item of items) {
+        // Find an ORIGINAL target item that matches AND hasn't been used yet
+        const originalMatch = originalTargetItems.find(w =>
+          w.id === item.id && w.variantIdx === item.variantIdx && !usedOriginalIndices.has(w.originalIdx)
+        );
+
+        if (originalMatch) {
+          // Replace this target item (just update timestamp)
+          list.items[originalMatch.originalIdx].addedAt = Date.now();
+          usedOriginalIndices.add(originalMatch.originalIdx);
+          replacedCount++;
+          if (item.sourceIdx !== undefined) {
+            movedSourceIndices.push(item.sourceIdx);
+          }
+        } else {
+          // No matching ORIGINAL target to replace
+          // Check if this item type existed in original - if so, extras stay in source
+          const typeExistedInOriginal = originalTargetItems.some(w =>
+            w.id === item.id && w.variantIdx === item.variantIdx
+          );
+          if (typeExistedInOriginal) {
+            // This is an "extra" - don't move it, leave in source
+            continue;
+          }
+          // This is a new item type - add it
+          list.items.push({
+            id: item.id,
+            variantIdx: item.variantIdx,
+            addedAt: Date.now(),
+          });
+          addedCount++;
+          if (item.sourceIdx !== undefined) {
+            movedSourceIndices.push(item.sourceIdx);
+          }
+        }
+      }
+    }
+
+    // If this was a move operation, remove ONLY the items that were actually moved
+    if (state._movingFromList && movedSourceIndices.length > 0) {
+      const sourceList = state.wishlists.lists.find(l => l.id === state._movingFromList);
+      if (sourceList) {
+        // Sort descending for safe removal
+        const sortedIndices = [...movedSourceIndices].sort((a, b) => b - a);
+        for (const idx of sortedIndices) {
+          if (idx >= 0 && idx < sourceList.items.length) {
+            sourceList.items.splice(idx, 1);
+          }
+        }
+      }
+    }
+
+    if (addedCount > 0 || replacedCount > 0) {
+      storage.setWishlists(state.wishlists);
+      hapticTick();
+      NookSounds.play('addToList');
+      state.wishlistToast = { listId, listName: list.name, action: state._movingFromList ? 'move' : 'add' };
+      // Auto-clear toast after 3 seconds
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        state.wishlistToast = null;
+        const el = document.getElementById('wl-toast');
+        if (el) el.remove();
+      }, 3000);
+    }
+
+    state.setPickerItems = null;
+    state.setPickerName = null;
+    state._movingFromList = null;
+    state.duplicatePickerData = null;
+    state.wishlistSelected.clear();
+    render();
+  }
+
   // Set picker — pick a list for entire set
   app.querySelectorAll('[data-set-pick-list]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -3758,7 +3962,7 @@ function attachEvents() {
       const list = state.wishlists.lists.find(l => l.id === listId);
       if (!list) return;
 
-      // If moving to the same list, just clear selection
+      // If moving to the same list, just clear selection (shouldn't happen now since button is disabled)
       if (state._movingFromList && state._movingFromList === listId) {
         state.setPickerItems = null;
         state.setPickerName = null;
@@ -3768,56 +3972,43 @@ function attachEvents() {
         return;
       }
 
-      let addedCount = 0;
-      for (const item of items) {
-        // Skip if already in list (no cap on wishlists)
-        if (list.items.some(w => w.id === item.id && w.variantIdx === item.variantIdx)) continue;
+      // Check for duplicates when moving items
+      if (state._movingFromList) {
+        // Find all source items that match something in target
+        const duplicateItems = items.filter(item =>
+          list.items.some(w => w.id === item.id && w.variantIdx === item.variantIdx)
+        );
 
-        list.items.push({
-          id: item.id,
-          variantIdx: item.variantIdx,
-          addedAt: Date.now(),
-        });
-        addedCount++;
-      }
-
-      // If this was a move operation, remove items from source list
-      if (state._movingFromList && addedCount > 0) {
-        const sourceList = state.wishlists.lists.find(l => l.id === state._movingFromList);
-        if (sourceList) {
-          // Get source indices sorted descending for safe removal
-          const sourceIndices = items
-            .filter(item => item.sourceIdx !== undefined)
-            .map(item => item.sourceIdx)
-            .sort((a, b) => b - a);
-
-          for (const idx of sourceIndices) {
-            if (idx >= 0 && idx < sourceList.items.length) {
-              sourceList.items.splice(idx, 1);
-            }
+        // Count unique item types that are duplicates
+        const uniqueDupeKeys = new Set(duplicateItems.map(item => `${item.id}:${item.variantIdx}`));
+        // Count how many of each duplicate type exist in target
+        const targetDupeCounts = {};
+        for (const item of duplicateItems) {
+          const key = `${item.id}:${item.variantIdx}`;
+          if (!targetDupeCounts[key]) {
+            targetDupeCounts[key] = list.items.filter(w => w.id === item.id && w.variantIdx === item.variantIdx).length;
           }
+        }
+        const totalInTarget = Object.values(targetDupeCounts).reduce((a, b) => a + b, 0);
+
+        if (duplicateItems.length > 0) {
+          // Show duplicate picker modal
+          state.duplicatePickerData = {
+            targetListId: listId,
+            targetListName: list.name,
+            items: items,
+            duplicateItems: duplicateItems, // source items that match target
+            uniqueDupeCount: uniqueDupeKeys.size, // unique item types
+            totalInTarget: totalInTarget, // how many copies exist in target
+            sourceDupeCount: duplicateItems.length, // how many source items are dupes
+          };
+          render();
+          return;
         }
       }
 
-      if (addedCount > 0) {
-        storage.setWishlists(state.wishlists);
-        hapticTick();
-        NookSounds.play('addToList');
-        state.wishlistToast = { listId, listName: list.name, action: state._movingFromList ? 'move' : 'add' };
-        // Auto-clear toast after 3 seconds
-        clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => {
-          state.wishlistToast = null;
-          const el = document.getElementById('wl-toast');
-          if (el) el.remove();
-        }, 3000);
-      }
-
-      state.setPickerItems = null;
-      state.setPickerName = null;
-      state._movingFromList = null;
-      state.wishlistSelected.clear();
-      render();
+      // No duplicates or not moving — proceed normally
+      performMoveOrAdd(listId, items, 'skip');
     });
   });
 
@@ -3862,6 +4053,46 @@ function attachEvents() {
       state.setPickerItems = null;
       state.setPickerName = null;
       state._movingFromList = null;
+      render();
+    }
+  });
+
+  // Duplicate picker — Keep Both (allow duplicates)
+  const dupeKeepSeparate = document.getElementById('dupe-keep-separate');
+  if (dupeKeepSeparate) dupeKeepSeparate.addEventListener('click', () => {
+    if (!state.duplicatePickerData) return;
+    const { targetListId, items } = state.duplicatePickerData;
+    performMoveOrAdd(targetListId, items, 'keep');
+  });
+
+  // Duplicate picker — Replace duplicates
+  const dupeReplace = document.getElementById('dupe-replace');
+  if (dupeReplace) dupeReplace.addEventListener('click', () => {
+    if (!state.duplicatePickerData) return;
+    const { targetListId, items } = state.duplicatePickerData;
+    performMoveOrAdd(targetListId, items, 'replace');
+  });
+
+  // Duplicate picker — Skip duplicates
+  const dupeSkip = document.getElementById('dupe-skip');
+  if (dupeSkip) dupeSkip.addEventListener('click', () => {
+    if (!state.duplicatePickerData) return;
+    const { targetListId, items } = state.duplicatePickerData;
+    performMoveOrAdd(targetListId, items, 'skip');
+  });
+
+  // Close duplicate picker
+  const closeDupePicker = document.getElementById('close-duplicate-picker');
+  if (closeDupePicker) closeDupePicker.addEventListener('click', () => {
+    state.duplicatePickerData = null;
+    render();
+  });
+
+  // Also close duplicate picker on overlay click
+  const dupePickerOverlay = document.getElementById('duplicate-picker-overlay');
+  if (dupePickerOverlay) dupePickerOverlay.addEventListener('click', (e) => {
+    if (e.target === dupePickerOverlay) {
+      state.duplicatePickerData = null;
       render();
     }
   });
@@ -4097,7 +4328,13 @@ function attachEvents() {
     state.wishlistSelected.clear();
 
     // Store toast message to show after render
-    const toastMsg = totalSelected > 40 ? '🛒 Added first 40 items selected!' : '🛒 Added to cart!';
+    const addedCount = itemsData.length;
+    let toastMsg;
+    if (addedCount < totalSelected) {
+      toastMsg = `🛒 Added ${addedCount}/${totalSelected} items. Add remaining after ordering.`;
+    } else {
+      toastMsg = '🛒 Added to cart!';
+    }
     await render();
     // Show toast after render completes (so it doesn't get removed)
     showToast(toastMsg);
