@@ -96,12 +96,23 @@ ACNHEX MARKETPLACE claude app/
 ├── css/
 │   └── styles.css          # ~4700 lines — ALL styles (no preprocessor)
 ├── js/
-│   ├── app.js              # ~4200 lines — Main app: routing, rendering, events, state
-│   ├── data.js             # ~320 lines — Data loading, search, expansion, filtering, hex lookup
-│   ├── storage.js          # ~55 lines — localStorage wrapper (cart, wishlists, prefix, etc.)
-│   ├── reviews.js          # ~203 lines — Villager review generation with templates
-│   ├── sounds.js           # ~238 lines — Web Audio API sound effects (no audio files)
-│   └── ads.js              # ~1270 lines — In-universe fake ad system
+│   ├── app.js              # Main app: state, routing, render orchestrator, attachEvents
+│   ├── data.js             # Data loading, search, expansion, filtering, hex lookup
+│   ├── storage.js          # localStorage wrapper (cart, wishlists, prefix, etc.)
+│   ├── reviews.js          # Villager review generation with templates
+│   ├── sounds.js           # Web Audio API sound effects (no audio files)
+│   ├── ads.js              # In-universe fake ad system
+│   ├── utils.js            # Shared utilities (esc function)
+│   ├── shared/
+│   │   ├── icons.js        # SVG icon definitions (ICONS constant)
+│   │   └── helpers.js      # Common helper functions (isInLovedList, getCartTotal, etc.)
+│   └── pages/
+│       ├── catalog.js      # renderCatalog, renderItemCard, renderDailyPick, etc.
+│       ├── detail.js       # renderDetail, orbit carousel, compare mode
+│       ├── cart.js         # renderCart, renderPastOrders
+│       ├── wishlist.js     # renderWishlist, renderWishlistDetail
+│       ├── settings.js     # renderSettings
+│       └── info.js         # renderInfo
 ├── data/
 │   ├── catalog-index.json  # Master index: category list + flat item index (~26K items)
 │   ├── villagers.json      # Villager data for reviews (name, photo, personality, catchphrase)
@@ -202,6 +213,9 @@ const state = {
   seenExportInfo: false,       // Export info tooltip dismissed
   // Emoji picker
   emojiPickerFor: null,        // List ID for emoji picker modal
+  // Compare variants mode
+  compareMode: false,          // Compare tray visible
+  compareVariants: [],         // Array of variant indices selected for comparison (max 5)
 };
 ```
 
@@ -291,6 +305,13 @@ const state = {
 - **Sticky CTA bar:** Fixed bottom gradient with:
   - "Add to List" secondary button (opens list picker modal)
   - Quantity control (−/0/+) + "Add to Cart" green gradient button
+- **Compare Variants Mode:** For items with 3+ variants, a "Compare" button opens a comparison tray:
+  - Fixed bottom tray showing 2-5 selected variants side by side
+  - Each variant shows: thumbnail, name, color1/color2, hex code
+  - Individual "Add to Cart" and "Add to List" buttons per variant
+  - "Clear" button to reset comparison selection
+  - Tap orbit variants to add/remove from comparison (max 5)
+  - Compare button only visible for items with 3+ variants
 - **Detail history stack:** Clicking similar items pushes current item to stack, back button pops
 
 ### 5d. Cart (Order Ledger)
@@ -796,9 +817,9 @@ Everything runs as-is. ES modules in the browser. CSS loaded directly. JSON fetc
 Raw data from the ACNH spreadsheet → preprocessed by `tools/preprocess.py` or `tools/preprocess.js` → produces `catalog-index.json` + per-category JSON files in `data/categories/`.
 
 ### Version
-- App version: 1.0.0 (shown in info page)
+- App version: 2.0.8 (shown in info page)
 - Data version: ACNH 2.0.8 update (all items through final update)
-- Cache-busting: `?v=30` on CSS and JS imports
+- Cache-busting: `?v=2.0.8` on CSS and JS imports
 
 ---
 

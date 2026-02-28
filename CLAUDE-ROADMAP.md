@@ -430,7 +430,7 @@ Lower priority, but adds charm and completeness.
 
 #### 4.3 Compare Variants Mode
 
-- [ ] **Status: NOT STARTED**
+- [x] **Status: COMPLETE**
 
 **What to do:**
 - On the item detail page, for items with 3+ variants, add a "Compare" button near the variant drawer trigger.
@@ -459,7 +459,24 @@ These don't add visible features but prevent future bugs and make the codebase m
 
 #### 5.1 Extract Render Functions from app.js
 
-- [ ] **Status: NOT STARTED**
+- [ ] **Status: INTEGRATED — awaiting user testing**
+
+**Completed:**
+- `js/shared/icons.js` — ICONS constant (still using local copy in app.js for other usages)
+- `js/shared/helpers.js` — Helper functions (isInLovedList, getCartTotal, etc.) with state parameter
+- `js/pages/info.js` — `renderInfo()` function
+- `js/pages/settings.js` — `renderSettings(state)` function
+- `js/pages/cart.js` — `renderCart(state)`, `renderPastOrders()`, helpers
+- `js/pages/wishlist.js` — `renderWishlist(state)`, `renderWishlistDetail(state)`, `getLastRenderedListHexes()`
+- `js/pages/catalog.js` — `renderCatalog(state)`, `renderItemCard(state, item, idx)`, etc.
+- `js/pages/detail.js` — `renderDetail(state)`, `clearDetailCaches()`, related functions
+- `sw.js` updated to v2.1.0 with all module paths cached
+
+**Integration approach:**
+- Page modules export render functions that take `state` as first parameter
+- `app.js` imports modules and calls them with `state` in the `render()` switch
+- Module-level state (caches, etc.) managed via getter/setter exports
+- Original `_local*` functions kept in app.js as reference (can be removed once stable)
 
 **Problem:** `app.js` is 4,300+ lines. It's hard to navigate and easy to introduce bugs.
 

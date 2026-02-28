@@ -5,7 +5,15 @@ import * as ads from './ads.js';
 import NookSounds from './sounds.js';
 import { esc } from './utils.js';
 
-// ─── SVG Icons ───
+// ─── Page Modules ───
+import { renderInfo } from './pages/info.js';
+import { renderSettings } from './pages/settings.js';
+import { renderCart } from './pages/cart.js';
+import { renderWishlist, getLastRenderedListHexes } from './pages/wishlist.js';
+// Note: Catalog uses local render functions due to search integration complexity
+import { renderDetail, clearDetailCaches } from './pages/detail.js';
+
+// ─── SVG Icons (restored) ───
 const ICONS = {
   search: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>`,
   heart: (filled) => `<svg width="15" height="15" viewBox="0 0 24 24" fill="${filled ? 'var(--blossoms)' : 'none'}" stroke="${filled ? 'var(--blossoms)' : 'currentColor'}" stroke-width="2" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`,
@@ -427,7 +435,7 @@ function itemImg(src, bg, size = 'full') {
 }
 
 // ─── Recently Viewed Section ───
-async function renderRecentlyViewed() {
+async function _localRenderRecentlyViewed() {
   if (!state.recentlyViewed || state.recentlyViewed.length === 0) return '';
 
   // Load item details for each recently viewed item
@@ -481,7 +489,7 @@ async function renderRecentlyViewed() {
 }
 
 // ─── Catalog Page ───
-async function renderCatalog() {
+async function _localRenderCatalog() {
   const categories = data.getCategories();
   const isRandom = state.isRandom;
   let items, total;
@@ -505,7 +513,7 @@ async function renderCatalog() {
 
   // Render search section if search is active
   if (state.searchOpen) {
-    return renderCatalogWithSearch();
+    return _localRenderCatalogWithSearch();
   }
 
   return `<div class="page">
@@ -564,9 +572,9 @@ async function renderCatalog() {
       </div>
     </div>
 
-    ${await renderRecentlyViewed()}
+    ${await _localRenderRecentlyViewed()}
 
-    ${await renderDailyPick()}
+    ${await _localRenderDailyPick()}
 
     <div style="padding:0 24px;margin-top:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -595,7 +603,7 @@ async function renderCatalog() {
     </div>
 
     <div class="item-grid">
-      ${ads.renderItemGridWithAds(items, renderItemCard)}
+      ${ads.renderItemGridWithAds(items, _localRenderItemCard)}
     </div>
 
     ${items.length < total && !isRandom && state.loadMode === 'batch' ? `<button class="load-more-btn" id="load-more">Load More</button>` : ''}
@@ -605,7 +613,7 @@ async function renderCatalog() {
 }
 
 // ─── Catalog with Integrated Search ───
-function renderCatalogWithSearch() {
+function _localRenderCatalogWithSearch() {
   const results = state.searchResults || { items: [], total: 0 };
   const hasFilters = state.searchFilterTags.length > 0;
   const hasQuery = state.searchQuery || hasFilters;
@@ -651,7 +659,7 @@ function renderCatalogWithSearch() {
           <p class="text-secondary">${results.total} result${results.total !== 1 ? 's' : ''}${state.searchQuery ? ` for "${esc(state.searchQuery)}"` : ''}${hasFilters ? ` (${state.searchFilterTags.length} filter${state.searchFilterTags.length !== 1 ? 's' : ''})` : ''}</p>
         </div>
         <div class="item-grid">
-          ${results.items.map((item, idx) => renderItemCard(item, idx)).join('')}
+          ${results.items.map((item, idx) => _localRenderItemCard(item, idx)).join('')}
         </div>
         ${results.items.length < results.total ? '<div id="search-scroll-sentinel" style="height:1px"></div>' : ''}
       ` : `
@@ -665,7 +673,7 @@ function renderCatalogWithSearch() {
   </div>`;
 }
 
-function renderItemCard(item, idx) {
+function _localRenderItemCard(item, idx) {
   const bg = data.getItemBg(idx);
   const vi = item.variantIdx ?? 0;
   const inLoved = isInLovedList(item.id, vi);
@@ -712,7 +720,7 @@ const thumbBgs = [
   'linear-gradient(135deg, #F5FAFF, #E0EFFF)',
 ];
 
-async function renderDetail() {
+async function _localRenderDetail() {
   if (!state.itemDetail) {
     return `<div class="page"><div class="loading"><div class="spinner"></div><p class="text-secondary">Loading...</p></div></div>`;
   }
@@ -731,7 +739,7 @@ async function renderDetail() {
     reviewData = await reviews.generateReviewSection(item);
     _reviewCache = { itemId: item.id, data: reviewData };
   }
-  const similarHtml = await renderSimilarItems(item);
+  const similarHtml = await _localRenderSimilarItems(item);
 
   // All detail fields for collapsible section
   const allFields = [
@@ -1131,7 +1139,7 @@ async function renderDetail() {
 const STYLE_TAGS = new Set(['active','cool','cute','elegant','gorgeous','simple']);
 let _similarCache = { itemId: null, matches: null, badgeText: null };
 
-async function renderSimilarItems(item) {
+async function _localRenderSimilarItems(item) {
   try {
     let allMatches, badgeText;
 
@@ -1258,7 +1266,7 @@ function getShortHex(hex) {
   return hex.length > 6 ? hex.slice(-4).toUpperCase() : hex.toUpperCase();
 }
 
-function renderCart() {
+function _localRenderCart() {
   const cart = state.cart;
   const prefix = state.prefix;
   const total = getCartTotal();
@@ -1390,12 +1398,12 @@ function renderCart() {
       <div class="nook-footer">✦ NOOK INC. CERTIFIED ✦</div>
     `}
 
-    ${renderPastOrders()}
+    ${_localRenderPastOrders()}
   </div>`;
 }
 
 // ─── Past Orders Helper ───
-function renderPastOrders() {
+function _localRenderPastOrders() {
   const history = storage.getOrderHistory();
   if (history.length === 0) return '';
 
@@ -1697,7 +1705,7 @@ function getDailyPickSeed() {
   return Math.abs(hash);
 }
 
-async function renderDailyPick() {
+async function _localRenderDailyPick() {
   const seed = getDailyPickSeed();
   const quipIndex = seed % DAILY_PICK_QUIPS.length;
   const quip = DAILY_PICK_QUIPS[quipIndex];
@@ -1776,11 +1784,10 @@ function getCollectionProgress() {
   return { totalItems, totalWishlisted, catCounts, categories };
 }
 
-// ─── Wishlist Page ───
-let lastRenderedListHexes = [];
+// ─── Wishlist Page (local functions - kept for reference) ───
 
-async function renderWishlist() {
-  if (state.viewingListId) return renderWishlistDetail();
+async function _localRenderWishlist() {
+  if (state.viewingListId) return _localRenderWishlistDetail();
 
   const lists = state.wishlists.lists;
   const totalItems = getTotalWishlistItems();
@@ -1874,7 +1881,7 @@ async function renderWishlist() {
   </div>`;
 }
 
-async function renderWishlistDetail() {
+async function _localRenderWishlistDetail() {
   const list = state.wishlists.lists.find(l => l.id === state.viewingListId);
   if (!list) { state.viewingListId = null; return renderWishlist(); }
 
@@ -1893,7 +1900,7 @@ async function renderWishlistDetail() {
       _vi: vi,
     });
   }
-  lastRenderedListHexes = entries.map(e => e.hex);
+  // Note: lastRenderedListHexes now managed by module
 
   const listEmoji = list.emoji || (list.id === '__loved__' ? '💚' : '📋');
   const orderCount = Math.ceil(entries.length / 40);
@@ -1958,18 +1965,22 @@ async function renderWishlistDetail() {
               const globalIdx = startIdx + localIdx;
               const vi = item._vi || 0;
               const isSelected = state.wishlistSelected.has(globalIdx);
-              return `<div class="wishlist-detail-row ${isSelected ? 'selected' : ''}" data-global-idx="${globalIdx}">
-                <div class="wishlist-detail-thumb wl-item-link" data-item="${esc(item.id)}" data-vi="${vi}" style="background:${data.getItemBg(globalIdx)};cursor:pointer">
-                  ${item.img ? `<img src="${esc(item.img)}" style="width:38px;height:38px;object-fit:contain" onerror="this.outerHTML='📦'" alt="">` : '📦'}
-                </div>
-                <div style="flex:1;min-width:0" class="wl-item-link" data-item="${esc(item.id)}" data-vi="${vi}" style="cursor:pointer">
-                  <div style="font-size:12px;font-weight:700;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(item.n)}</div>
-                  <div style="font-size:10px;color:var(--text-secondary);display:flex;align-items:center;gap:6px;margin-top:2px">
-                    ${esc(item.v1)}
-                    <span style="font-size:9px;font-weight:700;background:var(--tag-bg);color:var(--pines);padding:1px 6px;border-radius:50px">${esc(item.hex.slice(-4))}</span>
+              return `<div class="wishlist-detail-row ${isSelected ? 'selected' : ''}" data-global-idx="${globalIdx}" data-wl-select="${globalIdx}">
+                <div class="wl-left-half wl-item-link" data-item="${esc(item.id)}" data-vi="${vi}">
+                  <div class="wishlist-detail-thumb" style="background:${data.getItemBg(globalIdx)}">
+                    ${item.img ? `<img src="${esc(item.img)}" style="width:38px;height:38px;object-fit:contain" onerror="this.outerHTML='📦'" alt="">` : '📦'}
+                  </div>
+                  <div class="wl-item-info">
+                    <div style="font-size:12px;font-weight:700;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(item.n)}</div>
+                    <div style="font-size:10px;color:var(--text-secondary);display:flex;align-items:center;gap:6px;margin-top:2px">
+                      ${esc(item.v1)}
+                      <span style="font-size:9px;font-weight:700;background:var(--tag-bg);color:var(--pines);padding:1px 6px;border-radius:50px">${esc(item.hex.slice(-4))}</span>
+                    </div>
                   </div>
                 </div>
-                <div class="wishlist-check ${isSelected ? 'on' : 'off'}" data-item-check="${globalIdx}">${isSelected ? '✓' : ''}</div>
+                <div class="wl-right-half" data-wl-select="${globalIdx}">
+                  <div class="wishlist-check ${isSelected ? 'on' : 'off'}">${isSelected ? '✓' : ''}</div>
+                </div>
               </div>`;
             }).join('')}
           `;
@@ -2011,7 +2022,7 @@ async function renderWishlistDetail() {
               <div class="receipt-barcode">${Array.from({length:30}, () => `<span style="width:${Math.random()>.5?3:1.5}px"></span>`).join('')}</div>
               <div style="font-size:9px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">SHIP TO: Discord</div>
               ${chunk.map(item => `<div class="receipt-item"><span>• ${esc(item.n)}</span><span class="hex">${esc(item.hex.slice(-4))}</span></div>`).join('')}
-              <div class="receipt-cmd">${esc(state.prefix)}order ${chunk.map(e => e.hex).join(', ')}</div>
+              <div class="receipt-cmd">${esc(state.prefix)}order ${chunk.map(e => e.hex).join(' ')}</div>
               <div style="text-align:center;margin-top:8px;font-size:9px;color:var(--text-secondary);cursor:pointer">📋 tap to copy</div>
             </div>
           `).join('');
@@ -2022,7 +2033,7 @@ async function renderWishlistDetail() {
 }
 
 // ─── Settings Page ───
-function renderSettings() {
+function _localRenderSettings() {
   const presets = ['!', '.', '$', '?', '/'];
   return `<div class="page">
     <div class="page-header">
@@ -2191,7 +2202,7 @@ function renderSettings() {
 }
 
 // ─── Info Page ───
-function renderInfo() {
+function _localRenderInfo() {
   return `<div class="page">
     <div class="page-header">
       <h1 class="heading-xl" style="margin-bottom:4px">Info</h1>
@@ -2300,7 +2311,7 @@ function renderSearchResultsHTML() {
         <p class="text-secondary">${results.total} result${results.total !== 1 ? 's' : ''}${state.searchQuery ? ` for "${esc(state.searchQuery)}"` : ''}${hasFilters ? ` (${state.searchFilterTags.length} filter${state.searchFilterTags.length !== 1 ? 's' : ''})` : ''}</p>
       </div>
       <div class="item-grid" style="padding:0 24px">
-        ${results.items.map((item, idx) => renderItemCard(item, idx)).join('')}
+        ${results.items.map((item, idx) => _localRenderItemCard(item, idx)).join('')}
       </div>
       ${results.items.length < results.total ? '<div id="search-scroll-sentinel" style="height:1px"></div>' : ''}`;
   }
@@ -2346,8 +2357,11 @@ function updateFilterPills() {
     if (pillsContainer) {
       pillsContainer.outerHTML = pillsHTML;
     } else {
-      const searchResults = document.getElementById('search-results');
-      if (searchResults) searchResults.insertAdjacentHTML('beforebegin', pillsHTML);
+      // Insert inside .search-section at the end (before closing tag)
+      const searchSection = document.querySelector('.search-section');
+      if (searchSection) {
+        searchSection.insertAdjacentHTML('beforeend', pillsHTML);
+      }
     }
   } else if (pillsContainer) {
     pillsContainer.remove();
@@ -2367,7 +2381,12 @@ function updateFilterPills() {
   }
   // Update filter panel tag active states
   document.querySelectorAll('[data-filter-tag]').forEach(btn => {
-    btn.classList.toggle('active', state.searchFilterTags.includes(btn.dataset.filterTag));
+    const isActive = state.searchFilterTags.includes(btn.dataset.filterTag);
+    if (isActive) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
   });
 }
 
@@ -3285,14 +3304,15 @@ function renderExportModal() {
   const list = state.wishlists.lists.find(l => l.id === state.viewingListId);
   if (!list) return '';
 
-  const hexString = lastRenderedListHexes.join(' ');
+  const listHexes = getLastRenderedListHexes();
+  const hexString = listHexes.join(' ');
 
   return `<div class="sheet-overlay" id="export-modal-overlay">
     <div class="sheet-modal">
       <div class="sheet-handle"></div>
       <div style="flex-shrink:0">
         <div class="sheet-title">📤 Export List</div>
-        <div class="sheet-subtitle" style="margin-bottom:12px">${lastRenderedListHexes.length} items from "${esc(list.name)}"</div>
+        <div class="sheet-subtitle" style="margin-bottom:12px">${listHexes.length} items from "${esc(list.name)}"</div>
       </div>
       <div class="sheet-scroll">
         ${!state.seenExportInfo ? `
@@ -3362,11 +3382,11 @@ async function render() {
   }
   let content = '';
   switch (state.page) {
-    case 'catalog': content = await renderCatalog(); break;
-    case 'detail': content = await renderDetail(); break;
-    case 'cart': content = renderCart(); break;
-    case 'wishlist': content = await renderWishlist(); break;
-    case 'settings': content = renderSettings(); break;
+    case 'catalog': content = await _localRenderCatalog(); break;
+    case 'detail': content = await renderDetail(state); break;
+    case 'cart': content = renderCart(state); break;
+    case 'wishlist': content = await renderWishlist(state); break;
+    case 'settings': content = renderSettings(state); break;
     case 'info': content = renderInfo(); break;
   }
   app.innerHTML = `<div id="ptr-indicator" class="ptr-indicator"></div>` + content + renderNav() + renderModal() + renderSearch() + renderWishlistToast() + renderListPicker() + renderMovePicker() + renderSetPicker() + renderDuplicatePicker() + renderExportModal() + renderImportModal() + renderEmojiPicker() + ads.renderActivePopup(state.activePopup) + ads.renderAdToast(state.adToastVisible) + ads.renderFloatingNotif(state.floatingNotif);
@@ -4465,7 +4485,7 @@ function attachEvents() {
       if (state.cart.length > 0) {
         const prefix = state.prefix;
         const hexes = state.cart.map(c => c.hex);
-        const command = `${prefix}order ${hexes.join(', ')}`;
+        const command = `${prefix}order ${hexes.join(' ')}`;
         const snapshot = {
           items: [...state.cart],
           timestamp: Date.now(),
@@ -4806,11 +4826,12 @@ function attachEvents() {
       // Get chunk index if this is a chunked order
       const chunkIdx = parseInt(block.dataset.chunkIdx || '0', 10);
       const chunkSize = 40;
+      const listHexes = getLastRenderedListHexes();
       const start = chunkIdx * chunkSize;
-      const end = Math.min(start + chunkSize, lastRenderedListHexes.length);
-      const chunkHexes = lastRenderedListHexes.slice(start, end);
-      const command = `${state.prefix}order ${chunkHexes.join(', ')}`;
-      const totalChunks = Math.ceil(lastRenderedListHexes.length / chunkSize);
+      const end = Math.min(start + chunkSize, listHexes.length);
+      const chunkHexes = listHexes.slice(start, end);
+      const command = `${state.prefix}order ${chunkHexes.join(' ')}`;
+      const totalChunks = Math.ceil(listHexes.length / chunkSize);
 
       const showCopied = () => {
         const orderLabel = totalChunks > 1 ? ` (Order ${chunkIdx + 1}/${totalChunks})` : '';
@@ -5200,14 +5221,28 @@ function attachEvents() {
   const shareImageBtn = document.getElementById('share-image-btn');
   if (shareImageBtn) shareImageBtn.addEventListener('click', shareWishlistAsImage);
 
-  // Wishlist group selection system - Item checkbox clicks
+  // Wishlist group selection system - delegated click handling
   const wishlistContainer = document.getElementById('wishlist-items-container');
   if (wishlistContainer) {
     wishlistContainer.addEventListener('click', (e) => {
-      // Handle individual item checkbox
-      const itemCheck = e.target.closest('[data-item-check]');
-      if (itemCheck) {
-        const idx = parseInt(itemCheck.dataset.itemCheck, 10);
+      // Handle left-half click - go to item detail
+      const leftHalf = e.target.closest('.wl-left-half');
+      if (leftHalf) {
+        const itemId = leftHalf.dataset.item;
+        const vi = parseInt(leftHalf.dataset.vi) || 0;
+        if (itemId) {
+          state.selectedVariantIdx = vi;
+          state.page = 'detail';
+          state._pageEnter = true;
+          loadItemDetail(itemId);
+        }
+        return;
+      }
+
+      // Handle right-half click - toggle selection
+      const rightHalf = e.target.closest('.wl-right-half[data-wl-select]');
+      if (rightHalf) {
+        const idx = parseInt(rightHalf.dataset.wlSelect, 10);
         if (state.wishlistSelected.has(idx)) {
           state.wishlistSelected.delete(idx);
         } else {
@@ -5498,7 +5533,7 @@ function attachEvents() {
   const copyExportBtn = document.getElementById('copy-export-btn');
   if (copyExportBtn) copyExportBtn.addEventListener('click', () => {
     NookSounds.play('copyCommand');
-    const hexString = lastRenderedListHexes.join(' ');
+    const hexString = getLastRenderedListHexes().join(' ');
 
     const showCopied = () => {
       copyExportBtn.innerHTML = '✓ Copied!';
@@ -6290,8 +6325,7 @@ function trackRecentlyViewed(id, variantIdx) {
 
 async function loadItemDetail(itemId) {
   state.itemDetail = null;
-  _similarCache = { itemId: null, matches: null, badgeText: null }; // clear similar items cache for new item
-  _reviewCache = { itemId: null, data: null }; // clear reviews cache for new item
+  clearDetailCaches(); // clear similar items and reviews cache for new item
   state.similarScrollLeft = 0; // reset similar carousel scroll for new item
   state._detailScrollY = undefined; // prevent restoring old scroll position
   state.detailsExpanded = false; // reset collapsible details

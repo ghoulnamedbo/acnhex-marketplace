@@ -300,12 +300,15 @@
   border-color: #3A3D32;
 }
 [data-theme="dark"] .detail-qty-counter-btn {
-  background: #252820;
-  border-color: #3A3D32;
-  color: #9AAF7C;
+  background: rgba(0,0,0,0.25);
+  border-color: transparent;
+  color: #fff;
+}
+[data-theme="dark"] .detail-qty-counter-btn:hover:not(:disabled) {
+  background: rgba(0,0,0,0.35);
 }
 [data-theme="dark"] .detail-qty-counter-val {
-  color: #E8E8D8;
+  color: #fff;
 }
 
 /* Dark theme glass buttons on detail hero */
@@ -2593,6 +2596,27 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.wl-left-half {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  padding: 4px 0;
+}
+.wl-item-info {
+  flex: 1;
+  min-width: 0;
+}
+.wl-right-half {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 4px 0 4px 12px;
+  cursor: pointer;
+  min-width: 50px;
 }
 .wl-action-btn {
   width: 30px;
