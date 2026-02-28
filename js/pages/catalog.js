@@ -105,9 +105,9 @@ export async function renderRecentlyViewed(state) {
 
   if (cards.length === 0) return '';
 
-  return `<div class="recent-section" style="padding:16px 24px 0">
+  return `<div class="recent-section px-24 pt-16">
     <div class="recent-header">
-      <h4 class="label-upper" style="margin:0;display:flex;align-items:center;gap:6px"><span style="font-size:14px">🕐</span> RECENTLY VIEWED</h4>
+      <h4 class="label-upper similar-header-label"><span class="similar-header-emoji">🕐</span> RECENTLY VIEWED</h4>
     </div>
     <div class="recent-scroll-wrapper">
       <button class="recent-arrow left" id="recent-arrow-left">‹</button>
@@ -147,7 +147,7 @@ export async function renderDailyPick(state) {
   const variant = item.variants[variantIdx];
 
   return `
-    <div class="daily-pick-section" style="padding:0 24px;margin-top:16px">
+    <div class="daily-pick-section content-wrapper mt-16">
       <div class="daily-pick-card" data-daily-pick="${esc(item.id)}" data-daily-vi="${variantIdx}">
         <div class="daily-pick-badge">🌟 Nook's Daily Pick</div>
         <div class="daily-pick-content">
@@ -207,7 +207,7 @@ export function renderCatalogWithSearch(state) {
     </div>
     <div id="search-results">
       ${hasQuery ? `
-        <div style="padding:16px 24px 8px;display:flex;justify-content:space-between;align-items:center">
+        <div class="search-results-header">
           <p class="text-secondary">${results.total} result${results.total !== 1 ? 's' : ''}${state.searchQuery ? ` for "${esc(state.searchQuery)}"` : ''}${hasFilters ? ` (${state.searchFilterTags.length} filter${state.searchFilterTags.length !== 1 ? 's' : ''})` : ''}</p>
         </div>
         <div class="item-grid">
@@ -258,7 +258,7 @@ export async function renderCatalog(state) {
   return `<div class="page">
     <div class="app-header">
       <div>
-        <p class="label-upper" style="margin-bottom:4px">Welcome to</p>
+        <p class="label-upper mb-4">Welcome to</p>
         <h1 class="heading-xl">ACNHEX Market</h1>
       </div>
     </div>
@@ -315,8 +315,8 @@ export async function renderCatalog(state) {
 
     ${await renderDailyPick(state)}
 
-    <div style="padding:0 24px;margin-top:10px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div class="catalog-section-padding">
+      <div class="section-header-row">
         <h3 class="heading-section">Categories</h3>
       </div>
       <div class="categories-wrapper at-start" id="cat-wrapper">
@@ -336,7 +336,7 @@ export async function renderCatalog(state) {
       </div>
     </div>
 
-    <div style="padding:20px 24px 14px;display:flex;justify-content:space-between;align-items:center">
+    <div class="catalog-results-header">
       <h3 class="heading-section">${isRandom ? 'Random Picks' : state.activeCategory === 'All' ? 'All Items' : esc(state.activeCategory)}</h3>
       <span class="text-secondary">${total} found</span>
     </div>

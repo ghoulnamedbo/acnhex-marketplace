@@ -7144,6 +7144,449 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   color: #E8E8D8;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+/*   UTILITY CLASSES — Replace common inline styles                                 */
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Flexbox Layout Utilities ─── */
+.flex-row { display: flex; align-items: center; }
+.flex-col { display: flex; flex-direction: column; }
+.flex-1 { flex: 1; }
+.flex-shrink-0 { flex-shrink: 0; }
+.min-w-0 { min-width: 0; }
+.items-center { align-items: center; }
+.items-start { align-items: flex-start; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.justify-end { justify-content: flex-end; }
+.flex-wrap { flex-wrap: wrap; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.cursor-pointer { cursor: pointer; }
+
+/* ── Gap Utilities ─── */
+.gap-2 { gap: 2px; }
+.gap-4 { gap: 4px; }
+.gap-6 { gap: 6px; }
+.gap-8 { gap: 8px; }
+.gap-10 { gap: 10px; }
+.gap-12 { gap: 12px; }
+.gap-14 { gap: 14px; }
+.gap-16 { gap: 16px; }
+
+/* ── Margin Utilities ─── */
+.mb-0 { margin-bottom: 0; }
+.mb-2 { margin-bottom: 2px; }
+.mb-4 { margin-bottom: 4px; }
+.mb-6 { margin-bottom: 6px; }
+.mb-8 { margin-bottom: 8px; }
+.mb-12 { margin-bottom: 12px; }
+.mb-14 { margin-bottom: 14px; }
+.mb-16 { margin-bottom: 16px; }
+.mb-20 { margin-bottom: 20px; }
+.mb-28 { margin-bottom: 28px; }
+.mt-2 { margin-top: 2px; }
+.mt-6 { margin-top: 6px; }
+.mt-8 { margin-top: 8px; }
+.mt-10 { margin-top: 10px; }
+.mt-16 { margin-top: 16px; }
+.mt-20 { margin-top: 20px; }
+
+/* ── Padding Utilities ─── */
+.p-0 { padding: 0; }
+.px-12 { padding-left: 12px; padding-right: 12px; }
+.px-20 { padding-left: 20px; padding-right: 20px; }
+.px-24 { padding-left: 24px; padding-right: 24px; }
+.py-16 { padding-top: 16px; padding-bottom: 16px; }
+.py-20 { padding-top: 20px; padding-bottom: 20px; }
+.pb-10 { padding-bottom: 10px; }
+.pb-16 { padding-bottom: 16px; }
+.pb-20 { padding-bottom: 20px; }
+.pt-0 { padding-top: 0; }
+.pt-16 { padding-top: 16px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+/*   COMPONENT CLASSES — Semantic classes for specific patterns                     */
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Page Header (flex layout with space-between) ─── */
+.page-header--flex {
+  padding-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+/* ── Page Content Wrapper ─── */
+.content-wrapper { padding: 0 24px; }
+.content-wrapper--flex { padding: 0 24px; display: flex; flex-direction: column; gap: 12px; }
+.content-wrapper--gap-14 { padding: 0 24px; display: flex; flex-direction: column; gap: 14px; }
+
+/* ── Section Header Row (space-between) ─── */
+.section-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+/* ── Settings Page Components ─── */
+.settings-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.settings-toggle-label {
+  font-size: 12px;
+  font-weight: 700;
+}
+.settings-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+}
+.settings-volume-icon {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+/* ── Info Page Components ─── */
+.credit-card-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.credit-card-content {
+  flex: 1;
+  min-width: 0;
+}
+.credit-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: var(--text-primary);
+}
+.credit-card-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.app-footer-name {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 2px;
+  color: var(--palm-leaf);
+}
+.app-footer-version {
+  font-size: 10px;
+  color: var(--text-light);
+  margin-bottom: 4px;
+}
+.app-footer-tagline {
+  font-size: 10px;
+  color: var(--text-light);
+}
+
+/* ── Wishlist Page Components ─── */
+.wl-list-inner {
+  flex: 1;
+  min-width: 0;
+}
+.wl-list-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.wl-list-name {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 0;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+.wl-action-btns {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.wl-list-count {
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+.wl-list-chevron {
+  color: var(--text-light);
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* ── Wishlist Detail Components ─── */
+.wl-detail-header {
+  padding: 16px 20px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.wl-detail-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+.wl-detail-title-wrap {
+  min-width: 0;
+}
+.wl-detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.wl-detail-emoji {
+  font-size: 18px;
+}
+.wl-detail-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--palm-leaf);
+  letter-spacing: -0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wl-detail-count {
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+.wl-export-row {
+  padding: 0 20px 10px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* ── Wishlist Empty State ─── */
+.wl-empty-state {
+  text-align: center;
+  padding: 60px 40px;
+}
+.wl-empty-emoji {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+.wl-empty-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--palm-leaf);
+}
+.wl-empty-text {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  line-height: 1.6;
+}
+
+/* ── Wishlist Item Row Components ─── */
+.wl-item-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wl-item-meta {
+  font-size: 10px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+.wl-hex-pill {
+  font-size: 9px;
+  font-weight: 700;
+  background: var(--tag-bg);
+  color: var(--pines);
+  padding: 1px 6px;
+  border-radius: 50px;
+}
+
+/* ── Receipt / Bot Command Section ─── */
+.receipt-section {
+  padding: 0 20px 16px;
+}
+.receipt-tear-line {
+  border-top: 2px dashed var(--border);
+  margin: 4px 0 16px;
+  position: relative;
+}
+.receipt-tear-label {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg);
+  padding: 0 8px;
+  font-size: 9px;
+  color: var(--text-light);
+}
+.receipt-header-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.receipt-header-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--palm-leaf);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.receipt-header-count {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+.receipt-split-notice {
+  background: var(--tag-bg);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.receipt-split-icon {
+  font-size: 14px;
+}
+.receipt-split-text {
+  font-size: 11px;
+  color: var(--palm-leaf);
+}
+.receipt-chunk-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--pines);
+  text-align: center;
+  margin-bottom: 6px;
+}
+.receipt-ship-to {
+  font-size: 9px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+.receipt-copy-hint {
+  text-align: center;
+  margin-top: 8px;
+  font-size: 9px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.receipt-nook-footer {
+  text-align: center;
+  margin-top: 10px;
+  font-size: 9px;
+  color: var(--text-light);
+}
+
+/* ── Catalog Page Components ─── */
+.catalog-section-padding {
+  padding: 0 24px;
+  margin-top: 10px;
+}
+.catalog-results-header {
+  padding: 20px 24px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.search-results-header {
+  padding: 16px 24px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ── Detail Page Components ─── */
+.detail-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.similar-section-padding {
+  padding-left: 24px;
+  padding-right: 24px;
+}
+.similar-header-label {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.similar-header-emoji {
+  font-size: 14px;
+}
+
+/* ── Misc Utility Components ─── */
+.create-list-wrapper {
+  padding: 20px 24px;
+}
+.wishlist-items-wrapper {
+  padding: 0 12px 20px;
+}
+.glass-btn--static {
+  position: static;
+  flex-shrink: 0;
+}
+
+/* ── Select All Button ─── */
+.select-all-btn {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--pines);
+  background: var(--tag-bg);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Space Mono', monospace;
+}
+
+/* ── Code Block Modifier ─── */
+.code-block--settings {
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-size: 12px;
+}
+
+/* ── Settings Card Modifiers ─── */
+.settings-card--danger {
+  border: 1px solid var(--dolce-pink);
+}
+.label-upper--danger {
+  color: var(--danger);
+}
+
+/* ── Credit Icon Modifiers ─── */
+.credit-icon--tag {
+  background: var(--tag-bg);
+}
+.credit-icon--pink {
+  background: var(--dolce-pink);
+}
+
+/* ── Additional Margin Utilities ─── */
+.mt-12 { margin-top: 12px; }
+
 /* ── Reduce Motion ─── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

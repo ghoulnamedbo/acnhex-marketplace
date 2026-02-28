@@ -7,18 +7,18 @@ export function renderSettings(state) {
   const presets = ['!', '.', '$', '?', '/'];
   return `<div class="page">
     <div class="page-header">
-      <h1 class="heading-xl" style="margin-bottom:4px">Settings</h1>
-      <p class="text-secondary" style="margin-bottom:28px">Configure your bot prefix</p>
+      <h1 class="heading-xl mb-4">Settings</h1>
+      <p class="text-secondary mb-28">Configure your bot prefix</p>
     </div>
 
-    <div style="padding:0 24px">
+    <div class="content-wrapper">
       <div class="settings-card">
-        <h4 class="label-upper" style="margin-bottom:14px">Bot Command Prefix</h4>
+        <h4 class="label-upper mb-14">Bot Command Prefix</h4>
         <input type="text" class="prefix-input" id="prefix-input" value="${esc(state.prefix)}" maxlength="5">
       </div>
 
       <div class="settings-card">
-        <h4 class="label-upper" style="margin-bottom:16px">Quick Presets</h4>
+        <h4 class="label-upper mb-16">Quick Presets</h4>
         <div class="presets-grid">
           ${presets.map(p => `
             <button class="preset-btn ${state.prefix === p ? 'active' : ''}" data-preset="${esc(p)}">${esc(p)}</button>
@@ -27,8 +27,8 @@ export function renderSettings(state) {
       </div>
 
       <div class="settings-card">
-        <h4 class="label-upper" style="margin-bottom:14px">Preview</h4>
-        <div class="code-block" style="border-radius:14px;padding:14px 16px;font-size:12px">
+        <h4 class="label-upper mb-14">Preview</h4>
+        <div class="code-block code-block--settings">
           <span class="code-keyword">${esc(state.prefix)}order</span>
           <span class="code-value">0x0A3F</span>
           <span class="code-value">0x1B2C</span>
@@ -36,7 +36,7 @@ export function renderSettings(state) {
       </div>
 
       <div class="settings-card">
-        <h4 class="label-upper" style="margin-bottom:14px">Item Loading</h4>
+        <h4 class="label-upper mb-14">Item Loading</h4>
         <div class="load-mode-options">
           <button class="load-mode-btn ${state.loadMode === 'batch' ? 'active' : ''}" data-settings-load="batch">
             <span class="load-mode-icon">📦</span>
@@ -50,26 +50,26 @@ export function renderSettings(state) {
       </div>
 
       <div class="settings-card">
-        <h4 class="label-upper" style="margin-bottom:14px">Nook Inc. Sound Package</h4>
-        <p class="text-secondary" style="font-size:11px;margin-bottom:14px">Adds soft pocket sounds to browsing. Tom Nook approved.</p>
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <span style="font-size:12px;font-weight:700">🔊 Sound Effects</span>
+        <h4 class="label-upper mb-14">Nook Inc. Sound Package</h4>
+        <p class="settings-desc">Adds soft pocket sounds to browsing. Tom Nook approved.</p>
+        <div class="settings-toggle-row">
+          <span class="settings-toggle-label">🔊 Sound Effects</span>
           <label class="toggle-container">
             <input type="checkbox" id="soundToggle" ${state.soundEnabled ? 'checked' : ''}>
             <span class="toggle-track"><span class="toggle-thumb"></span></span>
           </label>
         </div>
         <div class="sound-volume-row ${state.soundEnabled ? '' : 'disabled'}">
-          <span style="font-size:11px;color:var(--text-secondary)">🔈</span>
+          <span class="settings-volume-icon">🔈</span>
           <input type="range" id="soundVolume" class="sound-slider" min="0" max="1" step="0.05" value="${state.soundVolume}" ${state.soundEnabled ? '' : 'disabled'}>
-          <span style="font-size:11px;color:var(--text-secondary)">🔊</span>
+          <span class="settings-volume-icon">🔊</span>
           <span id="volumeLabel" class="volume-label">${Math.round(state.soundVolume * 100)}%</span>
         </div>
       </div>
 
       <div class="settings-card">
-        <h4 class="label-upper" style="margin-bottom:14px">🌙 Appearance</h4>
-        <p class="text-secondary" style="font-size:11px;margin-bottom:14px">Choose your preferred theme for the app.</p>
+        <h4 class="label-upper mb-14">🌙 Appearance</h4>
+        <p class="settings-desc">Choose your preferred theme for the app.</p>
         <div class="theme-options">
           <button class="theme-btn ${state.theme === 'light' ? 'active' : ''}" data-theme="light">
             <span class="theme-icon">☀️</span>
@@ -87,20 +87,20 @@ export function renderSettings(state) {
       </div>
 
       <div class="settings-card">
-        <h4 class="label-upper" style="margin-bottom:14px">🃏 Card Effects</h4>
-        <p class="text-secondary" style="font-size:11px;margin-bottom:14px">Enable interactive motion effects when viewing cards in compare mode.</p>
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <span style="font-size:12px;font-weight:700">Card Motion</span>
+        <h4 class="label-upper mb-14">🃏 Card Effects</h4>
+        <p class="settings-desc">Enable interactive motion effects when viewing cards in compare mode.</p>
+        <div class="settings-toggle-row">
+          <span class="settings-toggle-label">Card Motion</span>
           <label class="toggle-container">
             <input type="checkbox" id="cardMotionToggle" ${state.cardMotionEnabled ? 'checked' : ''}>
             <span class="toggle-track"><span class="toggle-thumb"></span></span>
           </label>
         </div>
-        <p class="text-secondary" style="font-size:10px;margin-top:8px">Cards move with your mouse (desktop) or device tilt (mobile)</p>
+        <p class="text-secondary mt-8" style="font-size:10px">Cards move with your mouse (desktop) or device tilt (mobile)</p>
       </div>
 
       <div class="settings-card">
-        <h4 class="label-upper" style="margin-bottom:14px">⌨️ Keyboard Shortcuts</h4>
+        <h4 class="label-upper mb-14">⌨️ Keyboard Shortcuts</h4>
         <div class="keyboard-shortcuts-list">
           <div class="shortcut-row">
             <span class="shortcut-keys"><kbd>/</kbd> or <kbd>Ctrl</kbd>+<kbd>K</kbd></span>
@@ -122,10 +122,10 @@ export function renderSettings(state) {
       </div>
 
       <div class="settings-card">
-        <h4 class="label-upper" style="margin-bottom:14px">🦝 Fake Promos</h4>
-        <p class="text-secondary" style="font-size:11px;margin-bottom:14px">Toggle the in-universe Animal Crossing fake ads and promos.</p>
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <span style="font-size:12px;font-weight:700">Enable Fake Ads</span>
+        <h4 class="label-upper mb-14">🦝 Fake Promos</h4>
+        <p class="settings-desc">Toggle the in-universe Animal Crossing fake ads and promos.</p>
+        <div class="settings-toggle-row">
+          <span class="settings-toggle-label">Enable Fake Ads</span>
           <label class="toggle-container">
             <input type="checkbox" id="adsToggle" ${state.adsEnabled ? 'checked' : ''}>
             <span class="toggle-track"><span class="toggle-thumb"></span></span>
@@ -163,8 +163,8 @@ export function renderSettings(state) {
         </div>
       </div>
 
-      <div class="settings-card" style="border:1px solid var(--dolce-pink)">
-        <h4 class="label-upper" style="margin-bottom:14px;color:var(--danger)">Danger Zone</h4>
+      <div class="settings-card settings-card--danger">
+        <h4 class="label-upper label-upper--danger mb-14">Danger Zone</h4>
         <button class="clear-btn" id="clear-data">Clear All Data</button>
       </div>
     </div>

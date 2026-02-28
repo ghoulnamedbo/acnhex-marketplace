@@ -505,7 +505,7 @@ These don't add visible features but prevent future bugs and make the codebase m
 
 #### 5.2 Reduce Inline Styles
 
-- [ ] **Status: NOT STARTED**
+- [ ] **Status: INTEGRATED — awaiting user testing**
 
 **Problem:** Many render functions use massive `style="..."` attributes (100+ characters) instead of CSS classes. This makes the UI hard to maintain and theme (especially now with dark mode).
 

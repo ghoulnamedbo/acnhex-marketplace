@@ -131,9 +131,9 @@ async function renderSimilarItems(state, item) {
       </div>`;
     }).join('');
 
-    return `<div class="similar-section" style="padding-left:24px;padding-right:24px">
+    return `<div class="similar-section similar-section-padding">
       <div class="similar-header">
-        <h4 class="label-upper" style="margin:0;display:flex;align-items:center;gap:6px"><span style="font-size:14px">🍃</span> SIMILAR ITEMS</h4>
+        <h4 class="label-upper similar-header-label"><span class="similar-header-emoji">🍃</span> SIMILAR ITEMS</h4>
         <span class="similar-badge">${esc(badgeText)}</span>
       </div>
       <div class="similar-scroll-wrapper">
@@ -355,7 +355,7 @@ export async function renderDetail(state) {
       ` : ''}
 
       <div class="details-card" id="detail-fields">
-        <div class="detail-section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div class="detail-section-header">
           <span class="label-upper">Details</span>
           ${secondaryFields.length > 0 && !state.detailsExpanded ? `<span class="detail-more-hint">${secondaryFields.length} more fields</span>` : ''}
         </div>
