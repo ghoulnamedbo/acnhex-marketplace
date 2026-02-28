@@ -82,6 +82,11 @@ const state = {
   // Detail page V2
   detailsExpanded: false,
   variantDrawerOpen: false,
+  compareModalOpen: false,
+  compareVariants: [], // array of variant indices being compared
+  compareZoomIdx: null, // index of variant being viewed in zoom/card mode
+  detailedViewOpen: false, // full-screen card view for current variant
+  cardMotionEnabled: storage.getCardMotionEnabled(),
   // Saved detail state for tab switching
   _savedDetailState: null,
   // Import/Export modals
@@ -341,6 +346,20 @@ window.getAdPrefs = () => ({
 
 function isInWishlist(id, variantIdx = 0) {
   return state.wishlists.lists.some(list =>
+    list.items.some(w => w.id === id && w.variantIdx === variantIdx)
+  );
+}
+
+// Check if item is in the Loved list (index 0)
+function isInLovedList(id, variantIdx = 0) {
+  const lovedList = state.wishlists.lists[0];
+  if (!lovedList) return false;
+  return lovedList.items.some(w => w.id === id && w.variantIdx === variantIdx);
+}
+
+// Check if item is in any custom list (index 1+)
+function isInCustomList(id, variantIdx = 0) {
+  return state.wishlists.lists.slice(1).some(list =>
     list.items.some(w => w.id === id && w.variantIdx === variantIdx)
   );
 }
@@ -649,14 +668,14 @@ function renderCatalogWithSearch() {
 function renderItemCard(item, idx) {
   const bg = data.getItemBg(idx);
   const vi = item.variantIdx ?? 0;
-  const inWishlist = isInWishlist(item.id, vi);
+  const inLoved = isInLovedList(item.id, vi);
   const cartFull = getCartTotal() >= 40;
   const qtyInCart = getCartQtyForItem(item.id, vi);
   const showCounter = qtyInCart > 0;
   return `<div class="item-card" data-item="${esc(item.id)}" data-vi="${vi}">
     <div class="item-thumb" style="background:${bg}">
       ${item.img ? `<img src="${esc(item.img)}" loading="lazy" onerror="this.outerHTML='<span class=emoji-fallback>📦</span>'" alt="">` : '<span class="emoji-fallback">📦</span>'}
-      <button class="heart-btn" data-heart="${esc(item.id)}" data-heart-vi="${vi}">${ICONS.heart(inWishlist)}</button>
+      <button class="heart-btn" data-heart="${esc(item.id)}" data-heart-vi="${vi}">${ICONS.heart(inLoved)}</button>
     </div>
     <div class="item-info">
       <p class="item-name">${esc(item.n)}</p>
@@ -702,7 +721,7 @@ async function renderDetail() {
   const vi = state.selectedVariantIdx;
   const variant = item.variants[vi] || item.variants[0];
   const bg = data.getItemBg(0);
-  const inWishlist = isInWishlist(item.id, vi);
+  const inLoved = isInLovedList(item.id, vi);
   const cartFull = getCartTotal() >= 40;
   const qtyInCart = state.cart.filter(c => c.id === item.id && c.variantIdx === vi).length;
   let reviewData;
@@ -753,7 +772,7 @@ async function renderDetail() {
   return `<div class="page">
     <div class="detail-hero-orbit" id="detail-hero" style="background:${bg}">
       <button class="glass-btn left" id="detail-back">${ICONS.chevronLeft}</button>
-      <button class="glass-btn right" data-heart="${esc(item.id)}" data-heart-vi="${vi}">${ICONS.heartLg(inWishlist)}</button>
+      <button class="glass-btn right" data-heart="${esc(item.id)}" data-heart-vi="${vi}">${ICONS.heartLg(inLoved)}</button>
 
       ${item.variants.length > 1 ? (() => {
         const total = item.variants.length;
@@ -769,13 +788,13 @@ async function renderDetail() {
         <div class="variant-orbit-track variant-orbit-track--circular" data-count="${total}" data-selected="${vi}">
           ${item.variants.map((v, idx) => {
             const isCenter = idx === vi;
-            const isWishlisted = state.wishlists.lists.some(list =>
-              list.items.some(wi => wi.id === item.id && wi.variantIdx === idx)
-            );
+            const inLoved = isInLovedList(item.id, idx);
+            const inCustom = isInCustomList(item.id, idx);
             return `<div class="variant-orbit-item${isCenter ? ' variant-orbit-item--active' : ''}"
               data-variant-orbit="${idx}"
               data-bg="${thumbBgs[idx % thumbBgs.length]}">
-              ${isWishlisted ? '<div class="variant-orbit-heart-dot">♥</div>' : ''}
+              ${inLoved ? '<div class="variant-orbit-heart-dot">♥</div>' : ''}
+              ${inCustom ? '<div class="variant-orbit-list-dot">📋</div>' : ''}
               <img src="${esc(v.image)}" alt="${esc(v.name)}" loading="lazy"
                 onerror="this.style.display='none';this.parentNode.querySelector('.variant-orbit-fallback').style.display='flex';">
               <div class="variant-orbit-fallback" style="display:none;">📦</div>
@@ -793,6 +812,12 @@ async function renderDetail() {
         </div>
 
         <div class="variant-orbit-hint">← swipe to rotate →</div>
+
+        <div class="detail-hero-actions">
+          <button class="detail-hero-action-btn" data-action="open-detailed-view">🃏 Card</button>
+          ${item.variants.length >= 8 ? `<button class="detail-hero-action-btn" data-action="open-compare">⚖️ Compare</button>` : ''}
+          ${item.variants.length > 1 ? `<button class="detail-hero-action-btn" data-action="open-variant-drawer">☰ All ${item.variants.length}</button>` : ''}
+        </div>
       </div>`;
         } else {
           // Windowed approach for 15+ variants
@@ -813,14 +838,14 @@ async function renderDetail() {
           ${uniqueVisible.map((idx, pos) => {
             const v = item.variants[idx];
             const isCenter = idx === vi;
-            const isWishlisted = state.wishlists.lists.some(list =>
-              list.items.some(wi => wi.id === item.id && wi.variantIdx === idx)
-            );
+            const inLoved = isInLovedList(item.id, idx);
+            const inCustom = isInCustomList(item.id, idx);
             return `<div class="variant-orbit-item${isCenter ? ' variant-orbit-item--active' : ''}"
               data-variant-orbit="${idx}"
               data-orbit-pos="${pos}"
               data-bg="${thumbBgs[idx % thumbBgs.length]}">
-              ${isWishlisted ? '<div class="variant-orbit-heart-dot">♥</div>' : ''}
+              ${inLoved ? '<div class="variant-orbit-heart-dot">♥</div>' : ''}
+              ${inCustom ? '<div class="variant-orbit-list-dot">📋</div>' : ''}
               <img src="${esc(v.image)}" alt="${esc(v.name)}" loading="lazy"
                 onerror="this.style.display='none';this.parentNode.querySelector('.variant-orbit-fallback').style.display='flex';">
               <div class="variant-orbit-fallback" style="display:none;">📦</div>
@@ -837,34 +862,37 @@ async function renderDetail() {
         </div>
 
         <div class="variant-orbit-hint">← swipe to rotate →</div>
+
+        <div class="detail-hero-actions">
+          <button class="detail-hero-action-btn" data-action="open-detailed-view">🃏 Card</button>
+          ${item.variants.length >= 8 ? `<button class="detail-hero-action-btn" data-action="open-compare">⚖️ Compare</button>` : ''}
+          ${item.variants.length > 1 ? `<button class="detail-hero-action-btn" data-action="open-variant-drawer">☰ All ${item.variants.length}</button>` : ''}
+        </div>
       </div>`;
         }
       })() : `
       <div class="detail-single-variant">
         ${variant.image ? `<img src="${esc(variant.image)}" onerror="this.outerHTML='<span class=emoji-fallback>📦</span>'" alt="">` : '<span class="emoji-fallback">📦</span>'}
+        <div class="detail-hero-actions detail-hero-actions--single">
+          <button class="detail-hero-action-btn" data-action="open-detailed-view">🃏 Card</button>
+        </div>
       </div>`}
     </div>
 
     <div class="detail-content">
       <div class="detail-title-row">
         <div class="detail-title-left">
-          <h2 class="heading-lg">${esc(item.name)}</h2>
-          <span class="text-secondary detail-variant-name">${esc(variant.name)}</span>
+          <h2 class="heading-lg">${esc(item.name)}${item.variants.length > 1 ? ` <span class="detail-title-dot">•</span> <span class="detail-title-variant">${esc(variant.name)}</span>` : ''}</h2>
+          <div class="tag-pills tag-pills--inline">
+            ${(item.tags || []).slice(0, 6).map(t => `<span class="tag-pill">${esc(t)}</span>`).join('')}
+          </div>
         </div>
         <div class="detail-title-right">
           <div class="detail-rating">
             <span>⭐</span>
             <span class="detail-rating-value">${reviewData.avgRating}</span>
           </div>
-          ${item.variants.length > 1 ? `
-          <button class="variant-drawer-trigger" data-action="open-variant-drawer">
-            <span>☰</span> All ${item.variants.length}
-          </button>` : ''}
         </div>
-      </div>
-
-      <div class="tag-pills">
-        ${(item.tags || []).slice(0, 8).map(t => `<span class="tag-pill">${esc(t)}</span>`).join('')}
       </div>
 
       ${item.hhaSet && item.hhaSet !== 'None' ? `
@@ -939,15 +967,15 @@ async function renderDetail() {
       <div class="variant-drawer-scroll">
         ${item.variants.map((v, idx) => {
           const isSel = idx === vi;
-          const isWish = state.wishlists.lists.some(list =>
-            list.items.some(wi => wi.id === item.id && wi.variantIdx === idx)
-          );
+          const inLoved = isInLovedList(item.id, idx);
+          const inCustom = isInCustomList(item.id, idx);
           return `<button class="variant-drawer-row${isSel ? ' variant-drawer-row--selected' : ''}" data-drawer-variant="${idx}">
             <div class="variant-drawer-thumb" style="background:${thumbBgs[idx % thumbBgs.length]}">
               <img src="${esc(v.image)}" alt="${esc(v.name)}" loading="lazy"
                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
               <span style="display:none;font-size:16px;">📦</span>
-              ${isWish ? '<div class="variant-drawer-heart-dot">♥</div>' : ''}
+              ${inLoved ? '<div class="variant-drawer-heart-dot">♥</div>' : ''}
+              ${inCustom ? '<div class="variant-drawer-list-dot">📋</div>' : ''}
             </div>
             <span class="variant-drawer-name">${esc(v.name)}</span>
             <span class="variant-drawer-color">${esc(v.color1 || '-')}</span>
@@ -962,6 +990,140 @@ async function renderDetail() {
         </button>
       </div>
     </div>
+
+    ${item.variants.length >= 8 ? `
+    <div class="compare-tray${state.compareModalOpen ? ' compare-tray--open' : ''}">
+      <div class="compare-tray-header">
+        <span class="compare-tray-title">Compare <span class="compare-tray-count">${state.compareVariants.length}/5</span></span>
+        <button class="compare-tray-close" data-action="close-compare">✕</button>
+      </div>
+      <div class="compare-tray-grid">
+        ${item.variants.map((v, idx) => {
+          const isSelected = state.compareVariants.includes(idx);
+          const isDisabled = !isSelected && state.compareVariants.length >= 5;
+          return `<button class="compare-tray-item${isSelected ? ' compare-tray-item--selected' : ''}${isDisabled ? ' compare-tray-item--disabled' : ''}"
+            data-compare-toggle="${idx}" ${isDisabled ? 'disabled' : ''}>
+            <div class="compare-tray-thumb" style="background:${thumbBgs[idx % thumbBgs.length]}">
+              <img src="${esc(v.image)}" alt="${esc(v.name)}" loading="lazy">
+            </div>
+            <span class="compare-tray-name">${esc(v.name)}</span>
+            ${isSelected ? '<span class="compare-tray-check">✓</span>' : ''}
+          </button>`;
+        }).join('')}
+      </div>
+      ${state.compareVariants.length >= 2 ? `
+      <div class="compare-carousel-wrap">
+        <div class="compare-carousel" id="compare-carousel">
+          ${state.compareVariants.map((idx, pos) => {
+            const v = item.variants[idx];
+            const hex = v.hexVariated || v.hex || item.hexBase;
+            return `<div class="compare-card" data-compare-zoom="${idx}" style="--card-bg:${thumbBgs[idx % thumbBgs.length]}">
+              <div class="compare-card-img">
+                <img src="${esc(v.image)}" alt="${esc(v.name)}">
+              </div>
+              <div class="compare-card-info">
+                <span class="compare-card-name">${esc(v.name)}</span>
+                <div class="compare-card-colors">
+                  ${v.color1 ? `<span class="compare-card-color">${esc(v.color1)}</span>` : ''}
+                  ${v.color2 ? `<span class="compare-card-color">${esc(v.color2)}</span>` : ''}
+                </div>
+                <button class="hex-copy-badge" data-hex="${esc(hex)}">${esc(hex.slice(-6))}</button>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+        <div class="compare-carousel-dots">
+          ${state.compareVariants.map((idx, pos) => `<span class="compare-carousel-dot${pos === 0 ? ' active' : ''}" data-compare-dot="${pos}"></span>`).join('')}
+        </div>
+      </div>
+      ` : '<p class="compare-tray-hint">Select at least 2 variants to compare</p>'}
+    </div>
+    ${state.compareZoomIdx !== null ? (() => {
+      const zv = item.variants[state.compareZoomIdx];
+      const zhex = zv.hexVariated || zv.hex || item.hexBase;
+      const qtyInCart = state.cart.filter(c => c.id === item.id && c.variantIdx === state.compareZoomIdx).length;
+      const cartFull = getCartTotal() >= 40;
+      const isInList = state.wishlists.lists.some(list => list.items.some(wi => wi.id === item.id && wi.variantIdx === state.compareZoomIdx));
+      return `<div class="compare-zoom-backdrop" data-action="close-zoom"></div>
+      <div class="compare-zoom-card${state.cardMotionEnabled ? ' compare-zoom-card--motion' : ''}"
+           id="compare-zoom-card"
+           style="--card-bg:${thumbBgs[state.compareZoomIdx % thumbBgs.length]}">
+        <div class="compare-zoom-img">
+          <img src="${esc(zv.image)}" alt="${esc(zv.name)}">
+        </div>
+        <div class="compare-zoom-details">
+          <h3 class="compare-zoom-name">${esc(zv.name)}</h3>
+          <div class="compare-zoom-row">
+            <span class="compare-zoom-label">Color 1</span>
+            <span class="compare-zoom-value">${esc(zv.color1 || '-')}</span>
+          </div>
+          <div class="compare-zoom-row">
+            <span class="compare-zoom-label">Color 2</span>
+            <span class="compare-zoom-value">${esc(zv.color2 || '-')}</span>
+          </div>
+          <div class="compare-zoom-row">
+            <span class="compare-zoom-label">Hex</span>
+            <button class="hex-copy-badge" data-hex="${esc(zhex)}">${esc(zhex.slice(-6))}</button>
+          </div>
+          <div class="compare-zoom-actions">
+            ${qtyInCart > 0 ? `
+            <div class="compare-zoom-qty">
+              <button class="compare-zoom-qty-btn" data-compare-cart-minus="${state.compareZoomIdx}">−</button>
+              <span class="compare-zoom-qty-val">${qtyInCart}</span>
+              <button class="compare-zoom-qty-btn" data-compare-cart-plus="${state.compareZoomIdx}" ${cartFull ? 'disabled' : ''}>+</button>
+            </div>
+            ` : `
+            <button class="compare-zoom-btn" data-compare-cart="${state.compareZoomIdx}" ${cartFull ? 'disabled' : ''}>+ Cart</button>
+            `}
+            <button class="compare-zoom-btn" data-compare-list="${state.compareZoomIdx}">${isInList ? '💚 Saved' : '📋 List'}</button>
+          </div>
+        </div>
+      </div>`;
+    })() : ''}
+    ` : ''}
+
+    ${state.detailedViewOpen ? (() => {
+      const dv = item.variants[vi];
+      const dvHex = dv.hexVariated || dv.hex || item.hexBase;
+      const dvQtyInCart = state.cart.filter(c => c.id === item.id && c.variantIdx === vi).length;
+      const dvCartFull = getCartTotal() >= 40;
+      const dvInList = state.wishlists.lists.some(list => list.items.some(wi => wi.id === item.id && wi.variantIdx === vi));
+      return `<div class="compare-zoom-backdrop" data-action="close-detailed-view"></div>
+      <div class="compare-zoom-card${state.cardMotionEnabled ? ' compare-zoom-card--motion' : ''}"
+           id="detailed-view-card"
+           style="--card-bg:${thumbBgs[vi % thumbBgs.length]}">
+        <div class="compare-zoom-img">
+          <img src="${esc(dv.image)}" alt="${esc(dv.name)}">
+        </div>
+        <div class="compare-zoom-details">
+          <h3 class="compare-zoom-name">${esc(dv.name)}</h3>
+          <div class="compare-zoom-row">
+            <span class="compare-zoom-label">Color 1</span>
+            <span class="compare-zoom-value">${esc(dv.color1 || '-')}</span>
+          </div>
+          <div class="compare-zoom-row">
+            <span class="compare-zoom-label">Color 2</span>
+            <span class="compare-zoom-value">${esc(dv.color2 || '-')}</span>
+          </div>
+          <div class="compare-zoom-row">
+            <span class="compare-zoom-label">Hex</span>
+            <button class="hex-copy-badge" data-hex="${esc(dvHex)}">${esc(dvHex.slice(-6))}</button>
+          </div>
+          <div class="compare-zoom-actions">
+            ${dvQtyInCart > 0 ? `
+            <div class="compare-zoom-qty">
+              <button class="compare-zoom-qty-btn" data-detail-view-cart-minus>−</button>
+              <span class="compare-zoom-qty-val">${dvQtyInCart}</span>
+              <button class="compare-zoom-qty-btn" data-detail-view-cart-plus ${dvCartFull ? 'disabled' : ''}>+</button>
+            </div>
+            ` : `
+            <button class="compare-zoom-btn" data-action="detail-view-add-cart" ${dvCartFull ? 'disabled' : ''}>+ Cart</button>
+            `}
+            <button class="compare-zoom-btn" data-action="detail-view-add-list">${dvInList ? '💚 Saved' : '📋 List'}</button>
+          </div>
+        </div>
+      </div>`;
+    })() : ''}
   </div>`;
 }
 
@@ -1685,20 +1847,23 @@ async function renderWishlist() {
               ${list.id !== '__loved__' ? '<div class="wl-emoji-edit-badge">✎</div>' : ''}
             </div>
             <div style="flex:1;min-width:0">
-              <p style="font-size:13px;font-weight:700;margin-bottom:2px;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(list.name)}</p>
-              <p style="font-size:10px;color:var(--text-secondary)">${list.items.length} items${list.items.length > 40 ? ` · ${Math.ceil(list.items.length / 40)} orders` : ''}</p>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                <p style="font-size:13px;font-weight:700;margin-bottom:0;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">${esc(list.name)}</p>
+                ${list.id !== '__loved__' ? `
+                <div style="display:flex;gap:4px;flex-shrink:0">
+                  <button class="wl-rename-btn" data-rename-list="${esc(list.id)}" title="Rename list">✏</button>
+                  <button class="wl-dup-btn" data-dup-list="${esc(list.id)}" title="Duplicate list">⧉</button>
+                  <button class="remove-btn" data-delete-list="${esc(list.id)}">${ICONS.trash}</button>
+                </div>` : ''}
+              </div>
+              <p style="font-size:10px;color:var(--text-secondary);margin-top:2px">${list.items.length} items${list.items.length > 40 ? ` · ${Math.ceil(list.items.length / 40)} orders` : ''}</p>
               ${thumbItems.length > 0 ? `
               <div class="wl-thumb-strip">
                 ${thumbItems.map((it, i) => `<div class="wl-thumb" style="background:${data.getItemBg(i)}" data-thumb-item="${esc(it.id)}" data-thumb-vi="${it.variantIdx || 0}"></div>`).join('')}
                 ${extraCount > 0 ? `<div class="wl-thumb-extra">+${extraCount}</div>` : ''}
               </div>` : ''}
             </div>
-            ${list.id !== '__loved__' ? `
-              <div style="display:flex;gap:4px;flex-shrink:0">
-                <button class="wl-rename-btn" data-rename-list="${esc(list.id)}" title="Rename list">✏</button>
-                <button class="wl-dup-btn" data-dup-list="${esc(list.id)}" title="Duplicate list">⧉</button>
-                <button class="remove-btn" data-delete-list="${esc(list.id)}">${ICONS.trash}</button>
-              </div>` : '<div style="color:var(--text-light);font-size:14px;flex-shrink:0">›</div>'}
+            ${list.id === '__loved__' ? '<div style="color:var(--text-light);font-size:14px;flex-shrink:0">›</div>' : ''}
           </div>`;
         }).join('')}
       </div>`}
@@ -1770,6 +1935,10 @@ async function renderWishlistDetail() {
         <div style="font-size:11px;color:var(--text-secondary);margin-top:6px;line-height:1.6">Browse the catalog and tap the heart<br>to add items to this list.</div>
         <button class="cta-btn" id="start-browsing-btn" style="margin-top:20px;padding:12px 24px;border-radius:50px">Start Browsing</button>
       </div>` : `
+      ${entries.length <= 40 && entries.length > 0 ? `
+      <div style="padding:0 20px 10px;display:flex;justify-content:flex-end">
+        <button class="select-all-btn" id="wl-select-all" style="font-size:10px;font-weight:700;color:var(--pines);background:var(--tag-bg);border:none;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:'Space Mono',monospace">${state.wishlistSelected.size === entries.length ? '☑ Deselect All' : '☐ Select All'}</button>
+      </div>` : ''}
       <div style="padding:0 12px 20px" id="wishlist-items-container">
         ${groups.map((group, groupIdx) => {
           const startIdx = groupIdx * 40;
@@ -1789,11 +1958,11 @@ async function renderWishlistDetail() {
               const globalIdx = startIdx + localIdx;
               const vi = item._vi || 0;
               const isSelected = state.wishlistSelected.has(globalIdx);
-              return `<div class="wishlist-detail-row ${isSelected ? 'selected' : ''}" data-item="${esc(item.id)}" data-vi="${vi}" data-global-idx="${globalIdx}">
-                <div class="wishlist-detail-thumb" style="background:${data.getItemBg(globalIdx)}">
+              return `<div class="wishlist-detail-row ${isSelected ? 'selected' : ''}" data-global-idx="${globalIdx}">
+                <div class="wishlist-detail-thumb wl-item-link" data-item="${esc(item.id)}" data-vi="${vi}" style="background:${data.getItemBg(globalIdx)};cursor:pointer">
                   ${item.img ? `<img src="${esc(item.img)}" style="width:38px;height:38px;object-fit:contain" onerror="this.outerHTML='📦'" alt="">` : '📦'}
                 </div>
-                <div style="flex:1;min-width:0">
+                <div style="flex:1;min-width:0" class="wl-item-link" data-item="${esc(item.id)}" data-vi="${vi}" style="cursor:pointer">
                   <div style="font-size:12px;font-weight:700;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(item.n)}</div>
                   <div style="font-size:10px;color:var(--text-secondary);display:flex;align-items:center;gap:6px;margin-top:2px">
                     ${esc(item.v1)}
@@ -1934,6 +2103,19 @@ function renderSettings() {
             <span class="theme-label">System</span>
           </button>
         </div>
+      </div>
+
+      <div class="settings-card">
+        <h4 class="label-upper" style="margin-bottom:14px">🃏 Card Effects</h4>
+        <p class="text-secondary" style="font-size:11px;margin-bottom:14px">Enable interactive motion effects when viewing cards in compare mode.</p>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:12px;font-weight:700">Card Motion</span>
+          <label class="toggle-container">
+            <input type="checkbox" id="cardMotionToggle" ${state.cardMotionEnabled ? 'checked' : ''}>
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          </label>
+        </div>
+        <p class="text-secondary" style="font-size:10px;margin-top:8px">Cards move with your mouse (desktop) or device tilt (mobile)</p>
       </div>
 
       <div class="settings-card">
@@ -2323,7 +2505,7 @@ function updateDetailVariant() {
   if (!item) return;
   const vi = state.selectedVariantIdx;
   const variant = item.variants[vi] || item.variants[0];
-  const inWishlist = isInWishlist(item.id, vi);
+  const inLoved = isInLovedList(item.id, vi);
   const cartFull = getCartTotal() >= 40;
   const qtyInCart = state.cart.filter(c => c.id === item.id && c.variantIdx === vi).length;
 
@@ -2434,11 +2616,11 @@ function updateDetailVariant() {
     });
   }
 
-  // Update heart button in hero
+  // Update heart button in hero (pink only for Loved list)
   const heartBtn = app.querySelector('.detail-hero-orbit [data-heart]');
   if (heartBtn) {
     heartBtn.dataset.heartVi = vi;
-    heartBtn.innerHTML = ICONS.heartLg(inWishlist);
+    heartBtn.innerHTML = ICONS.heartLg(inLoved);
   }
 
   // Update URL hash with new variant
@@ -2708,6 +2890,42 @@ function hapticTick() {
   if (navigator.vibrate) navigator.vibrate(8);
 }
 
+// Fly to cart animation
+function flyToCart(sourceEl, targetEl) {
+  if (!sourceEl || !targetEl) return;
+
+  const sourceRect = sourceEl.getBoundingClientRect();
+  const targetRect = targetEl.getBoundingClientRect();
+
+  // Clone the image
+  const flyingEl = document.createElement('img');
+  flyingEl.src = sourceEl.src;
+  flyingEl.className = 'flying-item';
+  flyingEl.style.left = `${sourceRect.left}px`;
+  flyingEl.style.top = `${sourceRect.top}px`;
+  flyingEl.style.width = `${sourceRect.width}px`;
+  flyingEl.style.height = `${sourceRect.height}px`;
+  document.body.appendChild(flyingEl);
+
+  // Calculate the distance to fly
+  const dx = targetRect.left + targetRect.width / 2 - (sourceRect.left + sourceRect.width / 2);
+  const dy = targetRect.top + targetRect.height / 2 - (sourceRect.top + sourceRect.height / 2);
+
+  // Animate
+  requestAnimationFrame(() => {
+    flyingEl.style.transition = 'all 0.45s cubic-bezier(0.4, 0, 0.2, 1)';
+    flyingEl.style.transform = `translate(${dx}px, ${dy}px) scale(0.2)`;
+    flyingEl.style.opacity = '0.6';
+  });
+
+  // Clean up and pulse the cart icon
+  setTimeout(() => {
+    flyingEl.remove();
+    targetEl.classList.add('cart-pulse');
+    setTimeout(() => targetEl.classList.remove('cart-pulse'), 250);
+  }, 450);
+}
+
 // Surgical update: reposition orbit items + update detail fields + hero bg
 function updateOrbitAndDetail() {
   const item = state.itemDetail;
@@ -2797,7 +3015,7 @@ function updateOrbitAndDetail() {
   if (progressText) progressText.textContent = `${vi + 1} / ${total}`;
 
   // Update variant name in title area
-  const variantNameEl = document.querySelector('.detail-variant-name');
+  const variantNameEl = document.querySelector('.detail-title-variant');
   if (variantNameEl) {
     variantNameEl.textContent = item.variants[vi].name;
   }
@@ -2873,33 +3091,54 @@ function initDetailParallax() {
   }
 }
 
-// Update orbit heart dots after wishlist changes
+// Update orbit heart/list dots after wishlist changes
 function refreshOrbitHeartDots() {
   if (!state.itemDetail) return;
+  const itemId = state.itemDetail.id;
+
   document.querySelectorAll('.variant-orbit-item').forEach((el) => {
     const variantIdx = parseInt(el.dataset.variantOrbit, 10);
-    const isWish = state.wishlists.lists.some(list =>
-      list.items.some(wi => wi.id === state.itemDetail.id && wi.variantIdx === variantIdx)
-    );
-    const existing = el.querySelector('.variant-orbit-heart-dot');
-    if (isWish && !existing) {
+    const inLoved = isInLovedList(itemId, variantIdx);
+    const inCustom = isInCustomList(itemId, variantIdx);
+
+    // Handle loved heart dot
+    const heartDot = el.querySelector('.variant-orbit-heart-dot');
+    if (inLoved && !heartDot) {
       el.insertAdjacentHTML('afterbegin', '<div class="variant-orbit-heart-dot">♥</div>');
-    } else if (!isWish && existing) {
-      existing.remove();
+    } else if (!inLoved && heartDot) {
+      heartDot.remove();
+    }
+
+    // Handle custom list dot
+    const listDot = el.querySelector('.variant-orbit-list-dot');
+    if (inCustom && !listDot) {
+      el.insertAdjacentHTML('afterbegin', '<div class="variant-orbit-list-dot">📋</div>');
+    } else if (!inCustom && listDot) {
+      listDot.remove();
     }
   });
-  // Also update drawer heart dots
+
+  // Also update drawer heart/list dots
   document.querySelectorAll('.variant-drawer-row').forEach((row, idx) => {
     const thumb = row.querySelector('.variant-drawer-thumb');
     if (!thumb) return;
-    const isWish = state.wishlists.lists.some(list =>
-      list.items.some(wi => wi.id === state.itemDetail.id && wi.variantIdx === idx)
-    );
-    const existing = thumb.querySelector('.variant-drawer-heart-dot');
-    if (isWish && !existing) {
+    const inLoved = isInLovedList(itemId, idx);
+    const inCustom = isInCustomList(itemId, idx);
+
+    // Handle loved heart dot
+    const heartDot = thumb.querySelector('.variant-drawer-heart-dot');
+    if (inLoved && !heartDot) {
       thumb.insertAdjacentHTML('beforeend', '<div class="variant-drawer-heart-dot">♥</div>');
-    } else if (!isWish && existing) {
-      existing.remove();
+    } else if (!inLoved && heartDot) {
+      heartDot.remove();
+    }
+
+    // Handle custom list dot
+    const listDot = thumb.querySelector('.variant-drawer-list-dot');
+    if (inCustom && !listDot) {
+      thumb.insertAdjacentHTML('beforeend', '<div class="variant-drawer-list-dot">📋</div>');
+    } else if (!inCustom && listDot) {
+      listDot.remove();
     }
   });
 }
@@ -3552,6 +3791,9 @@ function attachEvents() {
       state.itemDetail = null;
       state.detailHistory = [];
       state._savedDetailState = null; // Clear saved detail state on explicit exit
+      state.compareModalOpen = false;
+      state.compareVariants = [];
+      state.compareZoomIdx = null;
       state.searchOpen = true;
       state.searchQuery = state.savedSearch.query;
       state.searchResults = state.savedSearch.results;
@@ -3568,6 +3810,9 @@ function attachEvents() {
       state.itemDetail = null;
       state.previousPage = null;
       state._savedDetailState = null; // Clear saved detail state on explicit exit
+      state.compareModalOpen = false;
+      state.compareVariants = [];
+      state.compareZoomIdx = null;
       state._pageEnter = true;
       await render();
       window.scrollTo(0, state.scrollY);
@@ -3711,6 +3956,326 @@ function attachEvents() {
     el.addEventListener('click', () => {
       document.querySelector('.variant-drawer')?.classList.remove('variant-drawer--open');
       document.querySelector('.variant-drawer-backdrop')?.classList.remove('variant-drawer-backdrop--open');
+    });
+  });
+
+  // Compare modal open/close
+  document.querySelectorAll('[data-action="open-compare"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.compareModalOpen = true;
+      state.compareVariants = []; // Start with empty selection - let user choose
+      state.compareZoomIdx = null;
+      render();
+    });
+  });
+  document.querySelectorAll('[data-action="close-compare"]').forEach(el => {
+    el.addEventListener('click', () => {
+      state.compareModalOpen = false;
+      state.compareVariants = [];
+      state.compareZoomIdx = null;
+      render();
+    });
+  });
+
+  // Compare zoom card open/close
+  document.querySelectorAll('[data-compare-zoom]').forEach(card => {
+    card.addEventListener('click', () => {
+      const idx = parseInt(card.dataset.compareZoom);
+      state.compareZoomIdx = idx;
+      render();
+      // Setup motion tracking after render
+      setTimeout(() => initCompareCardMotion(), 50);
+    });
+  });
+  document.querySelectorAll('[data-action="close-zoom"]').forEach(el => {
+    el.addEventListener('click', () => {
+      state.compareZoomIdx = null;
+      render();
+    });
+  });
+
+  // Compare variant toggle
+  document.querySelectorAll('[data-compare-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.compareToggle);
+      if (state.compareVariants.includes(idx)) {
+        state.compareVariants = state.compareVariants.filter(i => i !== idx);
+      } else if (state.compareVariants.length < 5) {
+        state.compareVariants.push(idx);
+      }
+      render();
+    });
+  });
+
+  // Compare add to cart - card persists, with bounce animation and fly effect
+  document.querySelectorAll('[data-compare-cart]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.compareCart);
+      const item = state.itemDetail;
+      if (!item) return;
+      if (getCartTotal() >= 40) {
+        showToast('Cart is full (40 items)');
+        return;
+      }
+      const variant = item.variants[idx];
+      state.cart.push({
+        id: item.id,
+        variantIdx: idx,
+        name: item.name,
+        variant: variant.name,
+        hex: variant.hexVariated || variant.hex || item.hexBase,
+        img: variant.image,
+      });
+      storage.setCart(state.cart);
+      hapticTick();
+
+      // Bounce the card
+      const card = document.getElementById('compare-zoom-card');
+      if (card) {
+        card.classList.add('compare-zoom-card--bounce');
+        setTimeout(() => card.classList.remove('compare-zoom-card--bounce'), 200);
+      }
+
+      // Fly to cart animation
+      const cardImg = card?.querySelector('.compare-zoom-img img');
+      const cartNav = document.querySelector('[data-nav="cart"]');
+      if (cardImg && cartNav) {
+        flyToCart(cardImg, cartNav);
+      }
+
+      showToast(`Added ${item.name} (${variant.name}) to cart`);
+      // Don't close zoom - just re-render to update button state
+      render();
+      // Re-init motion after render
+      setTimeout(() => initCompareCardMotion(), 50);
+    });
+  });
+
+  // Compare add to list - opens list picker on top of zoom card
+  document.querySelectorAll('[data-compare-list]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.compareList);
+      const item = state.itemDetail;
+      if (!item) return;
+      const variant = item.variants[idx];
+      state.listPickerItem = {
+        id: item.id,
+        variantIdx: idx,
+        name: item.name,
+        variant: variant.name,
+        img: variant.image,
+      };
+      // Keep zoom card open - list picker appears on top
+      render();
+    });
+  });
+
+  // Compare cart quantity plus
+  document.querySelectorAll('[data-compare-cart-plus]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.compareCartPlus);
+      const item = state.itemDetail;
+      if (!item || getCartTotal() >= 40) return;
+      const variant = item.variants[idx];
+      state.cart.push({
+        id: item.id,
+        variantIdx: idx,
+        name: item.name,
+        variant: variant.name,
+        hex: variant.hexVariated || variant.hex || item.hexBase,
+        img: variant.image,
+      });
+      storage.setCart(state.cart);
+      hapticTick();
+
+      // Bounce the card
+      const card = document.getElementById('compare-zoom-card');
+      if (card) {
+        card.classList.add('compare-zoom-card--bounce');
+        setTimeout(() => card.classList.remove('compare-zoom-card--bounce'), 200);
+      }
+
+      // Fly to cart
+      const cardImg = card?.querySelector('.compare-zoom-img img');
+      const cartNav = document.querySelector('[data-nav="cart"]');
+      if (cardImg && cartNav) flyToCart(cardImg, cartNav);
+
+      render();
+      setTimeout(() => initCompareCardMotion(), 50);
+    });
+  });
+
+  // Compare cart quantity minus
+  document.querySelectorAll('[data-compare-cart-minus]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.compareCartMinus);
+      const item = state.itemDetail;
+      if (!item) return;
+
+      // Remove one instance from cart
+      const cartIdx = state.cart.findIndex(c => c.id === item.id && c.variantIdx === idx);
+      if (cartIdx !== -1) {
+        state.cart.splice(cartIdx, 1);
+        storage.setCart(state.cart);
+        hapticTick();
+      }
+
+      render();
+      setTimeout(() => initCompareCardMotion(), 50);
+    });
+  });
+
+  // ─── Detailed View Card ───
+  // Open detailed view
+  document.querySelectorAll('[data-action="open-detailed-view"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.detailedViewOpen = true;
+      render();
+      setTimeout(() => initDetailedViewCardMotion(), 50);
+    });
+  });
+
+  // Close detailed view
+  document.querySelectorAll('[data-action="close-detailed-view"]').forEach(el => {
+    el.addEventListener('click', () => {
+      state.detailedViewOpen = false;
+      render();
+    });
+  });
+
+  // Detailed view add to cart
+  document.querySelectorAll('[data-action="detail-view-add-cart"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = state.itemDetail;
+      if (!item || getCartTotal() >= 40) return;
+      const vi = state.selectedVariantIdx;
+      const variant = item.variants[vi];
+      state.cart.push({
+        id: item.id,
+        variantIdx: vi,
+        name: item.name,
+        variant: variant.name,
+        hex: variant.hexVariated || variant.hex || item.hexBase,
+        img: variant.image,
+      });
+      storage.setCart(state.cart);
+      hapticTick();
+
+      // Bounce the card
+      const card = document.getElementById('detailed-view-card');
+      if (card) {
+        card.classList.add('compare-zoom-card--bounce');
+        setTimeout(() => card.classList.remove('compare-zoom-card--bounce'), 200);
+      }
+
+      // Fly to cart
+      const cardImg = card?.querySelector('.compare-zoom-img img');
+      const cartNav = document.querySelector('[data-nav="cart"]');
+      if (cardImg && cartNav) flyToCart(cardImg, cartNav);
+
+      showToast(`Added ${item.name} (${variant.name}) to cart`);
+      render();
+      setTimeout(() => initDetailedViewCardMotion(), 50);
+    });
+  });
+
+  // Detailed view cart quantity plus
+  document.querySelectorAll('[data-detail-view-cart-plus]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = state.itemDetail;
+      if (!item || getCartTotal() >= 40) return;
+      const vi = state.selectedVariantIdx;
+      const variant = item.variants[vi];
+      state.cart.push({
+        id: item.id,
+        variantIdx: vi,
+        name: item.name,
+        variant: variant.name,
+        hex: variant.hexVariated || variant.hex || item.hexBase,
+        img: variant.image,
+      });
+      storage.setCart(state.cart);
+      hapticTick();
+
+      // Bounce the card
+      const card = document.getElementById('detailed-view-card');
+      if (card) {
+        card.classList.add('compare-zoom-card--bounce');
+        setTimeout(() => card.classList.remove('compare-zoom-card--bounce'), 200);
+      }
+
+      // Fly to cart
+      const cardImg = card?.querySelector('.compare-zoom-img img');
+      const cartNav = document.querySelector('[data-nav="cart"]');
+      if (cardImg && cartNav) flyToCart(cardImg, cartNav);
+
+      render();
+      setTimeout(() => initDetailedViewCardMotion(), 50);
+    });
+  });
+
+  // Detailed view cart quantity minus
+  document.querySelectorAll('[data-detail-view-cart-minus]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = state.itemDetail;
+      if (!item) return;
+      const vi = state.selectedVariantIdx;
+
+      // Remove one instance from cart
+      const cartIdx = state.cart.findIndex(c => c.id === item.id && c.variantIdx === vi);
+      if (cartIdx !== -1) {
+        state.cart.splice(cartIdx, 1);
+        storage.setCart(state.cart);
+        hapticTick();
+      }
+
+      render();
+      setTimeout(() => initDetailedViewCardMotion(), 50);
+    });
+  });
+
+  // Detailed view add to list
+  document.querySelectorAll('[data-action="detail-view-add-list"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = state.itemDetail;
+      if (!item) return;
+      const vi = state.selectedVariantIdx;
+      const variant = item.variants[vi];
+      state.listPickerItem = {
+        id: item.id,
+        variantIdx: vi,
+        name: item.name,
+        variant: variant.name,
+        img: variant.image,
+      };
+      // Keep detailed view open - list picker appears on top
+      render();
+    });
+  });
+
+  // Compare carousel scroll tracking for dots
+  const compareCarousel = document.getElementById('compare-carousel');
+  if (compareCarousel) {
+    compareCarousel.addEventListener('scroll', () => {
+      const scrollLeft = compareCarousel.scrollLeft;
+      const cardWidth = 152; // 140px card + 12px gap
+      const activeIdx = Math.round(scrollLeft / cardWidth);
+      const dots = document.querySelectorAll('.compare-carousel-dot');
+      dots.forEach((dot, i) => {
+        dot.classList.toggle('active', i === activeIdx);
+      });
+    });
+  }
+
+  // Compare carousel dot clicks
+  document.querySelectorAll('[data-compare-dot]').forEach(dot => {
+    dot.addEventListener('click', () => {
+      const idx = parseInt(dot.dataset.compareDot);
+      const carousel = document.getElementById('compare-carousel');
+      if (carousel) {
+        const cardWidth = 152;
+        carousel.scrollTo({ left: idx * cardWidth, behavior: 'smooth' });
+      }
     });
   });
 
@@ -4094,6 +4659,7 @@ function attachEvents() {
       if (e.target.closest('[data-delete-list]')) return;
       if (e.target.closest('[data-edit-emoji]')) return;
       if (e.target.closest('[data-dup-list]')) return;
+      if (e.target.closest('[data-rename-list]')) return;
       state.viewingListId = btn.dataset.viewList;
       render();
     });
@@ -4879,6 +5445,39 @@ function attachEvents() {
     render();
   });
 
+  // Select All button for wishlist (when <= 40 items)
+  const wlSelectAll = document.getElementById('wl-select-all');
+  if (wlSelectAll) wlSelectAll.addEventListener('click', () => {
+    const list = state.wishlists.lists.find(l => l.id === state.viewingListId);
+    if (!list) return;
+    const totalItems = list.items.length;
+
+    // Toggle: if all selected, deselect all; otherwise select all
+    if (state.wishlistSelected.size === totalItems) {
+      state.wishlistSelected.clear();
+    } else {
+      for (let i = 0; i < totalItems; i++) {
+        state.wishlistSelected.add(i);
+      }
+    }
+    render();
+  });
+
+  // Wishlist item link clicks (name/image) - navigate to item detail
+  document.querySelectorAll('.wl-item-link').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const itemId = el.dataset.item;
+      const vi = parseInt(el.dataset.vi) || 0;
+      if (itemId) {
+        state.selectedVariantIdx = vi;
+        state.page = 'detail';
+        state._pageEnter = true;
+        loadItemDetail(itemId);
+      }
+    });
+  });
+
   // Export modal - close button
   const closeExportModal = document.getElementById('close-export-modal');
   if (closeExportModal) closeExportModal.addEventListener('click', () => {
@@ -5142,6 +5741,13 @@ function attachEvents() {
     if (volumeLabel) volumeLabel.textContent = Math.round(state.soundVolume * 100) + '%';
   });
 
+  // Card motion toggle
+  const cardMotionToggle = document.getElementById('cardMotionToggle');
+  if (cardMotionToggle) cardMotionToggle.addEventListener('change', (e) => {
+    state.cardMotionEnabled = e.target.checked;
+    storage.setCardMotionEnabled(state.cardMotionEnabled);
+  });
+
   // Ad toggles
   const adsToggle = document.getElementById('adsToggle');
   const adOptionsGroup = document.getElementById('adOptionsGroup');
@@ -5398,17 +6004,19 @@ let _flyAnimRect = null;
 
 // ─── Actions ───
 async function toggleWishlist(itemId, variantIdx = 0) {
-  const wasIn = isInWishlist(itemId, variantIdx);
-  if (wasIn) {
-    // Remove from ALL lists
-    state.wishlists.lists.forEach(list => {
-      list.items = list.items.filter(w => !(w.id === itemId && w.variantIdx === variantIdx));
-    });
+  // Check if in Loved list specifically (not any list) to determine toggle action
+  const wasInLoved = isInLovedList(itemId, variantIdx);
+  if (wasInLoved) {
+    // Remove from Loved list only
+    const loved = state.wishlists.lists.find(l => l.id === '__loved__');
+    if (loved) {
+      loved.items = loved.items.filter(w => !(w.id === itemId && w.variantIdx === variantIdx));
+    }
     storage.setWishlists(state.wishlists);
     NookSounds.play('heartRemove');
     showWishlistToast(itemId, variantIdx, 'Loved Items', true);
   } else {
-    // Add to Loved Items by default (single instance only)
+    // Add to Loved Items (single instance only)
     const loved = state.wishlists.lists.find(l => l.id === '__loved__');
     if (!loved.items.some(w => w.id === itemId && w.variantIdx === variantIdx)) {
       loved.items.push({ id: itemId, variantIdx });
@@ -5417,6 +6025,8 @@ async function toggleWishlist(itemId, variantIdx = 0) {
     NookSounds.play('heartAdd');
     showWishlistToast(itemId, variantIdx, 'Loved Items');
   }
+  // Track the correct state for UI updates
+  const wasIn = wasInLoved;
 
   if (state.searchOpen) {
     // Surgical update: toggle heart icons without full re-render to prevent flash
@@ -5824,6 +6434,179 @@ async function init() {
   initOfflineIndicator();
 }
 
+// ─── Compare Card Motion ───
+let gyroPermissionGranted = false;
+let cardMotionCleanup = null;
+
+function initCompareCardMotion() {
+  const card = document.getElementById('compare-zoom-card');
+  if (!card || !state.cardMotionEnabled) return;
+
+  // Clean up any previous listeners
+  if (cardMotionCleanup) cardMotionCleanup();
+
+  // Mouse motion on desktop - only react when mouse is within proximity
+  const PROXIMITY_THRESHOLD = 200; // px distance to start tracking
+  let isInProximity = false;
+
+  const handleMouseMove = (e) => {
+    if (!state.cardMotionEnabled) return;
+    const rect = card.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    // Calculate distance from mouse to card center
+    const dx = e.clientX - centerX;
+    const dy = e.clientY - centerY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // Only track when mouse is fairly close to the card
+    const cardRadius = Math.max(rect.width, rect.height) / 2;
+    if (distance > cardRadius + PROXIMITY_THRESHOLD) {
+      // Mouse is far away - card stays flat
+      if (isInProximity) {
+        isInProximity = false;
+        card.style.transform = 'translate(-50%, -50%) perspective(1000px) rotateX(0deg) rotateY(0deg)';
+      }
+      return;
+    }
+
+    isInProximity = true;
+    // Scale rotation based on proximity - closer = more responsive
+    const proximityFactor = 1 - Math.max(0, (distance - cardRadius) / PROXIMITY_THRESHOLD);
+    const rotateY = ((dx) / (rect.width / 2)) * 8 * proximityFactor;
+    const rotateX = -((dy) / (rect.height / 2)) * 8 * proximityFactor;
+    card.style.transform = `translate(-50%, -50%) perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+  };
+
+  const handleMouseLeave = () => {
+    isInProximity = false;
+    card.style.transform = 'translate(-50%, -50%) perspective(1000px) rotateX(0deg) rotateY(0deg)';
+  };
+
+  document.addEventListener('mousemove', handleMouseMove);
+  card.addEventListener('mouseleave', handleMouseLeave);
+
+  let orientationHandler = null;
+
+  // Gyro motion on mobile
+  if (window.DeviceOrientationEvent && 'ontouchstart' in window) {
+    orientationHandler = (e) => {
+      if (!state.cardMotionEnabled || !gyroPermissionGranted) return;
+      const rotateX = Math.max(-10, Math.min(10, (e.beta - 45) * 0.3));
+      const rotateY = Math.max(-10, Math.min(10, e.gamma * 0.3));
+      card.style.transform = `translate(-50%, -50%) perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    };
+
+    // Request permission on iOS 13+
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission()
+        .then(permission => {
+          if (permission === 'granted') {
+            gyroPermissionGranted = true;
+            window.addEventListener('deviceorientation', orientationHandler);
+          }
+        })
+        .catch(() => {});
+    } else {
+      gyroPermissionGranted = true;
+      window.addEventListener('deviceorientation', orientationHandler);
+    }
+  }
+
+  // Store cleanup function
+  cardMotionCleanup = () => {
+    document.removeEventListener('mousemove', handleMouseMove);
+    card.removeEventListener('mouseleave', handleMouseLeave);
+    if (orientationHandler) {
+      window.removeEventListener('deviceorientation', orientationHandler);
+    }
+  };
+}
+
+// ─── Detailed View Card Motion ───
+let detailedViewMotionCleanup = null;
+
+function initDetailedViewCardMotion() {
+  const card = document.getElementById('detailed-view-card');
+  if (!card || !state.cardMotionEnabled) return;
+
+  // Clean up any previous listeners
+  if (detailedViewMotionCleanup) detailedViewMotionCleanup();
+
+  // Mouse motion on desktop - only react when mouse is within proximity
+  const PROXIMITY_THRESHOLD = 200;
+  let isInProximity = false;
+
+  const handleMouseMove = (e) => {
+    if (!state.cardMotionEnabled) return;
+    const rect = card.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    const dx = e.clientX - centerX;
+    const dy = e.clientY - centerY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    const cardRadius = Math.max(rect.width, rect.height) / 2;
+    if (distance > cardRadius + PROXIMITY_THRESHOLD) {
+      if (isInProximity) {
+        isInProximity = false;
+        card.style.transform = 'translate(-50%, -50%) perspective(1000px) rotateX(0deg) rotateY(0deg)';
+      }
+      return;
+    }
+
+    isInProximity = true;
+    const proximityFactor = 1 - Math.max(0, (distance - cardRadius) / PROXIMITY_THRESHOLD);
+    const rotateY = ((dx) / (rect.width / 2)) * 8 * proximityFactor;
+    const rotateX = -((dy) / (rect.height / 2)) * 8 * proximityFactor;
+    card.style.transform = `translate(-50%, -50%) perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+  };
+
+  const handleMouseLeave = () => {
+    isInProximity = false;
+    card.style.transform = 'translate(-50%, -50%) perspective(1000px) rotateX(0deg) rotateY(0deg)';
+  };
+
+  document.addEventListener('mousemove', handleMouseMove);
+  card.addEventListener('mouseleave', handleMouseLeave);
+
+  let orientationHandler = null;
+
+  // Gyro motion on mobile
+  if (window.DeviceOrientationEvent && 'ontouchstart' in window) {
+    orientationHandler = (e) => {
+      if (!state.cardMotionEnabled || !gyroPermissionGranted) return;
+      const rotateX = Math.max(-10, Math.min(10, (e.beta - 45) * 0.3));
+      const rotateY = Math.max(-10, Math.min(10, e.gamma * 0.3));
+      card.style.transform = `translate(-50%, -50%) perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    };
+
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission()
+        .then(permission => {
+          if (permission === 'granted') {
+            gyroPermissionGranted = true;
+            window.addEventListener('deviceorientation', orientationHandler);
+          }
+        })
+        .catch(() => {});
+    } else {
+      gyroPermissionGranted = true;
+      window.addEventListener('deviceorientation', orientationHandler);
+    }
+  }
+
+  detailedViewMotionCleanup = () => {
+    document.removeEventListener('mousemove', handleMouseMove);
+    card.removeEventListener('mouseleave', handleMouseLeave);
+    if (orientationHandler) {
+      window.removeEventListener('deviceorientation', orientationHandler);
+    }
+  };
+}
+
 // ─── Keyboard Shortcuts ───
 function initKeyboardShortcuts() {
   document.addEventListener('keydown', (e) => {
@@ -5855,6 +6638,23 @@ function initKeyboardShortcuts() {
       }
       if (state.variantDrawerOpen) {
         state.variantDrawerOpen = false;
+        render();
+        return;
+      }
+      if (state.detailedViewOpen) {
+        state.detailedViewOpen = false;
+        render();
+        return;
+      }
+      if (state.compareZoomIdx !== null) {
+        state.compareZoomIdx = null;
+        render();
+        return;
+      }
+      if (state.compareModalOpen) {
+        state.compareModalOpen = false;
+        state.compareVariants = [];
+        state.compareZoomIdx = null;
         render();
         return;
       }

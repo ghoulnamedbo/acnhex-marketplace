@@ -18,6 +18,7 @@ const KEYS = {
   theme: 'acnhex_theme',
   recentlyViewed: 'acnhex_recent',
   orderHistory: 'acnhex_order_history',
+  cardMotionEnabled: 'acnhex_card_motion',
 };
 
 function get(key, fallback) {
@@ -60,6 +61,9 @@ export function setRecentlyViewed(items) { set(KEYS.recentlyViewed, items); }
 
 export function getOrderHistory() { return get(KEYS.orderHistory, []); }
 export function setOrderHistory(orders) { set(KEYS.orderHistory, orders); }
+
+export function getCardMotionEnabled() { return get(KEYS.cardMotionEnabled, true); }
+export function setCardMotionEnabled(v) { set(KEYS.cardMotionEnabled, v); }
 
 export function clearAll() {
   Object.values(KEYS).forEach(k => localStorage.removeItem(k));
