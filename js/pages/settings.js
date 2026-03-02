@@ -96,7 +96,7 @@ export function renderSettings(state) {
             <span class="toggle-track"><span class="toggle-thumb"></span></span>
           </label>
         </div>
-        <p class="text-secondary mt-8" style="font-size:10px">Cards move with your mouse (desktop) or device tilt (mobile)</p>
+        <p class="text-secondary mt-8" style="font-size:10px">Cards move with your mouse on desktop</p>
       </div>
 
       <div class="settings-card">

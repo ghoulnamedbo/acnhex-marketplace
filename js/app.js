@@ -2126,7 +2126,7 @@ function _localRenderSettings() {
             <span class="toggle-track"><span class="toggle-thumb"></span></span>
           </label>
         </div>
-        <p class="text-secondary" style="font-size:10px;margin-top:8px">Cards move with your mouse (desktop) or device tilt (mobile)</p>
+        <p class="text-secondary" style="font-size:10px;margin-top:8px">Cards move with your mouse on desktop</p>
       </div>
 
       <div class="settings-card">
@@ -3097,17 +3097,8 @@ function initDetailParallax() {
         if (img) img.style.transform = `translate(${x}px, ${y}px)`;
       }
     });
-  } else {
-    window.addEventListener('deviceorientation', (e) => {
-      const x = Math.max(-12, Math.min(12, (e.gamma || 0) * 0.4));
-      const y = Math.max(-8, Math.min(8, (e.beta || 0) * 0.25 - 10));
-      const active = document.querySelector('.variant-orbit-item--active');
-      if (active) {
-        const img = active.querySelector('img');
-        if (img) img.style.transform = `translate(${x}px, ${y}px)`;
-      }
-    });
   }
+  // Mobile gyro effect removed - was too jittery
 }
 
 // Update orbit heart/list dots after wishlist changes
@@ -6469,7 +6460,6 @@ async function init() {
 }
 
 // ─── Compare Card Motion ───
-let gyroPermissionGranted = false;
 let cardMotionCleanup = null;
 
 function initCompareCardMotion() {
@@ -6521,40 +6511,12 @@ function initCompareCardMotion() {
   document.addEventListener('mousemove', handleMouseMove);
   card.addEventListener('mouseleave', handleMouseLeave);
 
-  let orientationHandler = null;
-
-  // Gyro motion on mobile
-  if (window.DeviceOrientationEvent && 'ontouchstart' in window) {
-    orientationHandler = (e) => {
-      if (!state.cardMotionEnabled || !gyroPermissionGranted) return;
-      const rotateX = Math.max(-10, Math.min(10, (e.beta - 45) * 0.3));
-      const rotateY = Math.max(-10, Math.min(10, e.gamma * 0.3));
-      card.style.transform = `translate(-50%, -50%) perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-    };
-
-    // Request permission on iOS 13+
-    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-      DeviceOrientationEvent.requestPermission()
-        .then(permission => {
-          if (permission === 'granted') {
-            gyroPermissionGranted = true;
-            window.addEventListener('deviceorientation', orientationHandler);
-          }
-        })
-        .catch(() => {});
-    } else {
-      gyroPermissionGranted = true;
-      window.addEventListener('deviceorientation', orientationHandler);
-    }
-  }
+  // Mobile gyro effect removed - was too jittery
 
   // Store cleanup function
   cardMotionCleanup = () => {
     document.removeEventListener('mousemove', handleMouseMove);
     card.removeEventListener('mouseleave', handleMouseLeave);
-    if (orientationHandler) {
-      window.removeEventListener('deviceorientation', orientationHandler);
-    }
   };
 }
 
@@ -6606,38 +6568,11 @@ function initDetailedViewCardMotion() {
   document.addEventListener('mousemove', handleMouseMove);
   card.addEventListener('mouseleave', handleMouseLeave);
 
-  let orientationHandler = null;
-
-  // Gyro motion on mobile
-  if (window.DeviceOrientationEvent && 'ontouchstart' in window) {
-    orientationHandler = (e) => {
-      if (!state.cardMotionEnabled || !gyroPermissionGranted) return;
-      const rotateX = Math.max(-10, Math.min(10, (e.beta - 45) * 0.3));
-      const rotateY = Math.max(-10, Math.min(10, e.gamma * 0.3));
-      card.style.transform = `translate(-50%, -50%) perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-    };
-
-    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-      DeviceOrientationEvent.requestPermission()
-        .then(permission => {
-          if (permission === 'granted') {
-            gyroPermissionGranted = true;
-            window.addEventListener('deviceorientation', orientationHandler);
-          }
-        })
-        .catch(() => {});
-    } else {
-      gyroPermissionGranted = true;
-      window.addEventListener('deviceorientation', orientationHandler);
-    }
-  }
+  // Mobile gyro effect removed - was too jittery
 
   detailedViewMotionCleanup = () => {
     document.removeEventListener('mousemove', handleMouseMove);
     card.removeEventListener('mouseleave', handleMouseLeave);
-    if (orientationHandler) {
-      window.removeEventListener('deviceorientation', orientationHandler);
-    }
   };
 }
 
