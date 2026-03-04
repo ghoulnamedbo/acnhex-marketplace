@@ -29,6 +29,7 @@ export function renderCart(state) {
   const prefix = state.prefix;
   const total = getCartTotal(state);
   const hexes = cart.map(c => c.hex);
+  const uniqueItems = new Set(cart.map(c => `${c.id}_${c.variantIdx ?? 0}`)).size;
 
   return `<div class="page cart-page">
     <!-- Ledger Header -->
@@ -78,21 +79,26 @@ export function renderCart(state) {
         ${cart.map((item, idx) => `
           <div class="ledger-row" style="animation-delay:${idx * 0.07}s" data-cart-row="${idx}">
             <div class="ledger-num">${String(idx + 1).padStart(2, '0')}</div>
-            <div class="ledger-thumb" style="background:${data.getItemBg(idx)}">
-              ${item.img ? `<img src="${esc(item.img)}" onerror="this.outerHTML='📦'" alt="">` : '📦'}
-            </div>
-            <div class="ledger-info">
-              <div class="ledger-item-name">${esc(item.name)}</div>
-              <div class="ledger-item-meta">
-                ${esc(item.variant)}
-                <span class="ledger-dot">·</span>
-                <code class="ledger-hex-pill">${esc(getShortHex(item.hex))}</code>
+            <div class="ledger-row-link" data-cart-item-id="${esc(item.id)}" data-cart-item-vi="${item.variantIdx ?? 0}">
+              <div class="ledger-thumb" style="background:${data.getItemBg(idx)}">
+                ${item.img ? `<img src="${esc(item.img)}" onerror="this.outerHTML='📦'" alt="">` : '📦'}
+              </div>
+              <div class="ledger-info">
+                <div class="ledger-item-name">${esc(item.name)}</div>
+                <div class="ledger-item-meta">
+                  ${esc(item.variant)}
+                  <span class="ledger-dot">·</span>
+                  <code class="ledger-hex-pill">${esc(getShortHex(item.hex))}</code>
+                </div>
               </div>
             </div>
             <button class="ledger-dupe-btn" data-dupe-idx="${idx}" ${getCartTotal(state) >= 40 ? 'disabled' : ''}>+</button>
             <button class="ledger-remove-btn" data-remove-idx="${idx}">✕</button>
           </div>`).join('')}
       </div>
+
+      <!-- Order Summary -->
+      <div class="cart-summary-line">${uniqueItems} unique item${uniqueItems !== 1 ? 's' : ''}, ${total} total</div>
 
       <!-- Tear Line -->
       <div class="tear-line">

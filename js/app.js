@@ -452,12 +452,14 @@ async function _localRenderRecentlyViewed() {
       const hex = variant.hexVariated || variant.hex || item.hexBase;
       const idx = cards.length;
       const bg = data.getItemBg(idx);
+      const qtyInCart = getCartQtyForItem(entry.id, vi);
 
       // Use same structure as item cards
       cards.push(`<div class="item-card recent-item-card" data-item="${esc(entry.id)}" data-vi="${vi}">
         <div class="item-thumb" style="background:${bg}">
           ${variant.image ? `<img src="${esc(variant.image)}" loading="lazy" onerror="this.outerHTML='<span class=emoji-fallback>📦</span>'" alt="">` : '<span class="emoji-fallback">📦</span>'}
           <button class="heart-btn" data-heart="${esc(entry.id)}" data-heart-vi="${vi}">${ICONS.heart(inWL)}</button>
+          ${qtyInCart > 0 ? '<span class="in-cart-dot"></span>' : ''}
         </div>
         <div class="item-info">
           <p class="item-name">${esc(item.name)}</p>
@@ -684,6 +686,7 @@ function _localRenderItemCard(item, idx) {
     <div class="item-thumb" style="background:${bg}">
       ${item.img ? `<img src="${esc(item.img)}" loading="lazy" onerror="this.outerHTML='<span class=emoji-fallback>📦</span>'" alt="">` : '<span class="emoji-fallback">📦</span>'}
       <button class="heart-btn" data-heart="${esc(item.id)}" data-heart-vi="${vi}">${ICONS.heart(inLoved)}</button>
+      ${qtyInCart > 0 ? '<span class="in-cart-dot"></span>' : ''}
     </div>
     <div class="item-info">
       <p class="item-name">${esc(item.n)}</p>
@@ -4483,6 +4486,20 @@ function attachEvents() {
         storage.setCart(state.cart);
         render();
       }
+    });
+  });
+
+  // Cart item tap to view detail
+  app.querySelectorAll('.ledger-row-link[data-cart-item-id]').forEach(link => {
+    link.addEventListener('click', () => {
+      const itemId = link.dataset.cartItemId;
+      const vi = parseInt(link.dataset.cartItemVi) || 0;
+      state.selectedItemId = itemId;
+      state.selectedVariantIdx = vi;
+      state.previousPage = 'cart';
+      state.page = 'detail';
+      state._pageEnter = true;
+      loadItemDetail(itemId);
     });
   });
 

@@ -1202,6 +1202,21 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
 }
 .heart-btn:hover { transform: scale(1.1); background: rgba(255,255,255,0.95); }
 .heart-btn:active { transform: scale(0.95); opacity: 0.85; }
+.in-cart-dot {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 10px;
+  height: 10px;
+  background: var(--pines);
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.9);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  z-index: 2;
+}
+[data-theme="dark"] .in-cart-dot {
+  border-color: rgba(40,45,36,0.9);
+}
 .item-info { padding: 14px 14px 16px; }
 .item-name { font-size: 12px; font-weight: 700; margin-bottom: 6px; color: var(--text-primary); line-height: 1.4; }
 .item-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
@@ -1571,6 +1586,25 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   animation: fadeSlideIn 0.35s both;
 }
 .ledger-row:last-child { border-bottom: none; }
+.ledger-row-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: background 0.15s ease;
+}
+.ledger-row-link:hover {
+  background: rgba(106, 130, 62, 0.08);
+}
+.ledger-row-link:active {
+  background: rgba(106, 130, 62, 0.12);
+}
+[data-theme="dark"] .ledger-row-link:hover {
+  background: rgba(154, 175, 124, 0.1);
+}
 .ledger-num {
   font-size: 11px; color: #c4bdb4; font-weight: 700;
   width: 24px; text-align: center; flex-shrink: 0;
@@ -1617,6 +1651,21 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
 }
 .ledger-remove-btn:hover { background: #f5d5d5; }
 .ledger-remove-btn:active { transform: scale(0.92); opacity: 0.85; }
+
+/* Cart Summary Line */
+.cart-summary-line {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 20px 16px 0;
+  padding: 8px 0;
+}
+[data-theme="dark"] .cart-summary-line {
+  color: #7A7A6A;
+}
 
 /* Tear Line */
 .tear-line {

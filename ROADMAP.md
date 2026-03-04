@@ -209,19 +209,19 @@
 
 ---
 
-### 2.4 — Cart "Estimated Order" Summary Line
+### 2.4 — Cart "Estimated Order" Summary Line ✅
 **Risk: 🟢 Low** — Adds one new HTML element to cart render
 
 #### CHECKLIST
-- [ ] Read `js/pages/cart.js`
-- [ ] Find the tear line / separator between item rows and the shipping label
-- [ ] Above the tear line (or just below the last cart item), insert a summary line:
+- [x] Read `js/pages/cart.js`
+- [x] Find the tear line / separator between item rows and the shipping label
+- [x] Above the tear line (or just below the last cart item), insert a summary line:
   ```
   [X unique items, Y total]
   ```
-- [ ] Calculate unique items by counting distinct `id + variantIdx` combos in `state.cart`
-- [ ] Style it as a subtle, centered, small-caps label matching the receipt aesthetic
-- [ ] Add CSS in `styles.css` for the new element (use existing receipt/label styles)
+- [x] Calculate unique items by counting distinct `id + variantIdx` combos in `state.cart`
+- [x] Style it as a subtle, centered, small-caps label matching the receipt aesthetic
+- [x] Add CSS in `styles.css` for the new element (use existing receipt/label styles)
 
 #### TEST PLAN
 1. Add 3x of the same item + 1 different item to cart (4 total, 2 unique)
@@ -238,20 +238,20 @@
 
 ---
 
-### 3.1 — "In Cart" Indicator on Grid Cards
+### 3.1 — "In Cart" Indicator on Grid Cards ✅
 **Risk: 🟡 Low** — Adds a visual indicator; uses existing `getCartQtyForItem` helper
 
 #### CHECKLIST
-- [ ] Read `js/shared/helpers.js` — confirm `getCartQtyForItem(state, itemId, variantIdx)` exists
-- [ ] Read the item card render function in `js/app.js` (or `js/pages/catalog.js`)
-- [ ] After the heart button in each card, add a conditional "in cart" dot/badge:
+- [x] Read `js/shared/helpers.js` — confirm `getCartQtyForItem(state, itemId, variantIdx)` exists
+- [x] Read the item card render function in `js/app.js` (or `js/pages/catalog.js`)
+- [x] After the heart button in each card, add a conditional "in cart" dot/badge:
   ```js
   const cartQty = getCartQtyForItem(state, item.id, item.variantIdx || 0);
   // If cartQty > 0, render a small green dot or mini cart icon on the thumbnail
   ```
-- [ ] Add CSS for the indicator: small green dot (8px circle), positioned absolute in the top-left of the thumbnail, with a subtle border
-- [ ] Ensure the indicator updates when items are added/removed (it will naturally re-render)
-- [ ] The indicator should NOT appear on the detail page (only grid cards)
+- [x] Add CSS for the indicator: small green dot (8px circle), positioned absolute in the top-left of the thumbnail, with a subtle border
+- [x] Ensure the indicator updates when items are added/removed (it will naturally re-render)
+- [x] The indicator should NOT appear on the detail page (only grid cards)
 
 #### TEST PLAN
 1. Add any item to cart from the browse grid
@@ -263,18 +263,18 @@
 
 ---
 
-### 3.2 — Quantity Counter Visual Memory
+### 3.2 — Quantity Counter Visual Memory ✅
 **Risk: 🟡 Low** — Changes the Add button render to check cart state
 
 #### CHECKLIST
-- [ ] Read the item card render function (grid cards on browse page)
-- [ ] Find where the "Add" button renders and where the "− N +" counter renders
-- [ ] On render, check `getCartQtyForItem(state, item.id, item.variantIdx)`:
+- [x] Read the item card render function (grid cards on browse page)
+- [x] Find where the "Add" button renders and where the "− N +" counter renders
+- [x] On render, check `getCartQtyForItem(state, item.id, item.variantIdx)`:
   - If qty > 0 → render the "− N +" counter immediately (not the Add button)
   - If qty === 0 → render the "Add" button as normal
-- [ ] The − button should remove one from cart, + should add one more
-- [ ] Ensure this works with the existing add/remove cart logic (don't duplicate handlers)
-- [ ] Test with multiple variants of the same item (each variant tracked separately)
+- [x] The − button should remove one from cart, + should add one more
+- [x] Ensure this works with the existing add/remove cart logic (don't duplicate handlers)
+- [x] Test with multiple variants of the same item (each variant tracked separately)
 
 #### TEST PLAN
 1. Add 3x "Mom's plushie" to cart
@@ -286,17 +286,17 @@
 
 ---
 
-### 3.3 — Cart Item — Tap to View Detail
+### 3.3 — Cart Item — Tap to View Detail ✅
 **Risk: 🟡 Low** — Adds click handler to existing cart row elements
 
 #### CHECKLIST
-- [ ] Read `js/pages/cart.js`
-- [ ] Find the cart item row render (the thumbnail + name area)
-- [ ] Wrap the thumbnail and item name in a clickable element (or add a click handler to the existing row area, excluding the +/✕ buttons)
-- [ ] On click, navigate to the detail page: set `state.selectedItemId` and `state.selectedVariantIdx`, then navigate to `#/detail/{id}/{variantIdx}`
-- [ ] Add `cursor: pointer;` CSS to the clickable area
-- [ ] Ensure the (+) duplicate and (✕) remove buttons are NOT captured by this click (use `stopPropagation` or target-specific selectors)
-- [ ] Add a subtle hover/active state to indicate it's tappable
+- [x] Read `js/pages/cart.js`
+- [x] Find the cart item row render (the thumbnail + name area)
+- [x] Wrap the thumbnail and item name in a clickable element (or add a click handler to the existing row area, excluding the +/✕ buttons)
+- [x] On click, navigate to the detail page: set `state.selectedItemId` and `state.selectedVariantIdx`, then navigate to `#/detail/{id}/{variantIdx}`
+- [x] Add `cursor: pointer;` CSS to the clickable area
+- [x] Ensure the (+) duplicate and (✕) remove buttons are NOT captured by this click (use `stopPropagation` or target-specific selectors)
+- [x] Add a subtle hover/active state to indicate it's tappable
 
 #### TEST PLAN
 1. Add items to cart → navigate to Cart
