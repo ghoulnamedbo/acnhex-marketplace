@@ -110,7 +110,7 @@ function fillTemplate(template, villager, itemName, category) {
 }
 
 function reviewDate(birthday) {
-  const year = 2020 + Math.floor(Math.random() * 7);
+  const year = 2020 + Math.floor(Math.random() * 6); // 2020-2025 (ACNH era)
   const [month, day] = birthday.split('/');
   const date = new Date(year, parseInt(month) - 1, parseInt(day));
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });

@@ -96,12 +96,22 @@ async function renderSimilarItems(state, item) {
       const shuffle = arr => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
       allMatches = [...shuffle(setMatches), ...shuffle(styleMatches), ...shuffle(colorMatches)].slice(0, 12);
 
-      const badgeParts = [];
-      if (curSet && curSet !== 'None') badgeParts.push(curSet);
-      else if (curSeries && curSeries !== 'None') badgeParts.push(curSeries);
-      if (curStyles.length) badgeParts.push(curStyles[0]);
-      if (curColor1) badgeParts.push(variant.color1);
-      badgeText = badgeParts.slice(0, 2).join(' \u00b7 ') || 'Similar';
+      // Build legend entries for each match type present
+      const legendItems = [];
+      if (setMatches.length > 0) {
+        if (curSet && curSet !== 'None') {
+          legendItems.push({ icon: '📦', label: `Same set: ${curSet}` });
+        } else if (curSeries && curSeries !== 'None') {
+          legendItems.push({ icon: '📦', label: `Same series: ${curSeries}` });
+        }
+      }
+      if (styleMatches.length > 0 && curStyles.length) {
+        legendItems.push({ icon: '✨', label: `Similar style: ${curStyles[0]}` });
+      }
+      if (colorMatches.length > 0 && curColor1) {
+        legendItems.push({ icon: '🎨', label: `Similar color: ${variant.color1}` });
+      }
+      badgeText = legendItems;
 
       // Cache for this item so re-renders (heart toggles) don't reshuffle
       _similarCache = { itemId: item.id, matches: allMatches, badgeText };
@@ -116,7 +126,7 @@ async function renderSimilarItems(state, item) {
       const hex = v.hexVariated || v.hex || o.hexBase;
       const shortHex = hex.length > 6 ? hex.slice(-4).toUpperCase() : hex.toUpperCase();
       const matchClass = m.matchType === 'set' ? 'match-set' : m.matchType === 'style' ? 'match-style' : 'match-color';
-      const matchLabel = m.matchType === 'set' ? 'SET' : m.matchType === 'style' ? 'STYLE' : 'COLOR';
+      const matchLabel = m.matchType === 'set' ? '📦 SET' : m.matchType === 'style' ? '✨ STYLE' : '🎨 COLOR';
       return `<div class="similar-card" data-item="${esc(o.id)}" data-vi="0">
         <div class="similar-card-image" style="background:${data.getItemBg(idx)}">
           <span class="similar-match-tag ${matchClass}">${matchLabel}</span>
@@ -131,10 +141,14 @@ async function renderSimilarItems(state, item) {
       </div>`;
     }).join('');
 
+    const legendHtml = badgeText.length > 0
+      ? badgeText.map(item => `<div class="similar-legend-row"><span class="similar-legend-icon">${item.icon}</span> ${esc(item.label)}</div>`).join('')
+      : '';
+
     return `<div class="similar-section similar-section-padding">
       <div class="similar-header">
         <h4 class="label-upper similar-header-label"><span class="similar-header-emoji">🍃</span> SIMILAR ITEMS</h4>
-        <span class="similar-badge">${esc(badgeText)}</span>
+        <div class="similar-legend">${legendHtml}</div>
       </div>
       <div class="similar-scroll-wrapper">
         <button class="similar-arrow left" id="similar-arrow-left">‹</button>

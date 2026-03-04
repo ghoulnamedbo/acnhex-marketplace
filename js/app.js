@@ -463,7 +463,7 @@ async function _localRenderRecentlyViewed() {
           <p class="item-name">${esc(item.name)}</p>
           <div class="item-meta">
             <span class="item-variant">${esc(variant.name)}</span>
-            <span class="hex-badge">${esc(hex)}</span>
+            <span class="hex-badge">${esc(getShortHex(hex))}</span>
           </div>
         </div>
       </div>`);
@@ -689,7 +689,7 @@ function _localRenderItemCard(item, idx) {
       <p class="item-name">${esc(item.n)}</p>
       <div class="item-meta">
         <span class="item-variant">${esc(item.v1)}</span>
-        <span class="hex-badge">${esc(item.hex)}</span>
+        <span class="hex-badge">${esc(getShortHex(item.hex))}</span>
       </div>
       <div class="cart-btn-wrap" data-cart-item-id="${esc(item.id)}" data-cart-vi="${vi}">
         <button class="add-cart-btn${showCounter ? ' hidden' : ''}" data-add-cart="${esc(item.id)}" ${cartFull ? 'disabled' : ''}>
@@ -3371,6 +3371,10 @@ async function render() {
     if (simScroll) state.similarScrollLeft = simScroll.scrollLeft;
     state._detailScrollY = window.scrollY;
   }
+  // Capture cart progress bar width before DOM replacement for smooth transition
+  const prevProgressFill = app.querySelector('.ledger-progress-fill');
+  state._prevCartProgressWidth = prevProgressFill ? prevProgressFill.style.width : null;
+
   let content = '';
   switch (state.page) {
     case 'catalog': content = await _localRenderCatalog(); break;
@@ -4429,6 +4433,20 @@ function attachEvents() {
     playDetailEntrance();
     initDetailParallax();
     state._pageEnter = false;
+  }
+
+  // Animate cart progress bar from previous width to new width
+  const cartProgressFill = app.querySelector('.ledger-progress-fill[data-target-width]');
+  if (cartProgressFill) {
+    const startWidth = state._prevCartProgressWidth || '0%';
+    const targetWidth = cartProgressFill.dataset.targetWidth + '%';
+    // Set starting width and force layout calculation
+    cartProgressFill.style.width = startWidth;
+    cartProgressFill.getBoundingClientRect();
+    // Animate to target width
+    requestAnimationFrame(() => {
+      cartProgressFill.style.width = targetWidth;
+    });
   }
 
   // Cart duplicate by index (with pop animation)

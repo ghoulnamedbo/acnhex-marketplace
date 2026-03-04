@@ -45,7 +45,7 @@ export function renderCart(state) {
       </div>
       <div class="ledger-progress">
         <div class="ledger-progress-track">
-          <div class="ledger-progress-fill ${total > 35 ? 'danger' : ''}" style="width:${(total / 40) * 100}%"></div>
+          <div class="ledger-progress-fill ${total > 35 ? 'danger' : ''}" data-target-width="${(total / 40) * 100}"></div>
         </div>
         <div class="ledger-progress-labels">
           <span>${total} items</span>
