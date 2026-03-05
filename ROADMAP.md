@@ -1120,24 +1120,24 @@
 
 ---
 
-### 6.11 — Performance Perception (Prefetch + Instant Category Headers)
+### 6.11 — Performance Perception (Prefetch + Instant Category Headers) ✅
 **Risk: 🟡 Medium** — Changes data loading strategy
 
 #### CHECKLIST
-- [ ] Read `js/data.js` — understand category data loading and caching
-- [ ] **Instant category header**: When a category is clicked:
+- [x] Read `js/data.js` — understand category data loading and caching
+- [x] **Instant category header**: When a category is clicked:
   1. Immediately update the heading text and show skeleton cards (from 5.2)
   2. THEN load the actual data
   3. Replace skeletons with real cards once data arrives
   - This means splitting the category click handler into two phases
-- [ ] **Prefetch adjacent categories**: After loading a category, start fetching the next category in the list in the background:
+- [x] **Prefetch adjacent categories**: After loading a category, start fetching the next category in the list in the background:
   ```js
   // After loading "Furniture", prefetch "Clothing" in idle time
   requestIdleCallback(() => loadCategoryData(nextCategory));
   ```
-- [ ] Use `requestIdleCallback` (with fallback `setTimeout(..., 100)`) for prefetching
-- [ ] Don't prefetch more than 1-2 categories ahead (memory/bandwidth)
-- [ ] Cache management: the `categoryCache` in data.js already handles this
+- [x] Use `requestIdleCallback` (with fallback `setTimeout(..., 100)`) for prefetching
+- [x] Don't prefetch more than 1-2 categories ahead (memory/bandwidth)
+- [x] Cache management: the `categoryCache` in data.js already handles this
 
 #### TEST PLAN
 1. Click a category (e.g., "Clothing") from the carousel

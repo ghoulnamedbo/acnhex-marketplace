@@ -67,6 +67,7 @@ const state = {
   expandedItems: null,
   expandedTotal: 0,
   expandedLoading: false,
+  _showSkeletons: false, // Show skeleton cards during category switch
   scrollY: 0,
   previousPage: null,
   savedSearch: null,
@@ -710,12 +711,12 @@ async function _localRenderCatalog() {
     </div>
 
     <div class="item-grid">
-      ${ads.renderItemGridWithAds(items, _localRenderItemCard)}
+      ${state._showSkeletons ? renderSkeletonCards(12) : ads.renderItemGridWithAds(items, _localRenderItemCard)}
     </div>
 
-    ${items.length < total && !isRandom && state.loadMode === 'batch' ? `<button class="load-more-btn" id="load-more">Load More</button>` : ''}
-    ${items.length < total && !isRandom && state.loadMode === 'scroll' ? `<div id="scroll-sentinel" style="height:1px"></div>` : ''}
-    ${isRandom && items.length < total ? `<div id="scroll-sentinel" style="height:1px"></div>` : ''}
+    ${items.length < total && !isRandom && state.loadMode === 'batch' && !state._showSkeletons ? `<button class="load-more-btn" id="load-more">Load More</button>` : ''}
+    ${items.length < total && !isRandom && state.loadMode === 'scroll' && !state._showSkeletons ? `<div id="scroll-sentinel" style="height:1px"></div>` : ''}
+    ${isRandom && items.length < total && !state._showSkeletons ? `<div id="scroll-sentinel" style="height:1px"></div>` : ''}
   </div>`;
 }
 
@@ -3944,7 +3945,8 @@ function attachEvents() {
   app.querySelectorAll('[data-cat]').forEach(btn => {
     btn.addEventListener('click', async () => {
       NookSounds.play('categoryTap');
-      state.activeCategory = btn.dataset.cat;
+      const newCategory = btn.dataset.cat;
+      state.activeCategory = newCategory;
       state.loadedCount = 0;
       state.expandedItems = null;
       state.expandedTotal = 0;
@@ -3954,15 +3956,25 @@ function attachEvents() {
       state._pageEnter = true;
 
       // "All" category always shows random picks
-      if (btn.dataset.cat === 'All') {
+      if (newCategory === 'All') {
         state.isRandom = true;
         state.randomUsedIndices = new Set();
+        // Show skeletons immediately, then load random items
+        state._showSkeletons = true;
+        render();
         state.randomItems = await data.getRandomExpandedItems(50, state.randomUsedIndices);
+        state._showSkeletons = false;
         render();
       } else {
         state.isRandom = false;
+        // Show skeletons immediately for instant feedback
+        state._showSkeletons = true;
         render();
-        loadExpandedCatalog();
+        // Load actual data in background
+        await loadExpandedCatalog();
+        state._showSkeletons = false;
+        // Prefetch adjacent categories in idle time
+        data.prefetchAdjacentCategories(newCategory);
       }
     });
   });

@@ -321,3 +321,39 @@ export async function getItemsBySet(setName) {
   }
   return items;
 }
+
+// ─── Prefetch Categories (Performance Perception) ───
+export function isCategoryCached(category) {
+  if (category === 'All') return true;
+  return !!expandedCache[slugify(category)];
+}
+
+export function prefetchCategory(category) {
+  if (!catalogIndex || category === 'All') return;
+  const catSlug = slugify(category);
+  if (expandedCache[catSlug]) return; // Already cached
+
+  // Use requestIdleCallback with fallback for Safari
+  const scheduleIdle = window.requestIdleCallback || ((cb) => setTimeout(cb, 100));
+  scheduleIdle(() => {
+    loadCategoryData(category).then(catData => {
+      expandedCache[catSlug] = expandCategoryItems(catData);
+    }).catch(() => {}); // Silently fail prefetch
+  });
+}
+
+export function prefetchAdjacentCategories(currentCategory) {
+  if (!catalogIndex) return;
+  const cats = catalogIndex.categories;
+  const currentIdx = cats.findIndex(c => c.name === currentCategory);
+  if (currentIdx === -1) return;
+
+  // Prefetch next category (if exists)
+  if (currentIdx < cats.length - 1) {
+    prefetchCategory(cats[currentIdx + 1].name);
+  }
+  // Prefetch previous category (if exists)
+  if (currentIdx > 0) {
+    prefetchCategory(cats[currentIdx - 1].name);
+  }
+}
