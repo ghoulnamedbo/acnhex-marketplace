@@ -1940,10 +1940,10 @@ async function _localRenderWishlist() {
               ${list.id !== '__loved__' ? '<div class="wl-emoji-edit-badge">✎</div>' : ''}
             </div>
             <div style="flex:1;min-width:0">
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-                <p style="font-size:13px;font-weight:700;margin-bottom:0;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">${esc(list.name)}</p>
+              <div class="wl-list-header" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                <p class="wl-list-name-text" style="font-size:13px;font-weight:700;margin-bottom:0;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">${esc(list.name)}</p>
                 ${list.id !== '__loved__' ? `
-                <div style="display:flex;gap:4px;flex-shrink:0">
+                <div class="wl-action-btns" style="display:flex;gap:4px;flex-shrink:0">
                   <button class="wl-rename-btn" data-rename-list="${esc(list.id)}" title="Rename list">✏</button>
                   <button class="wl-dup-btn" data-dup-list="${esc(list.id)}" title="Duplicate list">⧉</button>
                   <button class="remove-btn" data-delete-list="${esc(list.id)}">${ICONS.trash}</button>
@@ -5094,22 +5094,89 @@ function attachEvents() {
     });
   });
 
-  // Rename list button
+  // Rename list button - inline editing
   app.querySelectorAll('[data-rename-list]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const listId = btn.dataset.renameList;
       const list = state.wishlists.lists.find(l => l.id === listId);
-      if (list) {
-        const newName = prompt('Rename list:', list.name);
-        if (newName && newName.trim() && newName.trim() !== list.name) {
-          list.name = newName.trim();
+      if (!list) return;
+
+      // Find the wishlist item container
+      const wishlistItem = btn.closest('.wishlist-item');
+      if (!wishlistItem) return;
+
+      // Find the name element and action buttons using classes
+      const nameEl = wishlistItem.querySelector('.wl-list-name-text');
+      const actionBtns = wishlistItem.querySelector('.wl-action-btns');
+      if (!nameEl || !actionBtns) return;
+
+      const originalName = list.name;
+
+      // Create inline input
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = originalName;
+      input.maxLength = 30;
+      input.className = 'wl-rename-input';
+      input.style.cssText = 'font-size:13px;font-weight:700;padding:4px 8px;border:1px solid var(--pines);border-radius:6px;background:var(--bg);color:var(--text-primary);width:100%;min-width:0;font-family:var(--font);outline:none;box-sizing:border-box;';
+
+      // Create confirm/cancel buttons
+      const confirmBtn = document.createElement('button');
+      confirmBtn.innerHTML = '✓';
+      confirmBtn.className = 'wl-rename-confirm';
+      confirmBtn.style.cssText = 'padding:4px 8px;border:none;background:var(--pines);color:white;border-radius:6px;font-size:12px;cursor:pointer;font-weight:700;';
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.innerHTML = '✕';
+      cancelBtn.className = 'wl-rename-cancel';
+      cancelBtn.style.cssText = 'padding:4px 8px;border:none;background:var(--border);color:var(--text);border-radius:6px;font-size:12px;cursor:pointer;';
+
+      // Replace name with input
+      nameEl.replaceWith(input);
+
+      // Replace action buttons
+      actionBtns.innerHTML = '';
+      actionBtns.appendChild(confirmBtn);
+      actionBtns.appendChild(cancelBtn);
+
+      // Focus and select
+      input.focus();
+      input.select();
+
+      const finishRename = (save) => {
+        const newName = input.value.trim();
+        if (save && newName && newName !== originalName) {
+          list.name = newName;
           storage.setWishlists(state.wishlists);
           NookSounds.play('click');
-          render();
           showToast('✏️ List renamed!');
         }
-      }
+        render(); // Re-render to restore normal state
+      };
+
+      confirmBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        finishRename(true);
+      });
+
+      cancelBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        finishRename(false);
+      });
+
+      input.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          finishRename(true);
+        } else if (ev.key === 'Escape') {
+          ev.preventDefault();
+          finishRename(false);
+        }
+      });
+
+      // Prevent click from bubbling to view-list
+      input.addEventListener('click', (ev) => ev.stopPropagation());
     });
   });
 

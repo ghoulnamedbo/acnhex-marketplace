@@ -527,22 +527,22 @@
 
 ---
 
-### 4.4 — List Rename with Inline Input (Replace prompt())
+### 4.4 — List Rename with Inline Input (Replace prompt()) ✅
 **Risk: 🟡 Medium** — Replaces a prompt() call with inline DOM
 
 #### CHECKLIST
-- [ ] Read `js/pages/wishlist.js` — find the rename handler
-- [ ] Find where `prompt()` is called for renaming
-- [ ] Replace with inline editing:
+- [x] Read `js/pages/wishlist.js` — find the rename handler
+- [x] Find where `prompt()` is called for renaming
+- [x] Replace with inline editing:
   - On rename button click, replace the list name `<p>` with an `<input>` pre-filled with current name
   - Show a confirm (✓) and cancel (✕) button
   - On confirm: save the new name via storage, re-render
   - On cancel: restore original name, re-render
   - On Enter key: confirm
   - On Escape key: cancel
-- [ ] Reuse the same pattern as the "Create New List" inline input (already exists)
-- [ ] Ensure special characters are handled (use `esc()`)
-- [ ] Max length: 30 characters (to prevent overflow)
+- [x] Reuse the same pattern as the "Create New List" inline input (already exists)
+- [x] Ensure special characters are handled (use `esc()`)
+- [x] Max length: 30 characters (to prevent overflow)
 
 #### TEST PLAN
 1. Go to Wishlist → tap the ✏ rename button on a custom list

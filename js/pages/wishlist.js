@@ -119,7 +119,7 @@ export async function renderWishlist(state) {
             </div>
             <div class="wl-list-inner">
               <div class="wl-list-header-row">
-                <p class="wl-list-name">${esc(list.name)}</p>
+                <p class="wl-list-name wl-list-name-text">${esc(list.name)}</p>
                 ${list.id !== '__loved__' ? `
                 <div class="wl-action-btns">
                   <button class="wl-rename-btn" data-rename-list="${esc(list.id)}" title="Rename list">✏</button>
