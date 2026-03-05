@@ -6254,6 +6254,20 @@ function updateAllCartBtnStates() {
     if (plusBtn) plusBtn.disabled = cartFull;
   });
 
+  // Update in-cart dots on item cards
+  document.querySelectorAll('.item-card[data-item]').forEach(card => {
+    const itemId = card.dataset.item;
+    const vi = parseInt(card.dataset.vi) || 0;
+    const qty = getCartQtyForItem(itemId, vi);
+    const thumb = card.querySelector('.item-thumb');
+    let dot = thumb?.querySelector('.in-cart-dot');
+    if (qty > 0 && !dot && thumb) {
+      thumb.insertAdjacentHTML('beforeend', '<span class="in-cart-dot"></span>');
+    } else if (qty === 0 && dot) {
+      dot.remove();
+    }
+  });
+
   // Update cart badge
   const badge = document.querySelector('.nav-badge');
   if (badge) {

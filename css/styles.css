@@ -863,6 +863,8 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   position: relative;
   overflow: hidden;
   max-width: 100%;
+  margin: 0 16px;
+  border-radius: 12px;
 }
 .hero-receipt-banner::before {
   content: '';
