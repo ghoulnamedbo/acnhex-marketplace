@@ -3990,16 +3990,33 @@ function attachEvents() {
   });
 
   // Filter reminder banner handlers
+  const filterReminderBanner = document.querySelector('.filter-reminder-banner');
   const filterReminderClear = document.getElementById('filter-reminder-clear');
   if (filterReminderClear) filterReminderClear.addEventListener('click', async () => {
+    // Fade out banner then clear filters
+    if (filterReminderBanner) {
+      filterReminderBanner.style.transition = 'opacity 0.15s ease-out';
+      filterReminderBanner.style.opacity = '0';
+      await new Promise(r => setTimeout(r, 150));
+    }
     state.searchFilterTags = [];
     state.searchFilterReminderDismissed = false;
-    await runSearch();
+    render(); // Full re-render to update banner and results
   });
   const filterReminderDismiss = document.getElementById('filter-reminder-dismiss');
   if (filterReminderDismiss) filterReminderDismiss.addEventListener('click', () => {
-    state.searchFilterReminderDismissed = true;
-    render();
+    // Fade out banner then dismiss
+    if (filterReminderBanner) {
+      filterReminderBanner.style.transition = 'opacity 0.15s ease-out';
+      filterReminderBanner.style.opacity = '0';
+      setTimeout(() => {
+        state.searchFilterReminderDismissed = true;
+        render();
+      }, 150);
+    } else {
+      state.searchFilterReminderDismissed = true;
+      render();
+    }
   });
 
   // Detail page
@@ -4717,7 +4734,7 @@ function attachEvents() {
       NookSounds.play('removeItem');
       const row = btn.closest('[data-cart-row]');
       if (row) {
-        row.style.animation = 'slideOutRight 0.4s ease-in forwards';
+        row.style.animation = 'slideOutRight 0.2s ease-in forwards';
         row.addEventListener('animationend', () => {
           state.cart.splice(idx, 1);
           storage.setCart(state.cart);
