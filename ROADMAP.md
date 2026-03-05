@@ -466,19 +466,19 @@
 
 ---
 
-### 4.2 — Active Filter Count Persistence & Reminder
+### 4.2 — Active Filter Count Persistence & Reminder ✅
 **Risk: 🟡 Medium** — Modifies search open/close behavior
 
 #### CHECKLIST
-- [ ] Read how `searchFilterTags` is managed in state across search open/close
-- [ ] Verify if filters already persist when closing and reopening search (check `state.savedSearch`)
-- [ ] If filters are cleared on search close → change behavior to KEEP filters in state
-- [ ] When reopening search with active filters, show a brief toast/banner:
+- [x] Read how `searchFilterTags` is managed in state across search open/close
+- [x] Verify if filters already persist when closing and reopening search (check `state.savedSearch`)
+- [x] If filters are cleared on search close → change behavior to KEEP filters in state
+- [x] When reopening search with active filters, show a brief toast/banner:
   ```
   "1 active filter: pink" (dismiss ✕)
   ```
-- [ ] Add a "Clear filters" quick action visible when filters are active
-- [ ] The filter badge on the filter icon should show immediately on search open if filters exist
+- [x] Add a "Clear filters" quick action visible when filters are active
+- [x] The filter badge on the filter icon should show immediately on search open if filters exist
 
 #### TEST PLAN
 1. Open search → add "pink" filter → see results
