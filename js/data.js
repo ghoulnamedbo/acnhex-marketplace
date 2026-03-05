@@ -8,7 +8,7 @@ export function getItemBg(index) {
   return BG_COLORS[index % BG_COLORS.length];
 }
 
-const CACHE_BUST = 'v5';
+const CACHE_BUST = 'v6';
 
 export async function loadCatalog() {
   if (catalogIndex) return catalogIndex;
