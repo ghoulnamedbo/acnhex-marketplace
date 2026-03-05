@@ -3,7 +3,7 @@
 
 import { esc } from '../utils.js';
 import { ICONS } from '../shared/icons.js';
-import { isInLovedList, isInCustomList, isInWishlist, getCartTotal } from '../shared/helpers.js';
+import { isInLovedList, isInCustomList, isInWishlist, getCartTotal, getCartQtyForItem } from '../shared/helpers.js';
 import * as data from '../data.js';
 import * as reviews from '../reviews.js';
 
@@ -425,13 +425,15 @@ function renderVariantDrawer(state, item, vi, thumbBgs) {
         <span class="text-secondary">${item.variants.length} variants</span>
       </div>
       <div class="variant-drawer-table-header">
-        <span></span><span>NAME</span><span>CLR 1</span><span>CLR 2</span><span>HEX</span>
+        <span></span><span>NAME</span><span>CLR 1</span><span>CLR 2</span><span>HEX</span><span>CART</span>
       </div>
       <div class="variant-drawer-scroll">
         ${item.variants.map((v, idx) => {
           const isSel = idx === vi;
           const variantInLoved = isInLovedList(state, item.id, idx);
           const variantInCustom = isInCustomList(state, item.id, idx);
+          const variantQty = getCartQtyForItem(state, item.id, idx);
+          const cartFull = getCartTotal(state) >= 40;
           return `<button class="variant-drawer-row${isSel ? ' variant-drawer-row--selected' : ''}" data-drawer-variant="${idx}">
             <div class="variant-drawer-thumb" style="background:${thumbBgs[idx % thumbBgs.length]}">
               <img src="${esc(v.image)}" alt="${esc(v.name)}" loading="lazy"
@@ -444,6 +446,7 @@ function renderVariantDrawer(state, item, vi, thumbBgs) {
             <span class="variant-drawer-color">${esc(v.color1 || '-')}</span>
             <span class="variant-drawer-color">${esc(v.color2 || '-')}</span>
             <span class="hex-copy-badge" data-hex="${esc(v.hexVariated || v.hex || item.hexBase)}">${esc((v.hexVariated || v.hex || item.hexBase).slice(-4).toUpperCase())}</span>
+            <span class="variant-drawer-cart-btn${variantQty > 0 ? ' has-qty' : ''}" data-drawer-cart="${idx}" data-item-id="${esc(item.id)}" ${cartFull && variantQty === 0 ? 'disabled' : ''}>${variantQty > 0 ? variantQty : '+'}</span>
           </button>`;
         }).join('')}
       </div>

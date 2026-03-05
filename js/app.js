@@ -973,13 +973,15 @@ async function _localRenderDetail() {
         <span class="text-secondary">${item.variants.length} variants</span>
       </div>
       <div class="variant-drawer-table-header">
-        <span></span><span>NAME</span><span>CLR 1</span><span>CLR 2</span><span>HEX</span>
+        <span></span><span>NAME</span><span>CLR 1</span><span>CLR 2</span><span>HEX</span><span>CART</span>
       </div>
       <div class="variant-drawer-scroll">
         ${item.variants.map((v, idx) => {
           const isSel = idx === vi;
           const inLoved = isInLovedList(item.id, idx);
           const inCustom = isInCustomList(item.id, idx);
+          const variantQty = getCartQtyForItem(item.id, idx);
+          const cartFull = getCartTotal() >= 40;
           return `<button class="variant-drawer-row${isSel ? ' variant-drawer-row--selected' : ''}" data-drawer-variant="${idx}">
             <div class="variant-drawer-thumb" style="background:${thumbBgs[idx % thumbBgs.length]}">
               <img src="${esc(v.image)}" alt="${esc(v.name)}" loading="lazy"
@@ -992,6 +994,7 @@ async function _localRenderDetail() {
             <span class="variant-drawer-color">${esc(v.color1 || '-')}</span>
             <span class="variant-drawer-color">${esc(v.color2 || '-')}</span>
             <span class="hex-copy-badge" data-hex="${esc(v.hexVariated || v.hex || item.hexBase)}">${esc((v.hexVariated || v.hex || item.hexBase).slice(-4).toUpperCase())}</span>
+            <span class="variant-drawer-cart-btn${variantQty > 0 ? ' has-qty' : ''}" data-drawer-cart="${idx}" data-item-id="${esc(item.id)}" ${cartFull && variantQty === 0 ? 'disabled' : ''}>${variantQty > 0 ? variantQty : '+'}</span>
           </button>`;
         }).join('')}
       </div>
@@ -2678,6 +2681,9 @@ function attachHexCopyEvents() {
     if (badge.dataset.hexListenerAttached) return;
     badge.dataset.hexListenerAttached = 'true';
 
+    // Store original text for rapid tap handling
+    badge.dataset.originalHex = badge.textContent;
+
     badge.addEventListener('click', (e) => {
       e.stopPropagation();
       // Read data-hex at click time (not closure)
@@ -2690,15 +2696,26 @@ function attachHexCopyEvents() {
         document.body.appendChild(ta); ta.select(); document.execCommand('copy');
         document.body.removeChild(ta);
       });
+
+      // Clear any existing timeout for rapid tap handling
+      if (badge._hexCopyTimeout) {
+        clearTimeout(badge._hexCopyTimeout);
+      }
+
+      // Reset animation by removing and re-adding class
+      badge.classList.remove('hex-copy-badge--copied');
+      void badge.offsetWidth; // Force reflow to restart animation
       badge.classList.add('hex-copy-badge--copied');
-      const originalText = badge.textContent;
+
       badge.textContent = '✓ Copied!';
       hapticTick();
       NookSounds.play('hexCopy');
-      setTimeout(() => {
+
+      badge._hexCopyTimeout = setTimeout(() => {
         badge.classList.remove('hex-copy-badge--copied');
-        badge.textContent = originalText;
-      }, 1400);
+        badge.textContent = badge.dataset.originalHex;
+        badge._hexCopyTimeout = null;
+      }, 600);
     });
   });
 }
@@ -3966,12 +3983,14 @@ function attachEvents() {
   // Variant drawer open/close
   document.querySelectorAll('[data-action="open-variant-drawer"]').forEach(btn => {
     btn.addEventListener('click', () => {
+      state.variantDrawerOpen = true;
       document.querySelector('.variant-drawer')?.classList.add('variant-drawer--open');
       document.querySelector('.variant-drawer-backdrop')?.classList.add('variant-drawer-backdrop--open');
     });
   });
   document.querySelectorAll('[data-action="close-variant-drawer"]').forEach(el => {
     el.addEventListener('click', () => {
+      state.variantDrawerOpen = false;
       document.querySelector('.variant-drawer')?.classList.remove('variant-drawer--open');
       document.querySelector('.variant-drawer-backdrop')?.classList.remove('variant-drawer-backdrop--open');
     });
@@ -4297,15 +4316,46 @@ function attachEvents() {
     });
   });
 
+  // Variant drawer cart buttons
+  document.querySelectorAll('.variant-drawer-cart-btn[data-drawer-cart]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (btn.hasAttribute('disabled')) return;
+      const variantIdx = parseInt(btn.dataset.drawerCart);
+      const itemId = btn.dataset.itemId;
+      if (!state.itemDetail || getCartTotal() >= 40) return;
+      const item = state.itemDetail;
+      const variant = item.variants[variantIdx];
+      if (!variant) return;
+      // Capture thumbnail position for fly animation
+      const row = btn.closest('.variant-drawer-row');
+      const thumb = row?.querySelector('.variant-drawer-thumb');
+      if (thumb) _flyAnimRect = thumb.getBoundingClientRect();
+      addToCart({
+        id: item.id,
+        name: item.name,
+        variant: variant.name,
+        variantIdx: variantIdx,
+        hex: variant.hexVariated || variant.hex || item.hexBase,
+        img: variant.image,
+      });
+      // Update button to show new quantity
+      const newQty = getCartQtyForItem(item.id, variantIdx);
+      btn.textContent = newQty > 0 ? newQty : '+';
+      btn.classList.toggle('has-qty', newQty > 0);
+    });
+  });
+
   // Variant drawer row clicks
   document.querySelectorAll('.variant-drawer-row').forEach(row => {
     row.addEventListener('click', (e) => {
-      // Don't close drawer if clicking hex copy badge
-      if (e.target.closest('.hex-copy-badge')) return;
+      // Don't close drawer if clicking hex copy badge or cart button
+      if (e.target.closest('.hex-copy-badge') || e.target.closest('.variant-drawer-cart-btn')) return;
       const idx = parseInt(row.dataset.drawerVariant);
       state.selectedVariantIdx = idx;
       hapticTick();
       updateOrbitAndDetail();
+      state.variantDrawerOpen = false;
       document.querySelector('.variant-drawer')?.classList.remove('variant-drawer--open');
       document.querySelector('.variant-drawer-backdrop')?.classList.remove('variant-drawer-backdrop--open');
     });
@@ -4326,6 +4376,7 @@ function attachEvents() {
       }));
       state.setPickerName = `${item.name} (all variants)`;
       // Close variant drawer
+      state.variantDrawerOpen = false;
       document.querySelector('.variant-drawer')?.classList.remove('variant-drawer--open');
       document.querySelector('.variant-drawer-backdrop')?.classList.remove('variant-drawer-backdrop--open');
       render();
@@ -6300,7 +6351,7 @@ function addToCart(entry) {
   NookSounds.play('addToCart');
   state._cartBounce = true;
 
-  if (state.searchOpen) {
+  if (state.searchOpen || state.variantDrawerOpen) {
     // Surgical update: just refresh the cart badge without a full re-render
     const cartTab = app.querySelector('[data-nav="cart"]');
     if (cartTab) {

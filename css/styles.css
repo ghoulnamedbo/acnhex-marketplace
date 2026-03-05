@@ -5505,7 +5505,7 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
 .hex-copy-badge--copied {
   color: #fff;
   background: var(--pines);
-  transform: scale(1.12);
+  transform: scale(1.15);
 }
 
 /* Larger hex badge in detail fields */
@@ -5571,8 +5571,8 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
 
 .variant-drawer-table-header {
   display: grid;
-  grid-template-columns: 44px 1fr 60px 60px 56px;
-  padding: 8px 20px;
+  grid-template-columns: 48px 1fr 60px 60px 56px 32px;
+  padding: 8px 16px;
   gap: 8px;
   align-items: center;
   border-bottom: 1px solid var(--border);
@@ -5581,6 +5581,7 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   color: var(--text-light);
   text-transform: uppercase;
   letter-spacing: 0.1em;
+  box-sizing: border-box;
 }
 
 .variant-drawer-scroll {
@@ -5591,9 +5592,9 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
 
 .variant-drawer-row {
   display: grid;
-  grid-template-columns: 48px 1fr 60px 60px 56px;
-  padding: 12px 20px;
-  gap: 10px;
+  grid-template-columns: 48px 1fr 60px 60px 56px 32px;
+  padding: 12px 16px;
+  gap: 8px;
   align-items: center;
   width: 100%;
   border: none;
@@ -5604,6 +5605,10 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   font-family: 'Space Mono', monospace;
   border-radius: 0 12px 12px 0;
   margin: 2px 0;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+  text-align: left;
 }
 
 .variant-drawer-row:hover {
@@ -5686,6 +5691,45 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   font-size: 9px;
   color: var(--text-secondary);
   text-align: left;
+}
+
+.variant-drawer-cart-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--pines);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: transform 0.1s ease, opacity 0.1s ease;
+  justify-self: end;
+}
+.variant-drawer-cart-btn:hover {
+  transform: scale(1.1);
+}
+.variant-drawer-cart-btn:active {
+  transform: scale(0.95);
+}
+.variant-drawer-cart-btn.has-qty {
+  background: var(--tag-bg);
+  color: var(--pines);
+}
+.variant-drawer-cart-btn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+[data-theme="dark"] .variant-drawer-cart-btn {
+  background: #4A5A38;
+}
+[data-theme="dark"] .variant-drawer-cart-btn.has-qty {
+  background: #2A3320;
+  color: #8A9A6A;
 }
 
 .variant-drawer-footer {

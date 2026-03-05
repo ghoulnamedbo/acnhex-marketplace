@@ -308,17 +308,20 @@
 
 ---
 
-### 3.4 — Variant Drawer "Add to Cart" Per Row
+### 3.4 — Variant Drawer "Add to Cart" Per Row ✅
 **Risk: 🟡 Low** — Adds a button to each row in existing drawer
 
 #### CHECKLIST
-- [ ] Read `js/pages/detail.js` — find the variant drawer render (the "ALL X" view)
-- [ ] Find where each `variant-drawer-row` is rendered
-- [ ] Add a small "+" button at the end of each row
-- [ ] On click, add that specific variant to cart using the existing cart-add logic
-- [ ] The button should show the cart quantity if > 0 (e.g., "2" instead of "+")
-- [ ] Add CSS: small circular button, green background, white text, positioned at the right of each row
-- [ ] Ensure adding from the drawer updates the detail page CTA bar quantity too
+- [x] Read `js/pages/detail.js` — find the variant drawer render (the "ALL X" view)
+- [x] Find where each `variant-drawer-row` is rendered
+- [x] Add a small "+" button at the end of each row
+- [x] On click, add that specific variant to cart using the existing cart-add logic
+- [x] The button should show the cart quantity if > 0 (e.g., "2" instead of "+")
+- [x] Add CSS: small circular button, green background, white text, positioned at the right of each row
+- [x] Ensure adding from the drawer updates the detail page CTA bar quantity too
+- [x] Add "CART" column header label
+- [x] Track drawer open state to prevent full re-render on cart add
+- [x] Add fly-to-cart animation support
 
 #### TEST PLAN
 1. Navigate to an item with multiple variants → tap "ALL X" to open the drawer
@@ -331,18 +334,18 @@
 
 ---
 
-### 3.5 — Hex Badge Tap-to-Copy Enhanced Feedback
+### 3.5 — Hex Badge Tap-to-Copy Enhanced Feedback ✅
 **Risk: 🟡 Low** — Enhances existing click handler with animation
 
 #### CHECKLIST
-- [ ] Find where the hex badge copy behavior is handled (likely in `js/pages/detail.js` or `js/app.js`)
-- [ ] After the existing `navigator.clipboard.writeText()` call, add:
+- [x] Find where the hex badge copy behavior is handled (likely in `js/pages/detail.js` or `js/app.js`)
+- [x] After the existing `navigator.clipboard.writeText()` call, add:
   - A CSS class toggle (e.g., `hex-copy-flash`) that:
     - Scales the badge up to 1.15x
     - Changes background to `var(--pines)` (green)
     - Changes text color to white
     - Transitions back after 600ms
-- [ ] Add the CSS keyframe/transition in `styles.css`:
+- [x] Add the CSS keyframe/transition in `styles.css`:
   ```css
   .hex-copy-badge.hex-copy-flash {
     transform: scale(1.15);
@@ -351,8 +354,8 @@
     transition: all 200ms ease-out;
   }
   ```
-- [ ] Remove the class after 600ms with `setTimeout`
-- [ ] Ensure the "✓ Copied!" text still appears
+- [x] Remove the class after 600ms with `setTimeout`
+- [x] Ensure the "✓ Copied!" text still appears
 
 #### TEST PLAN
 1. Navigate to any item detail → tap the hex badge
