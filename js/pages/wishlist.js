@@ -112,7 +112,7 @@ export async function renderWishlist(state) {
           const thumbItems = list.items.slice(0, 4);
           const extraCount = list.items.length > 4 ? list.items.length - 4 : 0;
           return `
-          <div class="wishlist-item${list.id !== '__loved__' ? ' draggable-list' : ''}" data-view-list="${esc(list.id)}" style="cursor:pointer;border-left:${list.id === '__loved__' ? '4px solid var(--pines)' : '4px solid transparent'}">
+          <div class="wishlist-item${list.id !== '__loved__' ? ' draggable-list' : ''}" data-view-list="${esc(list.id)}" tabindex="0" role="button" style="cursor:pointer;border-left:${list.id === '__loved__' ? '4px solid var(--pines)' : '4px solid transparent'}">
             ${list.id !== '__loved__' ? `<div class="wl-drag-handle" data-drag-handle="${esc(list.id)}">☰</div>` : ''}
             <div class="wl-emoji-icon${list.id !== '__loved__' ? ' wl-emoji-editable' : ''}" ${list.id !== '__loved__' ? `data-edit-emoji="${esc(list.id)}"` : ''} style="background:${list.id === '__loved__' ? 'var(--tag-bg)' : 'var(--bg)'}">
               <span class="emoji-fallback">${list.emoji || (list.id === '__loved__' ? '💚' : '📋')}</span>
@@ -233,7 +233,7 @@ export async function renderWishlistDetail(state) {
               const vi = item._vi || 0;
               const isSelected = state.wishlistSelected.has(globalIdx);
               return `<div class="wishlist-detail-row ${isSelected ? 'selected' : ''}" data-global-idx="${globalIdx}" data-wl-select="${globalIdx}">
-                <div class="wl-left-half wl-item-link" data-item="${esc(item.id)}" data-vi="${vi}">
+                <div class="wl-left-half wl-item-link" data-item="${esc(item.id)}" data-vi="${vi}" tabindex="0" role="button">
                   <div class="wishlist-detail-thumb" style="background:${data.getItemBg(globalIdx)}">
                     ${item.img ? `<img src="${esc(item.img)}" style="width:38px;height:38px;object-fit:contain" onerror="this.outerHTML='📦'" alt="">` : '📦'}
                   </div>

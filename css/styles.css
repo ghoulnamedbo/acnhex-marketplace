@@ -8443,6 +8443,98 @@ body.drag-active .wishlist-item:not(.dragging) {
   box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.2);
 }
 
+/* ═══════════════════════════════════════════
+   Keyboard Navigation & Focus States
+   ═══════════════════════════════════════════ */
+
+/* Focus-visible styles for keyboard navigation (not mouse) */
+*:focus-visible {
+  outline: 2px solid var(--pines);
+  outline-offset: 2px;
+}
+
+/* Override for elements that need custom focus styling */
+button:focus-visible,
+.nav-tab:focus-visible,
+.cat-btn:focus-visible,
+.preset-btn:focus-visible,
+.item-card:focus-visible,
+.similar-card:focus-visible,
+.wishlist-item:focus-visible,
+.ledger-row-link:focus-visible,
+.wl-item-link:focus-visible {
+  outline: 2px solid var(--pines);
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+
+/* Input fields get inset-style focus */
+input:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--pines);
+  box-shadow: 0 0 0 3px rgba(106, 130, 62, 0.15);
+}
+
+/* Cards and interactive items get subtle shadow enhancement on focus */
+.item-card:focus-visible,
+.similar-card:focus-visible,
+.wishlist-item:focus-visible {
+  outline: 2px solid var(--pines);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(106, 130, 62, 0.1), var(--shadow-card);
+}
+
+/* Round elements get matching outline radius */
+.heart-btn:focus-visible,
+.glass-btn:focus-visible,
+.jump-fab:focus-visible,
+.item-add-btn:focus-visible,
+.ledger-dupe-btn:focus-visible,
+.ledger-remove-btn:focus-visible {
+  outline: 2px solid var(--pines);
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+
+/* Nav tabs get pill shape focus */
+.nav-tab:focus-visible {
+  border-radius: 16px;
+}
+
+/* Category buttons match their shape */
+.cat-btn:focus-visible {
+  border-radius: 28px;
+}
+
+/* Search input wrapper */
+.search-input:focus-visible {
+  outline: none;
+  border-color: var(--pines);
+}
+
+/* Toggle switches */
+.toggle-container:focus-visible {
+  outline: 2px solid var(--pines);
+  outline-offset: 4px;
+  border-radius: 20px;
+}
+
+/* Hide outline on mouse click (only show for keyboard) */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Dark mode focus adjustments */
+[data-theme="dark"] *:focus-visible {
+  outline-color: var(--pines);
+}
+[data-theme="dark"] .item-card:focus-visible,
+[data-theme="dark"] .similar-card:focus-visible,
+[data-theme="dark"] .wishlist-item:focus-visible {
+  box-shadow: 0 0 0 4px rgba(154, 175, 124, 0.15), var(--shadow-card);
+}
+
 /* ── Reduce Motion ─── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

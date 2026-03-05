@@ -104,7 +104,7 @@ export function renderCart(state) {
         ${cart.map((item, idx) => `
           <div class="ledger-row" style="animation-delay:${idx * 0.07}s" data-cart-row="${idx}">
             <div class="ledger-num">${String(idx + 1).padStart(2, '0')}</div>
-            <div class="ledger-row-link" data-cart-item-id="${esc(item.id)}" data-cart-item-vi="${item.variantIdx ?? 0}">
+            <div class="ledger-row-link" data-cart-item-id="${esc(item.id)}" data-cart-item-vi="${item.variantIdx ?? 0}" tabindex="0" role="button">
               <div class="ledger-thumb" style="background:${data.getItemBg(idx)}">
                 ${item.img ? `<img src="${esc(item.img)}" onerror="this.outerHTML='📦'" alt="">` : '📦'}
               </div>

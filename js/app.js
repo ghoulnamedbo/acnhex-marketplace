@@ -541,7 +541,7 @@ async function _localRenderRecentlyViewed() {
       const qtyInCart = getCartQtyForItem(entry.id, vi);
 
       // Use same structure as item cards
-      cards.push(`<div class="item-card recent-item-card" data-item="${esc(entry.id)}" data-vi="${vi}">
+      cards.push(`<div class="item-card recent-item-card" data-item="${esc(entry.id)}" data-vi="${vi}" tabindex="0" role="button">
         <div class="item-thumb" style="background:${bg}">
           ${variant.image ? `<img src="${esc(variant.image)}" loading="lazy" onload="this.classList.add('loaded')" onerror="this.outerHTML='<span class=emoji-fallback>📦</span>'" alt="">` : '<span class="emoji-fallback">📦</span>'}
           <button class="heart-btn" data-heart="${esc(entry.id)}" data-heart-vi="${vi}">${ICONS.heart(inWL)}</button>
@@ -853,7 +853,7 @@ function _localRenderItemCard(item, idx) {
   const cartFull = getCartTotal() >= 40;
   const qtyInCart = getCartQtyForItem(item.id, vi);
   const showCounter = qtyInCart > 0;
-  return `<div class="item-card" data-item="${esc(item.id)}" data-vi="${vi}">
+  return `<div class="item-card" data-item="${esc(item.id)}" data-vi="${vi}" tabindex="0" role="button">
     <div class="item-thumb" style="background:${bg}">
       ${item.img ? `<img src="${esc(item.img)}" loading="lazy" onload="this.classList.add('loaded')" onerror="this.outerHTML='<span class=emoji-fallback>📦</span>'" alt="">` : '<span class="emoji-fallback">📦</span>'}
       <button class="heart-btn" data-heart="${esc(item.id)}" data-heart-vi="${vi}">${ICONS.heart(inLoved)}</button>
@@ -1398,7 +1398,7 @@ async function _localRenderSimilarItems(item) {
       const shortHex = hex.length > 6 ? hex.slice(-4).toUpperCase() : hex.toUpperCase();
       const matchClass = m.matchType === 'set' ? 'match-set' : m.matchType === 'style' ? 'match-style' : 'match-color';
       const matchLabel = m.matchType === 'set' ? 'SET' : m.matchType === 'style' ? 'STYLE' : 'COLOR';
-      return `<div class="similar-card" data-item="${esc(o.id)}" data-vi="0">
+      return `<div class="similar-card" data-item="${esc(o.id)}" data-vi="0" tabindex="0" role="button">
         <div class="similar-card-image" style="background:${data.getItemBg(idx)}">
           <span class="similar-match-tag ${matchClass}">${matchLabel}</span>
           <button class="similar-card-heart" data-heart="${esc(o.id)}" data-heart-vi="0">${ICONS.heart(inWL)}</button>
@@ -2025,7 +2025,7 @@ async function _localRenderWishlist() {
           const thumbItems = list.items.slice(0, 4);
           const extraCount = list.items.length > 4 ? list.items.length - 4 : 0;
           return `
-          <div class="wishlist-item${list.id !== '__loved__' ? ' draggable-list' : ''}" data-view-list="${esc(list.id)}" ${list.id !== '__loved__' ? `data-list-idx="${lists.indexOf(list)}"` : ''} style="cursor:pointer;border-left:${list.id === '__loved__' ? '4px solid var(--pines)' : '4px solid transparent'}">
+          <div class="wishlist-item${list.id !== '__loved__' ? ' draggable-list' : ''}" data-view-list="${esc(list.id)}" ${list.id !== '__loved__' ? `data-list-idx="${lists.indexOf(list)}"` : ''} tabindex="0" role="button" style="cursor:pointer;border-left:${list.id === '__loved__' ? '4px solid var(--pines)' : '4px solid transparent'}">
             ${list.id !== '__loved__' ? `<div class="wl-drag-handle" data-drag-handle="${esc(list.id)}">☰</div>` : ''}
             <div class="wl-emoji-icon${list.id !== '__loved__' ? ' wl-emoji-editable' : ''}" ${list.id !== '__loved__' ? `data-edit-emoji="${esc(list.id)}"` : ''} style="background:${list.id === '__loved__' ? 'var(--tag-bg)' : 'var(--bg)'}">
               <span class="emoji-fallback">${list.emoji || (list.id === '__loved__' ? '💚' : '📋')}</span>
@@ -2144,7 +2144,7 @@ async function _localRenderWishlistDetail() {
               const vi = item._vi || 0;
               const isSelected = state.wishlistSelected.has(globalIdx);
               return `<div class="wishlist-detail-row ${isSelected ? 'selected' : ''}" data-global-idx="${globalIdx}" data-wl-select="${globalIdx}">
-                <div class="wl-left-half wl-item-link" data-item="${esc(item.id)}" data-vi="${vi}">
+                <div class="wl-left-half wl-item-link" data-item="${esc(item.id)}" data-vi="${vi}" tabindex="0" role="button">
                   <div class="wishlist-detail-thumb" style="background:${data.getItemBg(globalIdx)}">
                     ${item.img ? `<img src="${esc(item.img)}" style="width:38px;height:38px;object-fit:contain" onerror="this.outerHTML='📦'" alt="">` : '📦'}
                   </div>
@@ -7779,6 +7779,15 @@ function initKeyboardShortcuts() {
         updateHash();
         render();
         return;
+      }
+    }
+
+    // Enter key activates focused interactive elements
+    if (e.key === 'Enter') {
+      const focused = document.activeElement;
+      if (focused && focused.getAttribute('role') === 'button') {
+        e.preventDefault();
+        focused.click();
       }
     }
   });

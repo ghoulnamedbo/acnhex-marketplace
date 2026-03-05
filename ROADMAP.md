@@ -1053,12 +1053,12 @@
 
 ---
 
-### 6.9 — Keyboard Navigation Polish
+### 6.9 — Keyboard Navigation Polish ✅
 **Risk: 🟡 Low-Medium** — Enhances existing keyboard handler
 
 #### CHECKLIST
-- [ ] Read the keyboard shortcut handler in `js/app.js`
-- [ ] **Focus rings**: Add visible focus indicators:
+- [x] Read the keyboard shortcut handler in `js/app.js`
+- [x] **Focus rings**: Add visible focus indicators:
   ```css
   *:focus-visible {
     outline: 2px solid var(--pines);
@@ -1067,13 +1067,13 @@
   }
   ```
   - Use `:focus-visible` (not `:focus`) to only show for keyboard navigation
-- [ ] **Tab order**: Verify logical tab order on each page:
+- [x] **Tab order**: Verify logical tab order on each page:
   - Browse: search bar → categories → first item card → second item card...
   - Detail: back button → heart → orbit controls → CTA buttons
   - Cart: first cart item → duplicate/remove → next item → copy command
-- [ ] **Search auto-focus**: When pressing `/` or `Ctrl+K`, ensure `input.focus()` is called immediately
-- [ ] Add `tabindex="0"` to interactive elements that aren't natively focusable (div buttons, etc.)
-- [ ] Add `role="button"` to clickable divs that aren't `<button>` elements
+- [x] **Search auto-focus**: When pressing `/` or `Ctrl+K`, ensure `input.focus()` is called immediately
+- [x] Add `tabindex="0"` to interactive elements that aren't natively focusable (div buttons, etc.)
+- [x] Add `role="button"` to clickable divs that aren't `<button>` elements
 
 #### TEST PLAN
 1. Press Tab repeatedly on the browse page
