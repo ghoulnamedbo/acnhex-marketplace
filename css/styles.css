@@ -2286,6 +2286,41 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   display: flex; align-items: center; gap: 4px;
 }
 
+/* ─── Search Autocomplete ─── */
+.search-autocomplete {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0 12px;
+  overflow-x: auto;
+}
+.autocomplete-hint {
+  font-size: 10px;
+  color: var(--text-light);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.autocomplete-chip {
+  padding: 6px 12px;
+  border-radius: 50px;
+  border: 1px dashed var(--pines);
+  background: transparent;
+  color: var(--pines);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font);
+  white-space: nowrap;
+  transition: background 0.15s ease, border-style 0.15s ease;
+}
+.autocomplete-chip:hover {
+  background: var(--tag-bg);
+  border-style: solid;
+}
+.autocomplete-chip:active {
+  transform: scale(0.95);
+}
+
 /* ─── Empty States ─── */
 .empty-state { text-align: center; padding: 60px 24px; color: var(--text-light); }
 .empty-emoji { font-size: 48px; margin-bottom: 16px; }

@@ -614,12 +614,60 @@ async function _localRenderCatalog() {
   </div>`;
 }
 
+// ─── Search Autocomplete Suggestions ───
+function getTagSuggestions(query) {
+  if (!query || query.length < 3) return [];
+  const q = query.toLowerCase().trim();
+  const tagGroups = data.getAvailableTags();
+  const suggestions = [];
+
+  // Check colors (can be primary or secondary)
+  const colors = tagGroups['Color 1 (Primary)'] || [];
+  for (const color of colors) {
+    if (color.startsWith(q) && suggestions.length < 4) {
+      if (!state.searchFilterTags.includes('c1:' + color)) {
+        suggestions.push({ label: color, tag: 'c1:' + color, type: 'primary color' });
+      }
+      if (!state.searchFilterTags.includes('c2:' + color)) {
+        suggestions.push({ label: color, tag: 'c2:' + color, type: 'secondary color' });
+      }
+    }
+  }
+
+  // Check styles
+  const styles = tagGroups['Styles'] || [];
+  for (const style of styles) {
+    if (style.startsWith(q) && !state.searchFilterTags.includes(style) && suggestions.length < 4) {
+      suggestions.push({ label: style, tag: style, type: 'style' });
+    }
+  }
+
+  // Check catalog status
+  const catalog = tagGroups['Catalog'] || [];
+  for (const cat of catalog) {
+    if (cat.startsWith(q) && !state.searchFilterTags.includes(cat) && suggestions.length < 4) {
+      suggestions.push({ label: cat, tag: cat, type: 'catalog' });
+    }
+  }
+
+  // Check other tags (antique, bathtub, etc.)
+  const other = tagGroups['Other'] || [];
+  for (const tag of other) {
+    if (tag.startsWith(q) && !state.searchFilterTags.includes(tag) && suggestions.length < 4) {
+      suggestions.push({ label: tag, tag: tag, type: 'other' });
+    }
+  }
+
+  return suggestions.slice(0, 4);
+}
+
 // ─── Catalog with Integrated Search ───
 function _localRenderCatalogWithSearch() {
   const results = state.searchResults || { items: [], total: 0 };
   const hasFilters = state.searchFilterTags.length > 0;
   const hasQuery = state.searchQuery || hasFilters;
   const tagGroups = data.getAvailableTags();
+  const suggestions = !state.searchFilterOpen ? getTagSuggestions(state.searchQuery) : [];
 
   return `<div class="page" id="search-page">
     <div class="search-section">
@@ -653,6 +701,11 @@ function _localRenderCatalogWithSearch() {
             const label = t.startsWith('c1:') ? `${t.slice(3)} (1)` : t.startsWith('c2:') ? `${t.slice(3)} (2)` : t;
             return `<button class="active-filter-pill" data-remove-filter="${esc(t)}">${esc(label)} ✕</button>`;
           }).join('')}
+        </div>` : ''}
+      ${suggestions.length > 0 ? `
+        <div class="search-autocomplete">
+          <span class="autocomplete-hint">Add filter:</span>
+          ${suggestions.map(s => `<button class="autocomplete-chip" data-autocomplete-tag="${esc(s.tag)}">+ ${esc(s.label)}${s.type.includes('color') ? ` (${s.type === 'primary color' ? '1' : '2'})` : ''}</button>`).join('')}
         </div>` : ''}
     </div>
     <div id="search-results">
@@ -2342,10 +2395,61 @@ async function runSearch() {
     container.innerHTML = renderSearchResultsHTML();
     attachSearchResultEvents();
     attachSearchScrollObserver();
-    // Re-render active filter pills
+    // Re-render active filter pills and autocomplete
     updateFilterPills();
+    updateAutocomplete();
   } else {
     render();
+  }
+}
+
+function updateAutocomplete() {
+  // Only show autocomplete when filter panel is closed
+  if (state.searchFilterOpen) {
+    const existing = document.querySelector('.search-autocomplete');
+    if (existing) existing.remove();
+    return;
+  }
+
+  const suggestions = getTagSuggestions(state.searchQuery);
+  let autocompleteContainer = document.querySelector('.search-autocomplete');
+
+  if (suggestions.length > 0) {
+    const html = `<div class="search-autocomplete">
+      <span class="autocomplete-hint">Add filter:</span>
+      ${suggestions.map(s => `<button class="autocomplete-chip" data-autocomplete-tag="${esc(s.tag)}">+ ${esc(s.label)}${s.type.includes('color') ? ` (${s.type === 'primary color' ? '1' : '2'})` : ''}</button>`).join('')}
+    </div>`;
+
+    if (autocompleteContainer) {
+      autocompleteContainer.outerHTML = html;
+    } else {
+      // Insert after active-filters or at end of search-section
+      const activeFilters = document.querySelector('.active-filters');
+      const searchSection = document.querySelector('.search-section');
+      if (activeFilters) {
+        activeFilters.insertAdjacentHTML('afterend', html);
+      } else if (searchSection) {
+        searchSection.insertAdjacentHTML('beforeend', html);
+      }
+    }
+    // Attach click handlers
+    document.querySelectorAll('[data-autocomplete-tag]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const tag = btn.dataset.autocompleteTag;
+        if (!state.searchFilterTags.includes(tag)) {
+          state.searchFilterTags.push(tag);
+          const tagLabel = tag.startsWith('c1:') || tag.startsWith('c2:') ? tag.slice(3) : tag;
+          if (state.searchQuery.toLowerCase().includes(tagLabel)) {
+            state.searchQuery = state.searchQuery.toLowerCase().replace(tagLabel, '').trim();
+            const input = document.getElementById('search-input');
+            if (input) input.value = state.searchQuery;
+          }
+          await runSearch();
+        }
+      });
+    });
+  } else if (autocompleteContainer) {
+    autocompleteContainer.remove();
   }
 }
 
@@ -3838,6 +3942,24 @@ function attachEvents() {
     btn.addEventListener('click', async () => {
       state.searchFilterTags = state.searchFilterTags.filter(t => t !== btn.dataset.removeFilter);
       await runSearch();
+    });
+  });
+
+  // Autocomplete chip click - add as filter
+  app.querySelectorAll('[data-autocomplete-tag]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const tag = btn.dataset.autocompleteTag;
+      if (!state.searchFilterTags.includes(tag)) {
+        state.searchFilterTags.push(tag);
+        // Clear the query text that matched this tag
+        const tagLabel = tag.startsWith('c1:') || tag.startsWith('c2:') ? tag.slice(3) : tag;
+        if (state.searchQuery.toLowerCase().includes(tagLabel)) {
+          state.searchQuery = state.searchQuery.toLowerCase().replace(tagLabel, '').trim();
+          const input = document.getElementById('search-input');
+          if (input) input.value = state.searchQuery;
+        }
+        await runSearch();
+      }
     });
   });
 
