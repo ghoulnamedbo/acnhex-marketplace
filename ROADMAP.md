@@ -877,20 +877,20 @@
 **Risk: 🟡 Medium** — Uses existing `orderHistory` localStorage
 
 #### CHECKLIST
-- [ ] Read `js/storage.js` — confirm `getOrderHistory()` and `setOrderHistory()` exist
-- [ ] Read `js/pages/cart.js` — find the empty cart state render
-- [ ] First: ensure orders are SAVED to history when the user copies the bot command
+- [x] Read `js/storage.js` — confirm `getOrderHistory()` and `setOrderHistory()` exist
+- [x] Read `js/pages/cart.js` — find the empty cart state render
+- [x] First: ensure orders are SAVED to history when the user copies the bot command
   - In the copy handler, save current cart to order history:
     ```js
     const history = storage.getOrderHistory();
     history.unshift({ items: [...state.cart], timestamp: Date.now() });
     storage.setOrderHistory(history.slice(0, 10)); // Keep last 10
     ```
-- [ ] In the empty cart render, check for order history:
+- [x] In the empty cart render, check for order history:
   - If history exists, show a "📦 Re-order last" button below "Start Shopping"
   - On click: restore `history[0].items` to `state.cart`, save, re-render
-- [ ] Show a brief description: "Re-order: [N items] from [relative time]"
-- [ ] Style: secondary button style (outline), below the primary "Start Shopping" button
+- [x] Show a brief description: "Re-order: [N items] from [relative time]"
+- [x] Style: secondary button style (outline), below the primary "Start Shopping" button
 
 #### TEST PLAN
 1. Add items to cart → copy the bot command (this saves to history)

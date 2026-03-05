@@ -1914,6 +1914,37 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
 .cart-empty-cta:hover { box-shadow: 0 6px 20px rgba(106,130,62,0.3); transform: translateY(-1px); }
 .cart-empty-cta:active { transform: scale(0.97); }
 
+/* Re-order Last Button */
+.cart-reorder-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 12px 24px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.cart-reorder-btn:hover {
+  border-color: var(--pines);
+  background: var(--bg);
+}
+.cart-reorder-btn:active {
+  transform: scale(0.97);
+}
+.reorder-meta {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
 /* Legacy cart/wishlist item styles still needed for wishlist */
 .wishlist-item {
   background: var(--card); border-radius: 18px; display: flex;

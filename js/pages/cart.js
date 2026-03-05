@@ -13,6 +13,49 @@ const CART_EMPTY_QUOTES = [
   "Tom Nook is tapping his foot… go find something nice!",
 ];
 
+function getRelativeTime(timestamp) {
+  const diff = Date.now() - timestamp;
+  const mins = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days === 1) return 'yesterday';
+  return `${days}d ago`;
+}
+
+function renderEmptyCart() {
+  const history = storage.getOrderHistory();
+  const lastOrder = history.length > 0 ? history[0] : null;
+
+  return `
+      <!-- Empty State -->
+      <div class="cart-empty-card">
+        <div class="cart-empty-inner">
+          <div class="cart-empty-leaves">
+            <div class="cart-leaf" style="left:15%;animation-delay:0s">🍃</div>
+            <div class="cart-leaf" style="left:37%;animation-delay:1.6s">🌱</div>
+            <div class="cart-leaf" style="left:59%;animation-delay:3.2s">🍃</div>
+            <div class="cart-leaf" style="left:81%;animation-delay:4.8s">🌱</div>
+          </div>
+          <div class="cart-empty-icon">🛒</div>
+          <div class="cart-empty-title">Your cart is empty!</div>
+          <div class="cart-empty-quote">
+            "${esc(CART_EMPTY_QUOTES[Math.floor(Math.random() * CART_EMPTY_QUOTES.length)])}"
+            <div class="cart-empty-attr">— Nook Inc.</div>
+          </div>
+          <button class="cart-empty-cta" data-nav="catalog">🏠 Start Shopping</button>
+          ${lastOrder ? `
+            <button class="cart-reorder-btn" data-reorder-last>
+              📦 Re-order last
+              <span class="reorder-meta">${lastOrder.items.length} items · ${getRelativeTime(lastOrder.timestamp)}</span>
+            </button>
+          ` : ''}
+        </div>
+      </div>`;
+}
+
 // ─── Helpers ───
 export function getShortHex(hex) {
   if (!hex) return '';
@@ -55,25 +98,7 @@ export function renderCart(state) {
       </div>
     </div>
 
-    ${cart.length === 0 ? `
-      <!-- Empty State -->
-      <div class="cart-empty-card">
-        <div class="cart-empty-inner">
-          <div class="cart-empty-leaves">
-            <div class="cart-leaf" style="left:15%;animation-delay:0s">🍃</div>
-            <div class="cart-leaf" style="left:37%;animation-delay:1.6s">🌱</div>
-            <div class="cart-leaf" style="left:59%;animation-delay:3.2s">🍃</div>
-            <div class="cart-leaf" style="left:81%;animation-delay:4.8s">🌱</div>
-          </div>
-          <div class="cart-empty-icon">🛒</div>
-          <div class="cart-empty-title">Your cart is empty!</div>
-          <div class="cart-empty-quote">
-            "${esc(CART_EMPTY_QUOTES[Math.floor(Math.random() * CART_EMPTY_QUOTES.length)])}"
-            <div class="cart-empty-attr">— Nook Inc.</div>
-          </div>
-          <button class="cart-empty-cta" data-nav="catalog">🏠 Start Shopping</button>
-        </div>
-      </div>` : `
+    ${cart.length === 0 ? renderEmptyCart() : `
       <!-- Ledger Items -->
       <div class="ledger-items">
         ${cart.map((item, idx) => `

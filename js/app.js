@@ -4951,6 +4951,22 @@ function attachEvents() {
     });
   });
 
+  // Re-order last (empty cart state)
+  const reorderBtn = document.querySelector('[data-reorder-last]');
+  if (reorderBtn) {
+    reorderBtn.addEventListener('click', () => {
+      const history = storage.getOrderHistory();
+      if (history.length > 0) {
+        const order = history[0];
+        state.cart = [...order.items];
+        storage.setCart(state.cart);
+        NookSounds.play('addToCart');
+        showToast(`♻ Reloaded ${order.items.length} item${order.items.length !== 1 ? 's' : ''}`);
+        render();
+      }
+    });
+  }
+
   // Wishlist add-to-cart (uses embedded data attributes for correct variant)
   app.querySelectorAll('[data-wl-add]').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -6175,6 +6191,18 @@ function attachEvents() {
     } else {
       fallbackCopy(command);
       showStamp();
+    }
+
+    // Save to order history when copying
+    if (state.cart.length > 0) {
+      const snapshot = {
+        items: [...state.cart],
+        timestamp: Date.now()
+      };
+      const history = storage.getOrderHistory();
+      history.unshift(snapshot);
+      if (history.length > 10) history.length = 10;
+      storage.setOrderHistory(history);
     }
   });
 
