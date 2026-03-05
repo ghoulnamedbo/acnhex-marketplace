@@ -965,25 +965,25 @@
 
 ---
 
-### 6.6 — Error & Edge Case States
+### 6.6 — Error & Edge Case States ✅
 **Risk: 🟠 Medium** — Multiple small changes across many files
 
 #### CHECKLIST
-- [ ] **Offline banner**:
+- [x] **Offline banner**:
   - Listen for `online`/`offline` events on `window`
   - When offline, show a fixed banner at the top: "📡 You're offline — browsing cached items"
   - When back online, auto-dismiss with "Back online!" toast
   - Style: subtle amber/yellow banner, 32px height, full width
-- [ ] **Cart full (40/40) state**:
+- [x] **Cart full (40/40) state**:
   - When cart has 40 items, disable all "Add" buttons across the app
   - Add visual state: grey out the button, show "Cart full" text
   - On the detail page CTA: "Cart full (40/40)" instead of "Add to Cart"
   - Play the `cartFull` sound (already exists)
-- [ ] **Empty search results**:
+- [x] **Empty search results**:
   - Find the "no results" state in search
   - Add suggested searches: "Try 'chair', 'blue', or 'elegant'"
   - Show the search query back: "No results for 'xyzabc'"
-- [ ] **Image fallback styling**:
+- [x] **Image fallback styling**:
   - Already addressed in Phase 5.4 (image loading strategy)
 
 #### TEST PLAN

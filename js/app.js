@@ -2521,7 +2521,18 @@ function renderSearchResultsHTML() {
   const results = state.searchResults || { items: [], total: 0 };
   const hasFilters = state.searchFilterTags.length > 0;
   const hasQuery = state.searchQuery || hasFilters;
+
   if (hasQuery) {
+    // No results found
+    if (results.total === 0) {
+      return `<div class="empty-state">
+          <p class="empty-emoji">🔍</p>
+          <p class="empty-title">No results${state.searchQuery ? ` for "${esc(state.searchQuery)}"` : ''}</p>
+          <p class="empty-text">Try "chair", "blue", or "elegant"</p>
+          ${hasFilters ? '<p class="empty-text" style="margin-top:8px"><button class="search-clear-filters-btn" id="search-clear-filters" style="color:var(--pines);background:none;border:none;text-decoration:underline;cursor:pointer;font-size:inherit">Clear filters</button></p>' : ''}
+        </div>`;
+    }
+    // Has results
     return `<div style="padding:16px 24px 8px">
         <p class="text-secondary">${results.total} result${results.total !== 1 ? 's' : ''}${state.searchQuery ? ` for "${esc(state.searchQuery)}"` : ''}${hasFilters ? ` (${state.searchFilterTags.length} filter${state.searchFilterTags.length !== 1 ? 's' : ''})` : ''}</p>
       </div>
@@ -2530,6 +2541,8 @@ function renderSearchResultsHTML() {
       </div>
       ${results.items.length < results.total ? '<div id="search-scroll-sentinel" style="height:1px"></div>' : ''}`;
   }
+
+  // Initial empty state (no query)
   return `<div class="empty-state">
       <p class="empty-emoji">🔍</p>
       <p class="empty-title">Search by name or tags</p>
@@ -2801,6 +2814,18 @@ function attachSearchResultEvents() {
       updateAllCartBtnStates();
     });
   });
+
+  // Clear filters button in no-results state
+  const clearFiltersBtn = document.getElementById('search-clear-filters');
+  if (clearFiltersBtn) {
+    clearFiltersBtn.addEventListener('click', () => {
+      state.searchFilterTags = [];
+      runSearch().then(() => {
+        updateSearchResults();
+        updateFilterPills();
+      });
+    });
+  }
 }
 
 // ─── Surgical Detail Variant Update ───
