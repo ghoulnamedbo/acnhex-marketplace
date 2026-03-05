@@ -1988,7 +1988,8 @@ async function _localRenderWishlist() {
           const thumbItems = list.items.slice(0, 4);
           const extraCount = list.items.length > 4 ? list.items.length - 4 : 0;
           return `
-          <div class="wishlist-item" data-view-list="${esc(list.id)}" style="cursor:pointer;border-left:${list.id === '__loved__' ? '4px solid var(--pines)' : '4px solid transparent'}">
+          <div class="wishlist-item${list.id !== '__loved__' ? ' draggable-list' : ''}" data-view-list="${esc(list.id)}" ${list.id !== '__loved__' ? `data-list-idx="${lists.indexOf(list)}"` : ''} style="cursor:pointer;border-left:${list.id === '__loved__' ? '4px solid var(--pines)' : '4px solid transparent'}">
+            ${list.id !== '__loved__' ? `<div class="wl-drag-handle" data-drag-handle="${esc(list.id)}">☰</div>` : ''}
             <div class="wl-emoji-icon${list.id !== '__loved__' ? ' wl-emoji-editable' : ''}" ${list.id !== '__loved__' ? `data-edit-emoji="${esc(list.id)}"` : ''} style="background:${list.id === '__loved__' ? 'var(--tag-bg)' : 'var(--bg)'}">
               <span class="emoji-fallback">${list.emoji || (list.id === '__loved__' ? '💚' : '📋')}</span>
               ${list.id !== '__loved__' ? '<div class="wl-emoji-edit-badge">✎</div>' : ''}
@@ -5181,10 +5182,159 @@ function attachEvents() {
       if (e.target.closest('[data-edit-emoji]')) return;
       if (e.target.closest('[data-dup-list]')) return;
       if (e.target.closest('[data-rename-list]')) return;
+      if (e.target.closest('[data-drag-handle]')) return;
       state.viewingListId = btn.dataset.viewList;
       render();
     });
   });
+
+  // ─── Drag-to-Reorder Wishlist Lists ───
+  const draggableLists = app.querySelectorAll('.draggable-list');
+  if (draggableLists.length > 1) {
+    let draggedEl = null;
+    let draggedListId = null;
+    let placeholder = null;
+    let startY = 0;
+    let isDragging = false;
+
+    const getListContainer = () => app.querySelector('.draggable-list')?.parentElement;
+
+    const handleDragStart = (e, handle) => {
+      const listItem = handle.closest('.draggable-list');
+      if (!listItem) return;
+
+      e.preventDefault();
+      draggedEl = listItem;
+      draggedListId = listItem.dataset.viewList;
+      startY = e.touches ? e.touches[0].clientY : e.clientY;
+      isDragging = false;
+
+      // Short delay before starting drag (for touch)
+      draggedEl._longPressTimer = setTimeout(() => {
+        isDragging = true;
+        draggedEl.classList.add('dragging');
+        document.body.classList.add('drag-active');
+
+        // Create placeholder
+        placeholder = document.createElement('div');
+        placeholder.className = 'wl-drag-placeholder';
+        placeholder.style.height = draggedEl.offsetHeight + 'px';
+        draggedEl.parentElement.insertBefore(placeholder, draggedEl);
+      }, e.touches ? 150 : 0);
+    };
+
+    const handleDragMove = (e) => {
+      if (!draggedEl) return;
+      const currentY = e.touches ? e.touches[0].clientY : e.clientY;
+
+      // Cancel if moved before drag started
+      if (!isDragging) {
+        if (Math.abs(currentY - startY) > 10) {
+          clearTimeout(draggedEl._longPressTimer);
+          draggedEl = null;
+        }
+        return;
+      }
+
+      e.preventDefault();
+      const deltaY = currentY - startY;
+      draggedEl.style.transform = `translateY(${deltaY}px)`;
+
+      // Find which element to insert before
+      const container = getListContainer();
+      if (!container || !placeholder) return;
+
+      const siblings = [...container.querySelectorAll('.draggable-list:not(.dragging), [data-view-list="__loved__"]')];
+      const draggedRect = draggedEl.getBoundingClientRect();
+      const draggedCenter = draggedRect.top + draggedRect.height / 2;
+
+      let insertBefore = null;
+      for (const sibling of siblings) {
+        const rect = sibling.getBoundingClientRect();
+        const siblingCenter = rect.top + rect.height / 2;
+        // Skip Loved Items - placeholder should always be after it
+        if (sibling.dataset.viewList === '__loved__') continue;
+        if (draggedCenter < siblingCenter) {
+          insertBefore = sibling;
+          break;
+        }
+      }
+
+      // Move placeholder to new position
+      if (insertBefore) {
+        container.insertBefore(placeholder, insertBefore);
+      } else {
+        // Append to end (after all siblings)
+        const lastDraggable = siblings.filter(s => s.dataset.viewList !== '__loved__').pop();
+        if (lastDraggable && lastDraggable.nextSibling !== placeholder) {
+          container.insertBefore(placeholder, lastDraggable.nextSibling);
+        }
+      }
+    };
+
+    const handleDragEnd = () => {
+      if (!draggedEl) return;
+      clearTimeout(draggedEl._longPressTimer);
+
+      if (isDragging && placeholder && draggedListId) {
+        // Get new order from DOM
+        const container = getListContainer();
+        if (container) {
+          const newOrder = [];
+          const lovedList = state.wishlists.lists.find(l => l.id === '__loved__');
+          if (lovedList) newOrder.push(lovedList);
+
+          // Get order of draggable elements and placeholder
+          const elements = [...container.children];
+          for (const el of elements) {
+            if (el === placeholder) {
+              // Insert dragged list at placeholder position
+              const draggedList = state.wishlists.lists.find(l => l.id === draggedListId);
+              if (draggedList && draggedList.id !== '__loved__') newOrder.push(draggedList);
+            } else if (el.classList.contains('draggable-list') && !el.classList.contains('dragging')) {
+              const listId = el.dataset.viewList;
+              const list = state.wishlists.lists.find(l => l.id === listId);
+              if (list && list.id !== '__loved__') newOrder.push(list);
+            }
+          }
+
+          // Only update if order actually changed
+          const oldIds = state.wishlists.lists.map(l => l.id).join(',');
+          const newIds = newOrder.map(l => l.id).join(',');
+          if (oldIds !== newIds && newOrder.length === state.wishlists.lists.length) {
+            state.wishlists.lists = newOrder;
+            storage.setWishlists(state.wishlists);
+            NookSounds.play('addToCart');
+          }
+        }
+        placeholder.remove();
+      }
+
+      if (draggedEl) {
+        draggedEl.classList.remove('dragging');
+        draggedEl.style.transform = '';
+      }
+      document.body.classList.remove('drag-active');
+
+      draggedEl = null;
+      draggedListId = null;
+      placeholder = null;
+      isDragging = false;
+
+      render();
+    };
+
+    // Attach handlers to drag handles
+    app.querySelectorAll('[data-drag-handle]').forEach(handle => {
+      handle.addEventListener('mousedown', (e) => handleDragStart(e, handle));
+      handle.addEventListener('touchstart', (e) => handleDragStart(e, handle), { passive: false });
+    });
+
+    document.addEventListener('mousemove', handleDragMove);
+    document.addEventListener('touchmove', handleDragMove, { passive: false });
+    document.addEventListener('mouseup', handleDragEnd);
+    document.addEventListener('touchend', handleDragEnd);
+  }
 
   // List back button
   const listBack = document.getElementById('list-back');

@@ -112,7 +112,8 @@ export async function renderWishlist(state) {
           const thumbItems = list.items.slice(0, 4);
           const extraCount = list.items.length > 4 ? list.items.length - 4 : 0;
           return `
-          <div class="wishlist-item" data-view-list="${esc(list.id)}" style="cursor:pointer;border-left:${list.id === '__loved__' ? '4px solid var(--pines)' : '4px solid transparent'}">
+          <div class="wishlist-item${list.id !== '__loved__' ? ' draggable-list' : ''}" data-view-list="${esc(list.id)}" style="cursor:pointer;border-left:${list.id === '__loved__' ? '4px solid var(--pines)' : '4px solid transparent'}">
+            ${list.id !== '__loved__' ? `<div class="wl-drag-handle" data-drag-handle="${esc(list.id)}">☰</div>` : ''}
             <div class="wl-emoji-icon${list.id !== '__loved__' ? ' wl-emoji-editable' : ''}" ${list.id !== '__loved__' ? `data-edit-emoji="${esc(list.id)}"` : ''} style="background:${list.id === '__loved__' ? 'var(--tag-bg)' : 'var(--bg)'}">
               <span class="emoji-fallback">${list.emoji || (list.id === '__loved__' ? '💚' : '📋')}</span>
               ${list.id !== '__loved__' ? '<div class="wl-emoji-edit-badge">✎</div>' : ''}

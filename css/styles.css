@@ -3353,6 +3353,66 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   transition-duration: 0.1s;
 }
 
+/* ─── Wishlist Drag-to-Reorder ─── */
+.wl-drag-handle {
+  width: 28px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-light);
+  font-size: 16px;
+  cursor: grab;
+  flex-shrink: 0;
+  opacity: 0.5;
+  touch-action: none;
+  user-select: none;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.wl-drag-handle:hover {
+  opacity: 1;
+  color: var(--pines);
+}
+
+.wl-drag-handle:active {
+  cursor: grabbing;
+}
+
+.draggable-list.dragging {
+  position: relative;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  opacity: 0.95;
+  transition: none;
+}
+
+.wl-drag-placeholder {
+  background: var(--border);
+  border-radius: 18px;
+  opacity: 0.5;
+  margin-bottom: 12px;
+  border: 2px dashed var(--pines);
+}
+
+body.drag-active {
+  cursor: grabbing;
+  user-select: none;
+}
+
+body.drag-active .wishlist-item:not(.dragging) {
+  transition: transform 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .draggable-list.dragging {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+  body.drag-active .wishlist-item:not(.dragging) {
+    transition: none;
+  }
+}
+
 /* ─── Add-to-Cart Bounce ─── */
 @keyframes cartBounce {
   0%   { transform: scale(1); }

@@ -782,7 +782,7 @@
 
 ---
 
-### 5.5 — Pull-to-Refresh Visual Polish
+### 5.5 — Pull-to-Refresh Visual Polish ✅
 **Risk: 🟠 Medium** — Modifies existing touch gesture handler
 
 #### CHECKLIST
@@ -817,7 +817,7 @@
 
 ---
 
-### 6.1 — Sound Preview Buttons in Settings
+### 6.1 — Sound Preview Buttons in Settings ✅
 **Risk: 🟡 Low-Medium** — Adds buttons that trigger existing sound functions
 
 #### CHECKLIST
@@ -841,7 +841,7 @@
 
 ---
 
-### 6.2 — Settings Section Jump Links
+### 6.2 — Settings Section Jump Links ✅
 **Risk: 🟡 Low** — Adds a mini nav at the top of settings page
 
 #### CHECKLIST
@@ -873,7 +873,7 @@
 
 ---
 
-### 6.3 — Empty Cart → "Re-order Last" Button
+### 6.3 — Empty Cart → "Re-order Last" Button ✅
 **Risk: 🟡 Medium** — Uses existing `orderHistory` localStorage
 
 #### CHECKLIST
@@ -902,7 +902,7 @@
 
 ---
 
-### 6.4 — Onboarding Modal Upgrade (Multi-Step)
+### 6.4 — Onboarding Modal Upgrade (Multi-Step) ✅
 **Risk: 🟠 Medium-High** — Replaces existing intro modal entirely
 
 #### CHECKLIST
@@ -932,25 +932,25 @@
 
 ---
 
-### 6.5 — Drag-to-Reorder Wishlist Lists
+### 6.5 — Drag-to-Reorder Wishlist Lists ✅
 **Risk: 🔴 High** — Touch gesture handling + state reordering + persistence
 
 #### CHECKLIST
-- [ ] Read `js/pages/wishlist.js` — understand the list rendering order
-- [ ] Read `js/storage.js` — the lists array order determines display order
-- [ ] Implement drag-to-reorder on the wishlist overview page:
+- [x] Read `js/pages/wishlist.js` — understand the list rendering order
+- [x] Read `js/storage.js` — the lists array order determines display order
+- [x] Implement drag-to-reorder on the wishlist overview page:
   - Add a drag handle (≡ icon) to each custom list card (NOT on Loved Items — it stays first)
   - On long-press of the handle: enter drag mode
   - Show a visual "lift" on the dragged card (shadow, scale up slightly)
   - Other cards shift position as the dragged card moves
   - On drop: reorder the `state.wishlists.lists` array and save to storage
-- [ ] Implementation options:
+- [x] Implementation options:
   - **Option A**: Native HTML5 drag-and-drop (simpler but less mobile-friendly)
   - **Option B**: Custom touch event handling (touchstart/touchmove/touchend) — recommended for mobile
-- [ ] Ensure Loved Items (index 0) is never draggable and always stays first
-- [ ] After reordering, save immediately to `storage.setWishlists()`
-- [ ] Add visual feedback: drop zone highlights, smooth repositioning animation
-- [ ] Consider `prefers-reduced-motion` — skip animations if set
+- [x] Ensure Loved Items (index 0) is never draggable and always stays first
+- [x] After reordering, save immediately to `storage.setWishlists()`
+- [x] Add visual feedback: drop zone highlights, smooth repositioning animation
+- [x] Consider `prefers-reduced-motion` — skip animations if set
 
 #### TEST PLAN
 1. Create 3+ custom lists
