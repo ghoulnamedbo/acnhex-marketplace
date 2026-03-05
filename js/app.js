@@ -3733,19 +3733,28 @@ function attachEvents() {
 
   // Category buttons
   app.querySelectorAll('[data-cat]').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       NookSounds.play('categoryTap');
       state.activeCategory = btn.dataset.cat;
       state.loadedCount = 0;
-      state.isRandom = false;
       state.expandedItems = null;
       state.expandedTotal = 0;
       ads.resetGridInterstitial();
       const catScrollEl = document.getElementById('cat-scroll');
       if (catScrollEl) state.catScrollLeft = catScrollEl.scrollLeft;
       state._pageEnter = true;
-      render();
-      loadExpandedCatalog();
+
+      // "All" category always shows random picks
+      if (btn.dataset.cat === 'All') {
+        state.isRandom = true;
+        state.randomUsedIndices = new Set();
+        state.randomItems = await data.getRandomExpandedItems(50, state.randomUsedIndices);
+        render();
+      } else {
+        state.isRandom = false;
+        render();
+        loadExpandedCatalog();
+      }
     });
   });
 
