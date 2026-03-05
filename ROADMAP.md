@@ -367,7 +367,7 @@
 
 ---
 
-### 3.6 — Empty List Personality (Warm Empty States)
+### 3.6 — Empty List Personality (Warm Empty States) ✅
 **Risk: 🟡 Low** — Adds conditional HTML in wishlist detail render
 
 #### CHECKLIST
@@ -396,24 +396,24 @@
 
 ---
 
-### 3.7 — Jump to Top / Jump to Order Buttons
+### 3.7 — Jump to Top / Jump to Order Buttons ✅
 **Risk: 🟡 Low** — New floating button, no existing UI modified
 
 #### CHECKLIST
-- [ ] Add a "Jump to Top" floating action button (FAB) that appears when the user scrolls past 600px on:
+- [x] Add a "Jump to Top" floating action button (FAB) that appears when the user scrolls past 600px on:
   - Browse/catalog page → "↑" arrow button, scrolls to top
   - Search results → same behavior
-- [ ] Add a "Jump to Order" FAB on:
+- [x] Add a "Jump to Order" FAB on:
   - Cart page (when items exist) → scrolls to the BOT COMMAND / shipping label section
   - Wishlist list detail → scrolls to the bottom action area
-- [ ] Implementation:
+- [x] Implementation:
   - Listen to `scroll` events (debounced)
   - Toggle a `.visible` class on the FAB when scroll threshold is met
   - Use `window.scrollTo({ top: 0, behavior: 'smooth' })` for top
   - Use `element.scrollIntoView({ behavior: 'smooth' })` for "jump to order"
-- [ ] Style: Small circular button (40px), `var(--pines)` background, white arrow icon, positioned bottom-right (above nav bar), `opacity: 0 → 1` transition
-- [ ] Must not overlap with the nav bar or CTA bar on detail page
-- [ ] The button should disappear when near the target (e.g., hide "jump to top" when near top)
+- [x] Style: Small circular button (40px), `var(--pines)` background, white arrow icon, positioned bottom-right (above nav bar), `opacity: 0 → 1` transition
+- [x] Must not overlap with the nav bar or CTA bar on detail page
+- [x] The button should disappear when near the target (e.g., hide "jump to top" when near top)
 
 #### TEST PLAN
 1. Browse page → scroll down past ~3 screens of items
@@ -432,15 +432,15 @@
 
 ---
 
-### 4.1 — Search Tag Auto-Complete Chips
+### 4.1 — Search Tag Auto-Complete Chips ✅
 **Risk: 🟡 Medium** — Modifies search input handler and results display
 
 #### CHECKLIST
-- [ ] Read the search logic in `js/app.js` and `js/data.js`
-- [ ] Read how `searchFilterTags` currently works in state
-- [ ] Collect all unique tags from the filter system (colors, styles, catalog, sizes)
-- [ ] In the search input handler (the debounced handler):
-  - After the user types 2+ characters, check if the query matches any known tag
+- [x] Read the search logic in `js/app.js` and `js/data.js`
+- [x] Read how `searchFilterTags` currently works in state
+- [x] Collect all unique tags from the filter system (colors, styles, catalog, sizes)
+- [x] In the search input handler (the debounced handler):
+  - After the user types 3+ characters, check if the query matches any known tag (using startsWith)
   - If match found, show auto-complete suggestion chips between the search input and the results:
     ```html
     <div class="search-autocomplete">
@@ -450,10 +450,10 @@
     </div>
     ```
   - Clicking a chip adds it to `searchFilterTags` and clears that word from the text input
-- [ ] Ensure existing manual filter panel (the ▽ toggle) still works independently
-- [ ] Auto-complete should only show when typing, not when the filter panel is open
-- [ ] Limit to max 3-4 suggestions to avoid clutter
-- [ ] Style: horizontal row of small pills with `+` prefix, subtle background
+- [x] Ensure existing manual filter panel (the ▽ toggle) still works independently
+- [x] Auto-complete should only show when typing, not when the filter panel is open
+- [x] Limit to max 3-4 suggestions to avoid clutter
+- [x] Style: horizontal row of small pills with `+` prefix, subtle background
 
 #### TEST PLAN
 1. Open search → type "pink"
