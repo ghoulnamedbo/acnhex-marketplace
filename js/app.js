@@ -56,6 +56,7 @@ const state = {
   searchResults: null,
   searchFilterTags: [],
   searchFilterOpen: false,
+  searchFilterReminderDismissed: false,
   loadedCount: 0,
   isRandom: false,
   randomItems: [],
@@ -227,6 +228,9 @@ async function parseHashAndNavigate() {
     case 'cart':
       state.page = 'cart';
       state._pageEnter = true;
+      // Clear search filters when leaving catalog (session-only persistence)
+      state.searchFilterTags = [];
+      state.searchFilterReminderDismissed = false;
       return true;
 
     case 'wishlist':
@@ -240,16 +244,25 @@ async function parseHashAndNavigate() {
         state.viewingListId = null;
       }
       state._pageEnter = true;
+      // Clear search filters when leaving catalog (session-only persistence)
+      state.searchFilterTags = [];
+      state.searchFilterReminderDismissed = false;
       return true;
 
     case 'settings':
       state.page = 'settings';
       state._pageEnter = true;
+      // Clear search filters when leaving catalog (session-only persistence)
+      state.searchFilterTags = [];
+      state.searchFilterReminderDismissed = false;
       return true;
 
     case 'info':
       state.page = 'info';
       state._pageEnter = true;
+      // Clear search filters when leaving catalog (session-only persistence)
+      state.searchFilterTags = [];
+      state.searchFilterReminderDismissed = false;
       return true;
 
     default:
@@ -679,6 +692,12 @@ function _localRenderCatalogWithSearch() {
         <button class="filter-toggle-btn ${hasFilters ? 'active' : ''}" id="filter-toggle">${ICONS.filter}${hasFilters ? `<span class="filter-badge">${state.searchFilterTags.length}</span>` : ''}</button>
         <button class="search-close-btn" id="search-close">✕</button>
       </div>
+      ${hasFilters && !state.searchFilterReminderDismissed && !state.searchFilterOpen ? `
+      <div class="filter-reminder-banner">
+        <span class="filter-reminder-text">${state.searchFilterTags.length} active filter${state.searchFilterTags.length !== 1 ? 's' : ''}: ${state.searchFilterTags.slice(0, 2).map(t => t.startsWith('c1:') ? t.slice(3) : t.startsWith('c2:') ? t.slice(3) : t).join(', ')}${state.searchFilterTags.length > 2 ? '...' : ''}</span>
+        <button class="filter-reminder-clear" id="filter-reminder-clear">Clear</button>
+        <button class="filter-reminder-dismiss" id="filter-reminder-dismiss">✕</button>
+      </div>` : ''}
       ${state.searchFilterOpen ? `
       <div class="filter-panel" id="filter-panel">
         ${Object.entries(tagGroups).map(([group, tags]) => {
@@ -3890,7 +3909,7 @@ function attachEvents() {
     state.searchOpen = false;
     state.searchQuery = '';
     state.searchResults = null;
-    state.searchFilterTags = [];
+    // Keep filters - they persist until page navigation or explicit clear
     state.searchFilterOpen = false;
     render();
   });
@@ -3968,6 +3987,19 @@ function attachEvents() {
   if (filterClear) filterClear.addEventListener('click', async () => {
     state.searchFilterTags = [];
     await runSearch();
+  });
+
+  // Filter reminder banner handlers
+  const filterReminderClear = document.getElementById('filter-reminder-clear');
+  if (filterReminderClear) filterReminderClear.addEventListener('click', async () => {
+    state.searchFilterTags = [];
+    state.searchFilterReminderDismissed = false;
+    await runSearch();
+  });
+  const filterReminderDismiss = document.getElementById('filter-reminder-dismiss');
+  if (filterReminderDismiss) filterReminderDismiss.addEventListener('click', () => {
+    state.searchFilterReminderDismissed = true;
+    render();
   });
 
   // Detail page
@@ -6926,7 +6958,7 @@ function initKeyboardShortcuts() {
         state.searchOpen = false;
         state.searchQuery = '';
         state.searchResults = null;
-        state.searchFilterTags = [];
+        // Keep filters - they persist until page navigation or explicit clear
         state.searchFilterOpen = false;
         render();
         return;

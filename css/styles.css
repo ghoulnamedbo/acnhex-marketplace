@@ -2286,6 +2286,48 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   display: flex; align-items: center; gap: 4px;
 }
 
+/* ─── Filter Reminder Banner ─── */
+.filter-reminder-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  background: var(--tag-bg);
+  border: 1px solid var(--pines);
+}
+.filter-reminder-text {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--pines);
+}
+.filter-reminder-clear {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: none;
+  background: var(--pines);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font);
+}
+.filter-reminder-dismiss {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-light);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: var(--font);
+}
+.filter-reminder-dismiss:hover {
+  color: var(--text);
+}
+
 /* ─── Search Autocomplete ─── */
 .search-autocomplete {
   display: flex;
