@@ -7369,6 +7369,18 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   background: #5a8848;
 }
 
+.past-order-reload-btn .reload-icon {
+  display: inline-block;
+}
+
+.past-order-reload-btn.reloading {
+  pointer-events: none;
+}
+
+.past-order-reload-btn.reloading .reload-icon {
+  animation: spin 0.5s linear infinite;
+}
+
 .past-order-copy-btn:active,
 .past-order-reload-btn:active {
   transform: scale(0.97);

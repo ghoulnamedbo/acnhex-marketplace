@@ -1577,7 +1577,7 @@ function _localRenderPastOrders() {
             </div>
             <div class="past-order-actions">
               <button class="past-order-copy-btn" data-copy-order="${idx}" title="Copy command">📋 Copy</button>
-              <button class="past-order-reload-btn" data-reload-order="${idx}" title="Reload to cart">♻ Reload</button>
+              <button class="past-order-reload-btn" data-reload-order="${idx}" title="Reload to cart"><span class="reload-icon">♻</span> Reload</button>
             </div>
           </div>`;
         }).join('')}
@@ -2410,7 +2410,7 @@ function renderModal() {
     <div class="onboard-step ${step === 0 ? 'active' : step > 0 ? 'left' : ''}">
       <p class="onboard-emoji">🍃</p>
       <h2 class="onboard-title">Welcome to ACNHEX Market!</h2>
-      <p class="onboard-desc">The complete Animal Crossing item catalog with Discord bot integration.</p>
+      <p class="onboard-desc">Browse, Copy, Paste. Do it all over again. Timmy and Tommy won't be mad.</p>
       <div class="onboard-flow">
         <div class="onboard-flow-step">
           <span class="onboard-flow-icon">🔍</span>
@@ -5017,12 +5017,15 @@ function attachEvents() {
         if (state.cart.length > 0) {
           if (!confirm('This will replace your current cart. Continue?')) return;
         }
+        // Add spin animation
+        btn.classList.add('reloading');
         // Reload the order items to cart
         state.cart = [...order.items];
         storage.setCart(state.cart);
         NookSounds.play('addToCart');
         showToast(`♻ Reloaded ${order.items.length} item${order.items.length !== 1 ? 's' : ''}`);
-        render();
+        // Small delay to show animation before re-render
+        setTimeout(() => render(), 400);
       }
     });
   });

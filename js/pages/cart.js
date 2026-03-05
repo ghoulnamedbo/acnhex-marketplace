@@ -225,7 +225,7 @@ export function renderPastOrders() {
             </div>
             <div class="past-order-actions">
               <button class="past-order-copy-btn" data-copy-order="${idx}" title="Copy command">📋 Copy</button>
-              <button class="past-order-reload-btn" data-reload-order="${idx}" title="Reload to cart">♻ Reload</button>
+              <button class="past-order-reload-btn" data-reload-order="${idx}" title="Reload to cart"><span class="reload-icon">♻</span> Reload</button>
             </div>
           </div>`;
         }).join('')}
