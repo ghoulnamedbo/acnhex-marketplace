@@ -6249,6 +6249,22 @@ function attachEvents() {
     if (volumeLabel) volumeLabel.textContent = Math.round(state.soundVolume * 100) + '%';
   });
 
+  // Sound preview buttons (always play, regardless of main toggle)
+  document.querySelectorAll('[data-preview-sound]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const soundName = btn.dataset.previewSound;
+      // Force play by temporarily enabling sound
+      NookSounds.init();
+      NookSounds.setEnabled(true);
+      NookSounds.play(soundName);
+      // Restore actual enabled state after playing
+      setTimeout(() => NookSounds.setEnabled(state.soundEnabled), 50);
+      // Visual feedback
+      btn.classList.add('playing');
+      setTimeout(() => btn.classList.remove('playing'), 500);
+    });
+  });
+
   // Card motion toggle
   const cardMotionToggle = document.getElementById('cardMotionToggle');
   if (cardMotionToggle) cardMotionToggle.addEventListener('change', (e) => {

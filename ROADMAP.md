@@ -821,15 +821,15 @@
 **Risk: 🟡 Low-Medium** — Adds buttons that trigger existing sound functions
 
 #### CHECKLIST
-- [ ] Read `js/sounds.js` — understand the `NookSounds` class and available sound methods
-- [ ] Read `js/pages/settings.js` — find the Sound Package section render
-- [ ] Add 2-3 small "▶" buttons next to the sound toggle, each playing a different sample:
+- [x] Read `js/sounds.js` — understand the `NookSounds` class and available sound methods
+- [x] Read `js/pages/settings.js` — find the Sound Package section render
+- [x] Add 2-3 small "▶" buttons next to the sound toggle, each playing a different sample:
   - "🛒 Cart" → plays `addToCart` sound
   - "💚 Heart" → plays `heartAdd` sound
   - "📋 Copy" → plays `copyCommand` sound
-- [ ] The preview buttons should work regardless of the main sound toggle state (always play at the current volume)
-- [ ] Style: small inline pill buttons with play icon, subtle styling
-- [ ] Buttons should have a brief "playing" state (highlight for 500ms)
+- [x] The preview buttons should work regardless of the main sound toggle state (always play at the current volume)
+- [x] Style: small inline pill buttons with play icon, subtle styling
+- [x] Buttons should have a brief "playing" state (highlight for 500ms)
 
 #### TEST PLAN
 1. Go to Settings → Sound section (sound toggle OFF)

@@ -7651,6 +7651,45 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   color: var(--text-secondary);
 }
 
+/* ── Sound Preview Buttons ─── */
+.sound-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.settings-preview-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+.sound-preview-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.sound-preview-btn:hover {
+  background: var(--bg);
+  border-color: var(--pines);
+}
+.sound-preview-btn:active,
+.sound-preview-btn.playing {
+  background: var(--pines);
+  border-color: var(--pines);
+  color: #fff;
+  transform: scale(0.95);
+}
+
 /* ── Info Page Components ─── */
 .credit-card-row {
   display: flex;

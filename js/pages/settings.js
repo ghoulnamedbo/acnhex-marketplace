@@ -65,6 +65,12 @@ export function renderSettings(state) {
           <span class="settings-volume-icon">🔊</span>
           <span id="volumeLabel" class="volume-label">${Math.round(state.soundVolume * 100)}%</span>
         </div>
+        <div class="sound-preview-row">
+          <span class="settings-preview-label">Preview:</span>
+          <button class="sound-preview-btn" data-preview-sound="addToCart">🛒 Cart</button>
+          <button class="sound-preview-btn" data-preview-sound="heartAdd">💚 Heart</button>
+          <button class="sound-preview-btn" data-preview-sound="copyCommand">📋 Copy</button>
+        </div>
       </div>
 
       <div class="settings-card">
