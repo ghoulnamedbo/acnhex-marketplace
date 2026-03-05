@@ -8,7 +8,7 @@ export function getItemBg(index) {
   return BG_COLORS[index % BG_COLORS.length];
 }
 
-const CACHE_BUST = 'v3';
+const CACHE_BUST = 'v4';
 
 export async function loadCatalog() {
   if (catalogIndex) return catalogIndex;
@@ -210,6 +210,7 @@ export function getAvailableTags() {
   const other = new Set();
 
   for (const item of catalogIndex.items) {
+    if (!item.t) continue;
     for (const tag of item.t.split('|')) {
       const t = tag.trim().toLowerCase();
       if (!t) continue;

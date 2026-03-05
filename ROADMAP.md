@@ -128,8 +128,8 @@
     pointer-events: none;
   }
   ```
-- [ ] Verify the arrows (< >) still appear and are clickable above the gradient
-- [ ] Test dark mode (gradient should use dark `--bg` value automatically via CSS var)
+- [x] Verify the arrows (< >) still appear and are clickable above the gradient
+- [x] Test dark mode (gradient should use dark `--bg` value automatically via CSS var)
 
 #### TEST PLAN
 1. Go to Browse → scroll categories
@@ -371,9 +371,9 @@
 **Risk: 🟡 Low** — Adds conditional HTML in wishlist detail render
 
 #### CHECKLIST
-- [ ] Read `js/pages/wishlist.js` — find the list detail view render
-- [ ] Find where the "0 items" state is handled (when viewing a list with no items)
-- [ ] Add an empty state message block similar to the cart empty state:
+- [x] Read `js/pages/wishlist.js` — find the list detail view render
+- [x] Find where the "0 items" state is handled (when viewing a list with no items)
+- [x] Add an empty state message block similar to the cart empty state:
   ```html
   <div class="wl-empty-state">
     <div class="wl-empty-emoji">[list emoji enlarged]</div>
@@ -382,9 +382,9 @@
     <button class="wl-empty-browse-btn">Start Browsing</button>
   </div>
   ```
-- [ ] The "Start Browsing" button should navigate to the catalog page
-- [ ] Style in `css/styles.css` matching the cart empty state aesthetic (centered, soft colors, leaf particles optional)
-- [ ] The "Loved Items" list should have a unique message: "Tap ♡ on any item to start your collection"
+- [x] The "Start Browsing" button should navigate to the catalog page
+- [x] Style in `css/styles.css` matching the cart empty state aesthetic (centered, soft colors, leaf particles optional)
+- [x] The "Loved Items" list should have a unique message: "Tap ♡ on any item to start your collection"
 
 #### TEST PLAN
 1. Create a new empty custom list from wishlist page

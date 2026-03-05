@@ -201,9 +201,11 @@ export async function renderWishlistDetail(state) {
 
     ${entries.length === 0 ? `
       <div class="wl-empty-state">
-        <div class="wl-empty-emoji">🍃</div>
-        <div class="wl-empty-title">Nothing here yet</div>
-        <div class="wl-empty-text">Browse the catalog and tap the heart<br>to add items to this list.</div>
+        <div class="wl-empty-emoji">${listEmoji}</div>
+        <div class="wl-empty-title">${list.id === '__loved__' ? 'No loved items yet' : 'This list is feeling lonely!'}</div>
+        <div class="wl-empty-text">${list.id === '__loved__'
+          ? 'Tap ♡ on any item to start your collection'
+          : 'Browse some items to fill it up 🍃'}</div>
         <button class="cta-btn mt-20" id="start-browsing-btn" style="padding:12px 24px;border-radius:50px">Start Browsing</button>
       </div>` : `
       ${entries.length <= 40 && entries.length > 0 ? `
