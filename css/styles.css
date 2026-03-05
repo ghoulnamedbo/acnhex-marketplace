@@ -1228,6 +1228,79 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   padding: 3px 8px; border-radius: 6px; font-weight: 700;
   letter-spacing: 0.02em;
 }
+
+/* ─── Skeleton Loading Cards ─── */
+.item-card.skeleton {
+  pointer-events: none;
+  cursor: default;
+}
+.item-card.skeleton:hover {
+  transform: none;
+  box-shadow: var(--shadow-card);
+}
+.skeleton-thumb {
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px 22px 0 0;
+}
+.skeleton-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,255,255,0.4) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite ease-in-out;
+}
+[data-theme="dark"] .skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,255,255,0.08) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton-info {
+  padding: 14px 14px 16px;
+}
+.skeleton-text {
+  height: 12px;
+  border-radius: 6px;
+  background: var(--border);
+  margin-bottom: 8px;
+}
+.skeleton-text.wide {
+  width: 80%;
+}
+.skeleton-text.narrow {
+  width: 50%;
+  margin-bottom: 12px;
+}
+.skeleton-btn {
+  height: 36px;
+  border-radius: 12px;
+  background: var(--border);
+}
+[data-theme="dark"] .skeleton-thumb {
+  background: #383d32 !important;
+}
+[data-theme="dark"] .skeleton-text,
+[data-theme="dark"] .skeleton-btn {
+  background: #3a3f34;
+}
+
 /* ─── Cart Button Container ─── */
 .cart-btn-wrap {
   position: relative;

@@ -537,6 +537,25 @@ async function _localRenderRecentlyViewed() {
   </div>`;
 }
 
+// ─── Skeleton Loading Cards ───
+function renderSkeletonCards(count = 12) {
+  const skeletons = [];
+  for (let i = 0; i < count; i++) {
+    const bg = data.getItemBg(i);
+    skeletons.push(`<div class="item-card skeleton">
+      <div class="skeleton-thumb" style="background:${bg}">
+        <div class="skeleton-shimmer"></div>
+      </div>
+      <div class="skeleton-info">
+        <div class="skeleton-text wide"></div>
+        <div class="skeleton-text narrow"></div>
+        <div class="skeleton-btn"></div>
+      </div>
+    </div>`);
+  }
+  return skeletons.join('');
+}
+
 // ─── Catalog Page ───
 async function _localRenderCatalog() {
   const categories = data.getCategories();
@@ -550,7 +569,7 @@ async function _localRenderCatalog() {
     items = state.expandedItems;
     total = state.expandedTotal;
   } else {
-    // Fallback while loading
+    // Fallback while loading (quick index data)
     const result = data.getItemsByCategory(
       state.activeCategory === 'All' ? null : state.activeCategory,
       0, state.loadedCount + 50
@@ -569,7 +588,7 @@ async function _localRenderCatalog() {
     <div class="app-header">
       <div>
         <p class="label-upper" style="margin-bottom:4px">Welcome to</p>
-        <h1 class="heading-xl">ACNHEX Market</h1>
+        <h1 class="heading-xl">ACNHEX Market</h1><!-- v3.7.7 -->
       </div>
     </div>
 
@@ -2595,8 +2614,18 @@ function attachSearchScrollObserver() {
 
 // ─── Load Expanded Catalog ───
 async function loadExpandedCatalog() {
-  if (state.expandedLoading) return;
+  // Guard against duplicate calls (for infinite scroll)
+  if (state.expandedLoading && state.expandedItems) return;
   state.expandedLoading = true;
+
+  // Show skeleton cards at bottom while loading more
+  if (state.expandedItems && state.expandedItems.length > 0) {
+    const grid = document.querySelector('.item-grid');
+    if (grid) {
+      grid.insertAdjacentHTML('beforeend', renderSkeletonCards(6));
+    }
+  }
+
   let result;
   if (state.activeCategory === 'All') {
     result = await data.getExpandedAll(0, state.loadedCount + 50);
@@ -2613,6 +2642,13 @@ async function loadExpandedCatalog() {
 async function loadMoreRandom() {
   if (state.expandedLoading) return;
   state.expandedLoading = true;
+
+  // Show skeleton cards at bottom while loading more
+  const grid = document.querySelector('.item-grid');
+  if (grid) {
+    grid.insertAdjacentHTML('beforeend', renderSkeletonCards(6));
+  }
+
   const more = await data.getRandomExpandedItems(50, state.randomUsedIndices);
   state.randomItems = [...state.randomItems, ...more];
   state.expandedLoading = false;

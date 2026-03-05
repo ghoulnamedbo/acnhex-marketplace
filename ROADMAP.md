@@ -636,11 +636,11 @@
 
 ---
 
-### 5.2 — Loading & Skeleton States
+### 5.2 — Loading & Skeleton States ✅
 **Risk: 🟠 Medium** — Adds intermediate render states during data loading
 
 #### CHECKLIST
-- [ ] Create skeleton card HTML templates in `js/app.js` or `js/pages/catalog.js`:
+- [x] Create skeleton card HTML templates in `js/app.js` or `js/pages/catalog.js`:
   ```html
   <div class="item-card skeleton">
     <div class="skeleton-thumb"></div>
@@ -649,7 +649,7 @@
     <div class="skeleton-btn"></div>
   </div>
   ```
-- [ ] Add CSS with animated shimmer gradient:
+- [x] Add CSS with animated shimmer gradient:
   ```css
   .skeleton { pointer-events: none; }
   .skeleton-thumb, .skeleton-text, .skeleton-btn {
@@ -663,14 +663,14 @@
     100% { background-position: -200% 0; }
   }
   ```
-- [ ] Show skeleton cards during:
+- [x] Show skeleton cards during:
   - Category switch (between clearing old items and rendering new ones)
   - "Load More" fetch (show 4-6 skeletons at the bottom while loading)
   - Search (while debounce timer is active)
   - Initial page load (before first render)
-- [ ] Show 4-6 skeleton cards matching the 2-column grid layout
-- [ ] Skeleton should match the exact dimensions of real cards
-- [ ] Test dark mode skeletons (colors should adapt via CSS vars)
+- [x] Show 4-6 skeleton cards matching the 2-column grid layout
+- [x] Skeleton should match the exact dimensions of real cards
+- [x] Test dark mode skeletons (colors should adapt via CSS vars)
 
 #### TEST PLAN
 1. Click a category (e.g., switch from "All" to "Furniture")
