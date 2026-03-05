@@ -556,19 +556,19 @@
 
 ---
 
-### 4.5 — Cart Badge Animation
+### 4.5 — Cart Badge Animation ✅
 **Risk: 🟡 Medium** — Modifies the nav bar badge render
 
 #### CHECKLIST
-- [ ] Find where the cart badge number is rendered in the nav bar (in `js/app.js`, likely in the `renderNav()` or main render function)
-- [ ] When the cart count changes, add a brief animation class:
+- [x] Find where the cart badge number is rendered in the nav bar (in `js/app.js`, likely in the `renderNav()` or main render function)
+- [x] When the cart count changes, add a brief animation class:
   - `.cart-badge-bump` → scale(1.3) then back to scale(1) over 300ms
   - Optionally: the old number slides up/fades out, new number slides in from below
-- [ ] Implementation approach:
+- [x] Implementation approach:
   - Track `previousCartCount` in state or a module variable
   - On render, if count changed: add `.cart-badge-bump` class
   - Remove class after 300ms via setTimeout
-- [ ] Add CSS:
+- [x] Add CSS:
   ```css
   .cart-badge-bump {
     animation: badge-bump 300ms ease-out;
@@ -579,7 +579,7 @@
     100% { transform: scale(1); }
   }
   ```
-- [ ] Don't animate on initial page load (only on actual cart changes)
+- [x] Don't animate on initial page load (only on actual cart changes)
 
 #### TEST PLAN
 1. Browse items → tap "Add" on an item

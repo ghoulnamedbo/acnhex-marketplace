@@ -6527,6 +6527,8 @@ function getCartQtyForItem(itemId, variantIdx) {
   return state.cart.filter(c => c.id === itemId && c.variantIdx === variantIdx).length;
 }
 
+let _prevCartCount = null; // Track previous cart count for badge animation
+
 function removeOneFromCart(itemId, variantIdx) {
   const idx = state.cart.findIndex(c => c.id === itemId && c.variantIdx === variantIdx);
   if (idx !== -1) {
@@ -6576,12 +6578,22 @@ function updateAllCartBtnStates() {
     }
   });
 
-  // Update cart badge
+  // Update cart badge with animation
   const badge = document.querySelector('.nav-badge');
   if (badge) {
     const total = getCartTotal();
+    const prevCount = _prevCartCount;
     badge.textContent = total;
     badge.style.display = total > 0 ? 'flex' : 'none';
+
+    // Animate badge on count change (skip initial load)
+    if (prevCount !== null && prevCount !== total) {
+      badge.classList.remove('pop');
+      // Force reflow to restart animation
+      void badge.offsetWidth;
+      badge.classList.add('pop');
+    }
+    _prevCartCount = total;
   }
 }
 
@@ -6894,6 +6906,7 @@ async function init() {
   }
 
   state._pageEnter = true;
+  _prevCartCount = state.cart.length; // Initialize to prevent animation on first load
   render();
   initPullToRefresh();
   initScrollTracking();
