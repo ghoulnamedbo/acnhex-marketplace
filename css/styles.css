@@ -2363,6 +2363,36 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   transform: scale(0.95);
 }
 
+/* ─── Search Scope Toggle ─── */
+.search-scope-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px 14px;
+  border-radius: 50px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-light);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: all 0.15s ease;
+}
+.search-scope-toggle:hover {
+  border-color: var(--pines);
+  color: var(--pines);
+}
+.search-scope-toggle.active {
+  background: var(--pines);
+  border-color: var(--pines);
+  color: white;
+}
+.search-scope-toggle:active {
+  transform: scale(0.97);
+}
+
 /* ─── Empty States ─── */
 .empty-state { text-align: center; padding: 60px 24px; color: var(--text-light); }
 .empty-emoji { font-size: 48px; margin-bottom: 16px; }

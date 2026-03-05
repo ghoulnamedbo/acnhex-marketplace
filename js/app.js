@@ -57,6 +57,7 @@ const state = {
   searchFilterTags: [],
   searchFilterOpen: false,
   searchFilterReminderVisible: false, // Only true when returning to search with existing filters
+  searchWithinCategory: false, // When true, search scoped to activeCategory
   loadedCount: 0,
   isRandom: false,
   randomItems: [],
@@ -726,6 +727,13 @@ function _localRenderCatalogWithSearch() {
           <span class="autocomplete-hint">Add filter:</span>
           ${suggestions.map(s => `<button class="autocomplete-chip" data-autocomplete-tag="${esc(s.tag)}">+ ${esc(s.label)}${s.type.includes('color') ? ` (${s.type === 'primary color' ? '1' : '2'})` : ''}</button>`).join('')}
         </div>` : ''}
+      ${state.activeCategory !== 'All' ? (() => {
+        const cat = data.getCategories().find(c => c.name === state.activeCategory);
+        const emoji = cat ? cat.emoji : '';
+        return `<button class="search-scope-toggle ${state.searchWithinCategory ? 'active' : ''}" id="search-scope-toggle">
+          ${emoji} Search within ${esc(state.activeCategory)}
+        </button>`;
+      })() : ''}
     </div>
     <div id="search-results">
       ${hasQuery ? `
@@ -2405,7 +2413,8 @@ let searchScrollLoading = false;
 
 async function runSearch() {
   if (state.searchQuery || state.searchFilterTags.length > 0) {
-    state.searchResults = await data.searchExpandedWithTags(state.searchQuery, state.searchFilterTags, 0, 50);
+    const scopeCategory = state.searchWithinCategory ? state.activeCategory : null;
+    state.searchResults = await data.searchExpandedWithTags(state.searchQuery, state.searchFilterTags, 0, 50, scopeCategory);
   } else {
     state.searchResults = null;
   }
@@ -2523,9 +2532,10 @@ async function loadMoreSearchResults() {
   if (searchScrollLoading || !state.searchResults) return;
   if (state.searchResults.items.length >= state.searchResults.total) return;
   searchScrollLoading = true;
+  const scopeCategory = state.searchWithinCategory ? state.activeCategory : null;
   const more = await data.searchExpandedWithTags(
     state.searchQuery, state.searchFilterTags,
-    state.searchResults.items.length, 50
+    state.searchResults.items.length, 50, scopeCategory
   );
   state.searchResults.items = [...state.searchResults.items, ...more.items];
   state.searchResults.total = more.total;
@@ -3915,6 +3925,7 @@ function attachEvents() {
     state.searchResults = null;
     // Keep filters - they persist until page navigation or explicit clear
     state.searchFilterOpen = false;
+    state.searchWithinCategory = false; // Reset scope toggle on close
     render();
   });
   const searchInput = document.getElementById('search-input');
@@ -3966,6 +3977,14 @@ function attachEvents() {
       state.searchFilterTags = state.searchFilterTags.filter(t => t !== btn.dataset.removeFilter);
       await runSearch();
     });
+  });
+
+  // Search within category toggle
+  const scopeToggle = document.getElementById('search-scope-toggle');
+  if (scopeToggle) scopeToggle.addEventListener('click', async () => {
+    state.searchWithinCategory = !state.searchWithinCategory;
+    scopeToggle.classList.toggle('active', state.searchWithinCategory);
+    await runSearch();
   });
 
   // Autocomplete chip click - add as filter

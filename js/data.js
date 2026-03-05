@@ -232,13 +232,15 @@ export function getAvailableTags() {
   return tagGroupsCache;
 }
 
-export async function searchExpandedWithTags(query, tags = [], offset = 0, limit = 50) {
+export async function searchExpandedWithTags(query, tags = [], offset = 0, limit = 50, category = null) {
   if (!catalogIndex) return { items: [], total: 0 };
   await getExpandedAll(0, 1);
   const all = expandedCache._all || [];
 
   const q = query ? query.toLowerCase().trim() : '';
   const filtered = all.filter(i => {
+    // Category filter (when searching within category)
+    if (category && category !== 'All' && i.c !== category) return false;
     if (q && !(i.n.toLowerCase().includes(q) || i.t.includes(q))) return false;
     for (const tag of tags) {
       if (tag.startsWith('c1:')) {

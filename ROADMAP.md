@@ -491,18 +491,18 @@
 
 ---
 
-### 4.3 — "Search Within Category" Toggle
+### 4.3 — "Search Within Category" Toggle ✅
 **Risk: 🟡 Medium** — Adds a toggle that modifies search scope
 
 #### CHECKLIST
-- [ ] Read the search function in `js/data.js` (`searchItems`)
-- [ ] Add an optional `category` parameter to `searchItems()`:
+- [x] Read the search function in `js/data.js` (`searchItems`)
+- [x] Add an optional `category` parameter to `searchItems()`:
   ```js
   export function searchItems(query, offset, limit, category = null) {
     // If category provided and not 'All', filter by category first
   }
   ```
-- [ ] In the search overlay UI (in `js/app.js`), add a toggle pill below the search input:
+- [x] In the search overlay UI (in `js/app.js`), add a toggle pill below the search input:
   ```html
   <button class="search-scope-toggle">
     🪑 Search within Furniture
@@ -511,10 +511,10 @@
   - Only visible when `state.activeCategory` is not 'All'
   - Shows the current category emoji + name
   - Toggleable: active = scoped search, inactive = global search
-- [ ] Add state property: `state.searchWithinCategory = false`
-- [ ] When toggled ON, pass `state.activeCategory` to the search function
-- [ ] When toggled OFF or category is 'All', search globally as before
-- [ ] Style: pill button matching existing filter tag style, with active/inactive states
+- [x] Add state property: `state.searchWithinCategory = false`
+- [x] When toggled ON, pass `state.activeCategory` to the search function
+- [x] When toggled OFF or category is 'All', search globally as before
+- [x] Style: pill button matching existing filter tag style, with active/inactive states
 
 #### TEST PLAN
 1. Select "Furniture" category in browse
