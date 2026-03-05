@@ -1,4 +1,4 @@
-const CACHE_NAME = 'acnhex-v2.1.5';
+const CACHE_NAME = 'acnhex-v3.0.2';
 const ASSETS = [
   './',
   './index.html',
@@ -82,18 +82,16 @@ self.addEventListener('fetch', (e) => {
   const isNavigation = e.request.mode === 'navigate';
 
   if (isDataFile) {
-    // Cache-first for data files
+    // Network-first for data files (ensures fresh data)
     e.respondWith(
-      caches.open(CACHE_NAME).then(cache => {
-        return cache.match(urlWithoutQuery).then(cached => {
-          if (cached) return cached;
-          return fetch(e.request).then(resp => {
-            if (resp.ok) {
-              cache.put(urlWithoutQuery, resp.clone());
-            }
-            return resp;
-          });
-        });
+      fetch(e.request).then(resp => {
+        if (resp.ok) {
+          const clone = resp.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(urlWithoutQuery, clone));
+        }
+        return resp;
+      }).catch(() => {
+        return caches.open(CACHE_NAME).then(cache => cache.match(urlWithoutQuery));
       })
     );
   } else {

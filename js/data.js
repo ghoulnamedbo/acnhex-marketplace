@@ -8,9 +8,11 @@ export function getItemBg(index) {
   return BG_COLORS[index % BG_COLORS.length];
 }
 
+const CACHE_BUST = 'v3';
+
 export async function loadCatalog() {
   if (catalogIndex) return catalogIndex;
-  const resp = await fetch('data/catalog-index.json');
+  const resp = await fetch(`data/catalog-index.json?${CACHE_BUST}`);
   catalogIndex = await resp.json();
   return catalogIndex;
 }
@@ -70,7 +72,7 @@ export async function getItemDetail(itemId) {
 
   const catSlug = slugify(indexItem.c);
   if (!categoryCache[catSlug]) {
-    const resp = await fetch(`data/categories/${catSlug}.json`);
+    const resp = await fetch(`data/categories/${catSlug}.json?${CACHE_BUST}`);
     categoryCache[catSlug] = await resp.json();
   }
 
@@ -95,7 +97,7 @@ const expandedCache = {}; // category slug -> expanded array
 async function loadCategoryData(category) {
   const catSlug = slugify(category);
   if (!categoryCache[catSlug]) {
-    const resp = await fetch(`data/categories/${catSlug}.json`);
+    const resp = await fetch(`data/categories/${catSlug}.json?${CACHE_BUST}`);
     categoryCache[catSlug] = await resp.json();
   }
   return categoryCache[catSlug];
