@@ -7717,6 +7717,54 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
 /* ── Additional Margin Utilities ─── */
 .mt-12 { margin-top: 12px; }
 
+/* ── Jump FAB (Floating Action Button) ─── */
+.jump-fab {
+  position: fixed;
+  bottom: 90px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--pines);
+  color: white;
+  border: none;
+  box-shadow: 0 2px 8px rgba(106,130,62,0.3), 0 4px 16px rgba(106,130,62,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.8) translateY(20px);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 100;
+  font-size: 18px;
+}
+.jump-fab.visible {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  pointer-events: auto;
+}
+.jump-fab:active {
+  transform: scale(0.92) translateY(0);
+}
+.jump-fab svg {
+  width: 20px;
+  height: 20px;
+  stroke: white;
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.jump-fab .fab-icon-up { display: none; }
+.jump-fab .fab-icon-down { display: block; }
+.jump-fab[data-direction="up"] .fab-icon-up { display: block; }
+.jump-fab[data-direction="up"] .fab-icon-down { display: none; }
+[data-theme="dark"] .jump-fab {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.2);
+}
+
 /* ── Reduce Motion ─── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

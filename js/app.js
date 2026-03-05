@@ -3395,6 +3395,9 @@ async function render() {
   const prevProgressFill = app.querySelector('.ledger-progress-fill');
   state._prevCartProgressWidth = prevProgressFill ? prevProgressFill.style.width : null;
 
+  // Reset order FAB dismissed state on page change
+  _orderFabDismissed = false;
+
   let content = '';
   switch (state.page) {
     case 'catalog': content = await _localRenderCatalog(); break;
@@ -3404,7 +3407,7 @@ async function render() {
     case 'settings': content = renderSettings(state); break;
     case 'info': content = renderInfo(); break;
   }
-  app.innerHTML = `<div id="ptr-indicator" class="ptr-indicator"></div>` + content + renderNav() + renderModal() + renderSearch() + renderWishlistToast() + renderListPicker() + renderMovePicker() + renderSetPicker() + renderDuplicatePicker() + renderExportModal() + renderImportModal() + renderEmojiPicker() + ads.renderActivePopup(state.activePopup) + ads.renderAdToast(state.adToastVisible) + ads.renderFloatingNotif(state.floatingNotif);
+  app.innerHTML = `<div id="ptr-indicator" class="ptr-indicator"></div>` + content + renderNav() + renderModal() + renderSearch() + renderWishlistToast() + renderListPicker() + renderMovePicker() + renderSetPicker() + renderDuplicatePicker() + renderExportModal() + renderImportModal() + renderEmojiPicker() + ads.renderActivePopup(state.activePopup) + ads.renderAdToast(state.adToastVisible) + ads.renderFloatingNotif(state.floatingNotif) + renderJumpFab();
   attachEvents();
 
   // Apply entrance animations only on page/category navigation
@@ -3560,6 +3563,40 @@ function attachEvents() {
       }
     });
   });
+
+  // Jump FAB handlers
+  const jumpTopFab = document.getElementById('jump-top-fab');
+  if (jumpTopFab) {
+    jumpTopFab.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+  const jumpOrderFab = document.getElementById('jump-order-fab');
+  if (jumpOrderFab) {
+    jumpOrderFab.addEventListener('click', () => {
+      const direction = jumpOrderFab.dataset.direction;
+
+      // Dismiss FAB
+      _orderFabDismissed = true;
+      jumpOrderFab.classList.remove('visible');
+
+      if (direction === 'up') {
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        // Scroll to order section
+        const target = document.querySelector('.shipping-label') ||
+                       document.querySelector('.receipt-section') ||
+                       document.querySelector('.wl-export-row') ||
+                       document.querySelector('.copy-list-order-chunk');
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    });
+  }
+  // Update FAB visibility on initial render
+  updateJumpFabVisibility();
 
   // Category buttons
   app.querySelectorAll('[data-cat]').forEach(btn => {
@@ -6491,6 +6528,70 @@ function initPullToRefresh() {
   });
 }
 
+// ─── Jump FAB (Floating Action Button) ───
+function renderJumpFab() {
+  // Show on catalog, search, cart (with items), wishlist detail
+  const showTop = state.page === 'catalog' || state.searchOpen;
+  const showOrder = (state.page === 'cart' && state.cart.length > 0) ||
+                    (state.page === 'wishlist' && state.viewingListId);
+
+  if (!showTop && !showOrder) return '';
+
+  if (showOrder) {
+    // Dual arrows - direction controlled by JS
+    return `<button class="jump-fab" id="jump-order-fab" data-direction="down">
+      <svg class="fab-icon-down" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+      <svg class="fab-icon-up" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>`;
+  }
+
+  // Up arrow to jump to top
+  return `<button class="jump-fab" id="jump-top-fab"><svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg></button>`;
+}
+
+let _orderFabDismissed = false;
+
+function updateJumpFabVisibility() {
+  const fab = document.getElementById('jump-top-fab') || document.getElementById('jump-order-fab');
+  if (!fab) return;
+
+  const scrollY = window.scrollY || 0;
+  const threshold = 400;
+
+  if (fab.id === 'jump-top-fab') {
+    // Show when scrolled past threshold, hide when near top
+    fab.classList.toggle('visible', scrollY > threshold);
+  } else {
+    // Jump to order FAB
+    const target = document.querySelector('.shipping-label') ||
+                   document.querySelector('.receipt-section') ||
+                   document.querySelector('.wl-export-row') ||
+                   document.querySelector('.copy-list-order-chunk');
+
+    if (!target) {
+      fab.classList.remove('visible');
+      return;
+    }
+
+    const targetRect = target.getBoundingClientRect();
+    const targetInView = targetRect.top < window.innerHeight && targetRect.bottom > 0;
+    const targetAbove = targetRect.bottom < 0; // Target scrolled past (above viewport)
+    const targetBelow = targetRect.top > window.innerHeight; // Target below viewport
+
+    // Reset dismissed state when target goes out of view below (scrolled back up)
+    if (targetBelow) {
+      _orderFabDismissed = false;
+    }
+
+    // Set direction: up if target is above, down if target is below
+    fab.dataset.direction = targetAbove ? 'up' : 'down';
+
+    // Show FAB only when: scrolled enough, target NOT in view, and not dismissed
+    const shouldShow = scrollY > threshold && !targetInView && !_orderFabDismissed;
+    fab.classList.toggle('visible', shouldShow);
+  }
+}
+
 // ─── Scroll Activity Tracking (for notification gating) ───
 let scrollIdleTimer = null;
 function initScrollTracking() {
@@ -6500,6 +6601,9 @@ function initScrollTracking() {
     scrollIdleTimer = setTimeout(() => {
       state._userScrolling = false;
     }, 2000); // Consider user idle after 2s of no scroll
+
+    // Update FAB visibility
+    updateJumpFabVisibility();
   }, { passive: true });
 }
 
