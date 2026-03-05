@@ -43,7 +43,7 @@ export function renderItemCard(state, item, idx) {
   const showCounter = qtyInCart > 0;
   return `<div class="item-card" data-item="${esc(item.id)}" data-vi="${vi}">
     <div class="item-thumb" style="background:${bg}">
-      ${item.img ? `<img src="${esc(item.img)}" loading="lazy" onerror="this.outerHTML='<span class=emoji-fallback>📦</span>'" alt="">` : '<span class="emoji-fallback">📦</span>'}
+      ${item.img ? `<img src="${esc(item.img)}" loading="lazy" onload="this.classList.add('loaded')" onerror="this.outerHTML='<span class=emoji-fallback>📦</span>'" alt="">` : '<span class="emoji-fallback">📦</span>'}
       <button class="heart-btn" data-heart="${esc(item.id)}" data-heart-vi="${vi}">${ICONS.heart(inLoved)}</button>
     </div>
     <div class="item-info">
@@ -87,7 +87,7 @@ export async function renderRecentlyViewed(state) {
       // Use same structure as item cards
       cards.push(`<div class="item-card recent-item-card" data-item="${esc(entry.id)}" data-vi="${vi}">
         <div class="item-thumb" style="background:${bg}">
-          ${variant.image ? `<img src="${esc(variant.image)}" loading="lazy" onerror="this.outerHTML='<span class=emoji-fallback>📦</span>'" alt="">` : '<span class="emoji-fallback">📦</span>'}
+          ${variant.image ? `<img src="${esc(variant.image)}" loading="lazy" onload="this.classList.add('loaded')" onerror="this.outerHTML='<span class=emoji-fallback>📦</span>'" alt="">` : '<span class="emoji-fallback">📦</span>'}
           <button class="heart-btn" data-heart="${esc(entry.id)}" data-heart-vi="${vi}">${ICONS.heart(inWL)}</button>
         </div>
         <div class="item-info">

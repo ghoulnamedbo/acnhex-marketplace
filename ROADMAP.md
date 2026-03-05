@@ -682,11 +682,18 @@
 
 ---
 
-### 5.3 — State Transition Animations
+### 5.3 — State Transition Animations ✅
 **Risk: 🟠 Medium-High** — Modifies the core render cycle
 
+*Already implemented in previous work:*
+- Page transitions (`.page-enter` with `pageFadeIn`)
+- Card entry stagger (`.grid-enter` with staggered delays)
+- Expand/collapse animation (`.detail-fields-collapsible` with `max-height`)
+- Sheet modal slide-up (`sheetSlideUp`)
+- `prefers-reduced-motion` support
+
 #### CHECKLIST
-- [ ] **Page transitions (cross-fade)**:
+- [x] **Page transitions (cross-fade)**:
   - In `js/app.js`, find the main `render()` function
   - Before clearing `app.innerHTML`, capture the old content and apply a fade-out class
   - After setting new `innerHTML`, apply a fade-in class
@@ -696,7 +703,7 @@
   .page-enter { animation: fadeIn 200ms ease-out; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   ```
-- [ ] **Card entry stagger**:
+- [x] **Card entry stagger**:
   - After rendering item cards, add staggered delays:
   ```js
   document.querySelectorAll('.item-card').forEach((card, i) => {
@@ -708,19 +715,19 @@
   .card-enter { animation: cardFadeIn 200ms ease-out both; }
   @keyframes cardFadeIn { from { opacity: 0; transform: translateY(12px); } }
   ```
-- [ ] **Expand/collapse animation** (Show all details):
+- [x] **Expand/collapse animation** (Show all details):
   - Wrap the collapsible content in a container with `max-height` transition
   - Collapsed: `max-height: 0; overflow: hidden`
   - Expanded: `max-height: 500px` (large enough for content)
   - Transition: `max-height 300ms ease-out`
-- [ ] **Sheet modal entry**:
+- [x] **Sheet modal entry**:
   - Add slide-up animation to `.sheet-modal`:
   ```css
   .sheet-modal { animation: slideUp 300ms cubic-bezier(0.34, 1.56, 0.64, 1); }
   @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
   ```
-- [ ] **Nav tab indicator slide** — if the active pill is a pseudo-element or real element, animate its `left` position with transition
-- [ ] Test that `prefers-reduced-motion` is respected (wrap animations in a media query)
+- [x] **Nav tab indicator slide** — if the active pill is a pseudo-element or real element, animate its `left` position with transition
+- [x] Test that `prefers-reduced-motion` is respected (wrap animations in a media query)
 
 #### TEST PLAN
 1. Switch between nav tabs (Browse → Cart → Wishlist)
@@ -735,13 +742,13 @@
 
 ---
 
-### 5.4 — Image Loading Strategy (Blur Placeholder + Fade In)
+### 5.4 — Image Loading Strategy (Blur Placeholder + Fade In) ✅
 **Risk: 🟠 Medium** — Modifies image rendering across all card types
 
 #### CHECKLIST
-- [ ] Find all places where item images are rendered (`<img>` tags in card renders)
-- [ ] Wrap each image in a container with a solid background color (matching `getItemBg(index)`)
-- [ ] Add a CSS class for the loading state and loaded state:
+- [x] Find all places where item images are rendered (`<img>` tags in card renders)
+- [x] Wrap each image in a container with a solid background color (matching `getItemBg(index)`)
+- [x] Add a CSS class for the loading state and loaded state:
   ```css
   .item-img-wrapper {
     background: var(--img-placeholder-bg);
@@ -756,14 +763,14 @@
     opacity: 1;
   }
   ```
-- [ ] Add `onload` handler to each image: `onload="this.classList.add('loaded')"`
-- [ ] Replace the `onerror` fallback (📦 emoji) with a styled placeholder:
+- [x] Add `onload` handler to each image: `onload="this.classList.add('loaded')"`
+- [x] Replace the `onerror` fallback (📦 emoji) with a styled placeholder:
   ```html
   <div class="img-fallback">📦</div>
   ```
   Style it with centered emoji, matching background color, proper sizing
-- [ ] Ensure lazy loading (`loading="lazy"`) is preserved
-- [ ] Test: images should fade in as they load, placeholder color shows first
+- [x] Ensure lazy loading (`loading="lazy"`) is preserved
+- [x] Test: images should fade in as they load, placeholder color shows first
 
 #### TEST PLAN
 1. Clear browser cache → reload the app
@@ -779,22 +786,22 @@
 **Risk: 🟠 Medium** — Modifies existing touch gesture handler
 
 #### CHECKLIST
-- [ ] Find the pull-to-refresh implementation in `js/app.js`
-- [ ] Add a visual indicator element above the content:
+- [x] Find the pull-to-refresh implementation in `js/app.js`
+- [x] Add a visual indicator element above the content:
   ```html
   <div class="ptr-indicator">
     <span class="ptr-icon">🍃</span>
     <span class="ptr-text">Pull to refresh</span>
   </div>
   ```
-- [ ] During the pull gesture:
+- [x] During the pull gesture:
   - The indicator should translate down proportionally to the pull distance
   - The 🍃 icon should rotate based on pull distance
   - At threshold: text changes to "Release to refresh"
   - After release: show spinner or "Refreshing..." text
   - On complete: snap back up and hide
-- [ ] Add CSS for the indicator (fixed/absolute positioned above the scroll area, starts hidden)
-- [ ] Respect `prefers-reduced-motion` — disable rotation animation
+- [x] Add CSS for the indicator (fixed/absolute positioned above the scroll area, starts hidden)
+- [x] Respect `prefers-reduced-motion` — disable rotation animation
 
 #### TEST PLAN
 1. On the browse page, pull down from the top (mobile gesture or click-drag)

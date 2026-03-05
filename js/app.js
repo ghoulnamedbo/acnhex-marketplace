@@ -504,7 +504,7 @@ async function _localRenderRecentlyViewed() {
       // Use same structure as item cards
       cards.push(`<div class="item-card recent-item-card" data-item="${esc(entry.id)}" data-vi="${vi}">
         <div class="item-thumb" style="background:${bg}">
-          ${variant.image ? `<img src="${esc(variant.image)}" loading="lazy" onerror="this.outerHTML='<span class=emoji-fallback>📦</span>'" alt="">` : '<span class="emoji-fallback">📦</span>'}
+          ${variant.image ? `<img src="${esc(variant.image)}" loading="lazy" onload="this.classList.add('loaded')" onerror="this.outerHTML='<span class=emoji-fallback>📦</span>'" alt="">` : '<span class="emoji-fallback">📦</span>'}
           <button class="heart-btn" data-heart="${esc(entry.id)}" data-heart-vi="${vi}">${ICONS.heart(inWL)}</button>
           ${qtyInCart > 0 ? '<span class="in-cart-dot"></span>' : ''}
         </div>
@@ -816,7 +816,7 @@ function _localRenderItemCard(item, idx) {
   const showCounter = qtyInCart > 0;
   return `<div class="item-card" data-item="${esc(item.id)}" data-vi="${vi}">
     <div class="item-thumb" style="background:${bg}">
-      ${item.img ? `<img src="${esc(item.img)}" loading="lazy" onerror="this.outerHTML='<span class=emoji-fallback>📦</span>'" alt="">` : '<span class="emoji-fallback">📦</span>'}
+      ${item.img ? `<img src="${esc(item.img)}" loading="lazy" onload="this.classList.add('loaded')" onerror="this.outerHTML='<span class=emoji-fallback>📦</span>'" alt="">` : '<span class="emoji-fallback">📦</span>'}
       <button class="heart-btn" data-heart="${esc(item.id)}" data-heart-vi="${vi}">${ICONS.heart(inLoved)}</button>
       ${qtyInCart > 0 ? '<span class="in-cart-dot"></span>' : ''}
     </div>
@@ -3609,7 +3609,7 @@ async function render() {
     case 'settings': content = renderSettings(state); break;
     case 'info': content = renderInfo(); break;
   }
-  app.innerHTML = `<div id="ptr-indicator" class="ptr-indicator"></div>` + content + renderNav() + renderModal() + renderSearch() + renderWishlistToast() + renderListPicker() + renderMovePicker() + renderSetPicker() + renderDuplicatePicker() + renderExportModal() + renderImportModal() + renderEmojiPicker() + ads.renderActivePopup(state.activePopup) + ads.renderAdToast(state.adToastVisible) + ads.renderFloatingNotif(state.floatingNotif) + renderJumpFab();
+  app.innerHTML = `<div id="ptr-indicator" class="ptr-indicator"><span class="ptr-icon">🍃</span><span class="ptr-text">Pull to refresh</span></div>` + content + renderNav() + renderModal() + renderSearch() + renderWishlistToast() + renderListPicker() + renderMovePicker() + renderSetPicker() + renderDuplicatePicker() + renderExportModal() + renderImportModal() + renderEmojiPicker() + ads.renderActivePopup(state.activePopup) + ads.renderAdToast(state.adToastVisible) + ads.renderFloatingNotif(state.floatingNotif) + renderJumpFab();
   attachEvents();
 
   // Apply entrance animations only on page/category navigation
@@ -6862,14 +6862,25 @@ function initPullToRefresh() {
       const indicator = document.getElementById('ptr-indicator');
       if (indicator) {
         indicator.classList.add('pulling');
-        indicator.style.setProperty('--pull-y', Math.min(pullDistance * 0.4, 80) + 'px');
+        const translatedY = Math.min(pullDistance * 0.4, 80);
+        indicator.style.setProperty('--pull-y', translatedY + 'px');
+        const ptrText = indicator.querySelector('.ptr-text');
+        if (translatedY >= threshold * 0.4) {
+          indicator.classList.add('threshold');
+          if (ptrText) ptrText.textContent = 'Release to refresh';
+        } else {
+          indicator.classList.remove('threshold');
+          if (ptrText) ptrText.textContent = 'Pull to refresh';
+        }
       }
     } else {
       pulling = false;
       const indicator = document.getElementById('ptr-indicator');
       if (indicator) {
-        indicator.classList.remove('pulling');
+        indicator.classList.remove('pulling', 'threshold');
         indicator.style.setProperty('--pull-y', '0px');
+        const ptrText = indicator.querySelector('.ptr-text');
+        if (ptrText) ptrText.textContent = 'Pull to refresh';
       }
     }
   }, { passive: true });
@@ -6880,9 +6891,11 @@ function initPullToRefresh() {
     const indicator = document.getElementById('ptr-indicator');
     if (!indicator) return;
     const pullY = parseFloat(indicator.style.getPropertyValue('--pull-y')) || 0;
+    const ptrText = indicator.querySelector('.ptr-text');
     if (pullY >= threshold * 0.4) {
-      indicator.classList.remove('pulling');
+      indicator.classList.remove('pulling', 'threshold');
       indicator.classList.add('refreshing');
+      if (ptrText) ptrText.textContent = 'Refreshing...';
       // Refresh with new random items
       NookSounds.play('pullRefresh');
       ads.resetGridInterstitial();
@@ -6891,10 +6904,12 @@ function initPullToRefresh() {
       state.randomItems = await data.getRandomExpandedItems(50, state.randomUsedIndices);
       indicator.classList.remove('refreshing');
       indicator.style.setProperty('--pull-y', '0px');
+      if (ptrText) ptrText.textContent = 'Pull to refresh';
       render();
     } else {
-      indicator.classList.remove('pulling');
+      indicator.classList.remove('pulling', 'threshold');
       indicator.style.setProperty('--pull-y', '0px');
+      if (ptrText) ptrText.textContent = 'Pull to refresh';
     }
   });
 }
