@@ -56,7 +56,7 @@ const state = {
   searchResults: null,
   searchFilterTags: [],
   searchFilterOpen: false,
-  searchFilterReminderDismissed: false,
+  searchFilterReminderVisible: false, // Only true when returning to search with existing filters
   loadedCount: 0,
   isRandom: false,
   randomItems: [],
@@ -230,7 +230,7 @@ async function parseHashAndNavigate() {
       state._pageEnter = true;
       // Clear search filters when leaving catalog (session-only persistence)
       state.searchFilterTags = [];
-      state.searchFilterReminderDismissed = false;
+      state.searchFilterReminderVisible = false;
       return true;
 
     case 'wishlist':
@@ -246,7 +246,7 @@ async function parseHashAndNavigate() {
       state._pageEnter = true;
       // Clear search filters when leaving catalog (session-only persistence)
       state.searchFilterTags = [];
-      state.searchFilterReminderDismissed = false;
+      state.searchFilterReminderVisible = false;
       return true;
 
     case 'settings':
@@ -254,7 +254,7 @@ async function parseHashAndNavigate() {
       state._pageEnter = true;
       // Clear search filters when leaving catalog (session-only persistence)
       state.searchFilterTags = [];
-      state.searchFilterReminderDismissed = false;
+      state.searchFilterReminderVisible = false;
       return true;
 
     case 'info':
@@ -262,7 +262,7 @@ async function parseHashAndNavigate() {
       state._pageEnter = true;
       // Clear search filters when leaving catalog (session-only persistence)
       state.searchFilterTags = [];
-      state.searchFilterReminderDismissed = false;
+      state.searchFilterReminderVisible = false;
       return true;
 
     default:
@@ -692,7 +692,7 @@ function _localRenderCatalogWithSearch() {
         <button class="filter-toggle-btn ${hasFilters ? 'active' : ''}" id="filter-toggle">${ICONS.filter}${hasFilters ? `<span class="filter-badge">${state.searchFilterTags.length}</span>` : ''}</button>
         <button class="search-close-btn" id="search-close">✕</button>
       </div>
-      ${hasFilters && !state.searchFilterReminderDismissed && !state.searchFilterOpen ? `
+      ${state.searchFilterReminderVisible && !state.searchFilterOpen ? `
       <div class="filter-reminder-banner">
         <span class="filter-reminder-text">${state.searchFilterTags.length} active filter${state.searchFilterTags.length !== 1 ? 's' : ''}: ${state.searchFilterTags.slice(0, 2).map(t => t.startsWith('c1:') ? t.slice(3) : t.startsWith('c2:') ? t.slice(3) : t).join(', ')}${state.searchFilterTags.length > 2 ? '...' : ''}</span>
         <button class="filter-reminder-clear" id="filter-reminder-clear">Clear</button>
@@ -3894,12 +3894,16 @@ function attachEvents() {
   // Search
   const searchOpen = document.getElementById('search-open');
   if (searchOpen) searchOpen.addEventListener('click', () => {
+    // Show reminder only when returning to search with existing filters
+    state.searchFilterReminderVisible = state.searchFilterTags.length > 0;
     state.searchOpen = true;
     render();
     setTimeout(() => document.getElementById('search-input')?.focus(), 50);
   });
   const searchOpenLabel = document.getElementById('search-open-label');
   if (searchOpenLabel) searchOpenLabel.addEventListener('click', () => {
+    // Show reminder only when returning to search with existing filters
+    state.searchFilterReminderVisible = state.searchFilterTags.length > 0;
     state.searchOpen = true;
     render();
     setTimeout(() => document.getElementById('search-input')?.focus(), 50);
@@ -4000,7 +4004,7 @@ function attachEvents() {
       await new Promise(r => setTimeout(r, 150));
     }
     state.searchFilterTags = [];
-    state.searchFilterReminderDismissed = false;
+    state.searchFilterReminderVisible = false;
     render(); // Full re-render to update banner and results
   });
   const filterReminderDismiss = document.getElementById('filter-reminder-dismiss');
@@ -4010,11 +4014,11 @@ function attachEvents() {
       filterReminderBanner.style.transition = 'opacity 0.15s ease-out';
       filterReminderBanner.style.opacity = '0';
       setTimeout(() => {
-        state.searchFilterReminderDismissed = true;
+        state.searchFilterReminderVisible = false;
         render();
       }, 150);
     } else {
-      state.searchFilterReminderDismissed = true;
+      state.searchFilterReminderVisible = false;
       render();
     }
   });
@@ -4042,6 +4046,7 @@ function attachEvents() {
       state.searchResults = state.savedSearch.results;
       state.searchFilterTags = state.savedSearch.filterTags;
       state.searchFilterOpen = state.savedSearch.filterOpen;
+      state.searchFilterReminderVisible = false; // Don't show reminder when returning from detail
       const savedScrollY = state.savedSearch.scrollY || 0;
       state.savedSearch = null;
       state.previousPage = null;
@@ -7018,6 +7023,8 @@ function initKeyboardShortcuts() {
     // "/" or Ctrl+K → Open search
     if (e.key === '/' || (e.ctrlKey && e.key === 'k')) {
       e.preventDefault();
+      // Show reminder only when returning to search with existing filters
+      state.searchFilterReminderVisible = state.searchFilterTags.length > 0;
       state.searchOpen = true;
       render();
       // Focus search input after render
