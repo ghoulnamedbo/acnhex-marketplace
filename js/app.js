@@ -6669,9 +6669,9 @@ function attachEvents() {
           break;
         case 'popup':
           // Full popup preview (modal content without overlay wrapper)
-          previewHTML = `<div class="modal-box modal-premium" style="position:relative;max-width:100%;transform:none">
+          previewHTML = `<div class="modal-box modal-premium">
             <div class="modal-header">
-              <button class="close-btn">&times;</button>
+              <button class="close-btn">\u00D7</button>
               <span class="sparkle-icon">\u2728</span>
               <h3>Nook Inc. Premium</h3>
               <div class="tier-label">Gold Leaf Tier</div>
@@ -6680,7 +6680,7 @@ function attachEvents() {
               <div class="feature-list">
                 <div class="feature-row"><span class="f-icon">\u{1F4E6}</span><span class="f-text"><strong>80-item</strong> cart limit</span></div>
                 <div class="feature-row"><span class="f-icon">\u{1F9A4}</span><span class="f-text"><strong>Priority</strong> Dodo delivery</span></div>
-                <div class="feature-row"><span class="f-icon">\u{1F3F7}\uFE0F</span><span class="f-text"><strong>Exclusive</strong> Nook Shopping deals</span></div>
+                <div class="feature-row"><span class="f-icon">\u{1F3F7}\uFE0F</span><span class="f-text"><strong>Exclusive</strong> Nook deals</span></div>
               </div>
               <div class="price-block"><span class="price-amount">49,999 \u{1F514}</span><span class="price-period">bells / month</span></div>
               <button class="cta-button">Subscribe Now \u{1F343}</button>
