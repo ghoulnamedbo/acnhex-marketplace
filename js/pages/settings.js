@@ -8,11 +8,18 @@ export function renderSettings(state) {
   return `<div class="page">
     <div class="page-header">
       <h1 class="heading-xl mb-4">Settings</h1>
-      <p class="text-secondary mb-28">Configure your bot prefix</p>
+      <p class="text-secondary mb-12">Configure your bot prefix</p>
+      <div class="settings-jump-links">
+        <button class="jump-chip" data-jump="settings-prefix">Prefix</button>
+        <button class="jump-chip" data-jump="settings-sound">Sound</button>
+        <button class="jump-chip" data-jump="settings-appearance">Theme</button>
+        <button class="jump-chip" data-jump="settings-promos">Promos</button>
+        <button class="jump-chip" data-jump="settings-danger">Data</button>
+      </div>
     </div>
 
     <div class="content-wrapper">
-      <div class="settings-card">
+      <div class="settings-card" id="settings-prefix">
         <h4 class="label-upper mb-14">Bot Command Prefix</h4>
         <input type="text" class="prefix-input" id="prefix-input" value="${esc(state.prefix)}" maxlength="5">
       </div>
@@ -35,7 +42,7 @@ export function renderSettings(state) {
         </div>
       </div>
 
-      <div class="settings-card">
+      <div class="settings-card" id="settings-loading">
         <h4 class="label-upper mb-14">Item Loading</h4>
         <div class="load-mode-options">
           <button class="load-mode-btn ${state.loadMode === 'batch' ? 'active' : ''}" data-settings-load="batch">
@@ -49,7 +56,7 @@ export function renderSettings(state) {
         </div>
       </div>
 
-      <div class="settings-card">
+      <div class="settings-card" id="settings-sound">
         <h4 class="label-upper mb-14">Nook Inc. Sound Package</h4>
         <p class="settings-desc">Adds soft pocket sounds to browsing. Tom Nook approved.</p>
         <div class="settings-toggle-row">
@@ -73,7 +80,7 @@ export function renderSettings(state) {
         </div>
       </div>
 
-      <div class="settings-card">
+      <div class="settings-card" id="settings-appearance">
         <h4 class="label-upper mb-14">🌙 Appearance</h4>
         <p class="settings-desc">Choose your preferred theme for the app.</p>
         <div class="theme-options">
@@ -92,7 +99,7 @@ export function renderSettings(state) {
         </div>
       </div>
 
-      <div class="settings-card">
+      <div class="settings-card" id="settings-motion">
         <h4 class="label-upper mb-14">🃏 Card Effects</h4>
         <p class="settings-desc">Enable interactive motion effects when viewing cards in compare mode.</p>
         <div class="settings-toggle-row">
@@ -105,7 +112,7 @@ export function renderSettings(state) {
         <p class="text-secondary mt-8" style="font-size:10px">Cards move with your mouse on desktop</p>
       </div>
 
-      <div class="settings-card">
+      <div class="settings-card" id="settings-shortcuts">
         <h4 class="label-upper mb-14">⌨️ Keyboard Shortcuts</h4>
         <div class="keyboard-shortcuts-list">
           <div class="shortcut-row">
@@ -127,7 +134,7 @@ export function renderSettings(state) {
         </div>
       </div>
 
-      <div class="settings-card">
+      <div class="settings-card" id="settings-promos">
         <h4 class="label-upper mb-14">🦝 Fake Promos</h4>
         <p class="settings-desc">Toggle the in-universe Animal Crossing fake ads and promos.</p>
         <div class="settings-toggle-row">
@@ -169,7 +176,7 @@ export function renderSettings(state) {
         </div>
       </div>
 
-      <div class="settings-card settings-card--danger">
+      <div class="settings-card settings-card--danger" id="settings-danger">
         <h4 class="label-upper label-upper--danger mb-14">Danger Zone</h4>
         <button class="clear-btn" id="clear-data">Clear All Data</button>
       </div>

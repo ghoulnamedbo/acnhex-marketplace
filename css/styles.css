@@ -7690,6 +7690,45 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   transform: scale(0.95);
 }
 
+/* ── Settings Jump Links ─── */
+.settings-jump-links {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-top: 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.settings-jump-links::-webkit-scrollbar {
+  display: none;
+}
+.jump-chip {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border-radius: 50px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-family: var(--font);
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+.jump-chip:hover {
+  background: var(--bg);
+  border-color: var(--pines);
+  color: var(--pines);
+}
+.jump-chip:active {
+  background: var(--pines);
+  border-color: var(--pines);
+  color: #fff;
+  transform: scale(0.95);
+}
+
 /* ── Info Page Components ─── */
 .credit-card-row {
   display: flex;

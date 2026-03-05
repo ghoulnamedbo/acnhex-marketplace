@@ -845,10 +845,10 @@
 **Risk: 🟡 Low** — Adds a mini nav at the top of settings page
 
 #### CHECKLIST
-- [ ] Read `js/pages/settings.js`
-- [ ] Add unique `id` attributes to each settings section card:
+- [x] Read `js/pages/settings.js`
+- [x] Add unique `id` attributes to each settings section card:
   - `id="settings-prefix"`, `id="settings-loading"`, `id="settings-sound"`, `id="settings-appearance"`, `id="settings-motion"`, `id="settings-shortcuts"`, `id="settings-promos"`, `id="settings-danger"`
-- [ ] At the top of the settings page, render a horizontal scrollable chip row:
+- [x] At the top of the settings page, render a horizontal scrollable chip row:
   ```html
   <div class="settings-jump-links">
     <a href="#settings-prefix" class="jump-chip">Prefix</a>
@@ -858,9 +858,9 @@
     <a href="#settings-danger" class="jump-chip">Data</a>
   </div>
   ```
-- [ ] Use smooth scroll behavior: `scroll-behavior: smooth` on the page or use JS `scrollIntoView`
-- [ ] Style: small horizontal pills, scroll-snap, matching category carousel aesthetic
-- [ ] Ensure clicking a jump link doesn't interfere with hash routing (use `e.preventDefault()` + manual scrollIntoView)
+- [x] Use smooth scroll behavior: `scroll-behavior: smooth` on the page or use JS `scrollIntoView`
+- [x] Style: small horizontal pills, scroll-snap, matching category carousel aesthetic
+- [x] Ensure clicking a jump link doesn't interfere with hash routing (use `e.preventDefault()` + manual scrollIntoView)
 
 #### TEST PLAN
 1. Go to Settings

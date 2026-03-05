@@ -6201,6 +6201,18 @@ function attachEvents() {
     });
   });
 
+  // Settings jump links (smooth scroll to section)
+  app.querySelectorAll('[data-jump]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const targetId = btn.dataset.jump;
+      const target = document.getElementById(targetId);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+
   // Settings load mode
   app.querySelectorAll('[data-settings-load]').forEach(btn => {
     btn.addEventListener('click', () => {
