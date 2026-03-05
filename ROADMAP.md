@@ -1024,23 +1024,23 @@
 
 ---
 
-### 6.8 — URL-Aware Deep Linking & Page Titles
+### 6.8 — URL-Aware Deep Linking & Page Titles ✅
 **Risk: 🟡 Low-Medium** — Adds document.title updates
 
 #### CHECKLIST
-- [ ] In `js/app.js`, find the `updateHash()` function or the render cycle
-- [ ] After each navigation, update `document.title`:
+- [x] In `js/app.js`, find the `updateHash()` function or the render cycle
+- [x] After each navigation, update `document.title`:
   - Catalog: `"ACNHEX Market"`
   - Detail: `"[Item Name] - [Variant] | ACNHEX Market"`
   - Cart: `"Cart (N) | ACNHEX Market"`
   - Wishlist: `"Wishlist | ACNHEX Market"` or `"[List Name] | ACNHEX Market"`
   - Settings: `"Settings | ACNHEX Market"`
   - Info: `"About | ACNHEX Market"`
-- [ ] Test the browser back button through these flows:
+- [x] Test the browser back button through these flows:
   - Browse → Detail → Similar Item → Detail → Back → Back → Browse
   - Browse → Cart → Back → Browse
   - Browse → Search → Item Detail → Back → Search results preserved
-- [ ] Verify that the hash routing + `popstate`/`hashchange` listeners handle all cases
+- [x] Verify that the hash routing + `popstate`/`hashchange` listeners handle all cases
 
 #### TEST PLAN
 1. Navigate to an item detail page

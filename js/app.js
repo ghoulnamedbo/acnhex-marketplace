@@ -181,6 +181,43 @@ function updateHash() {
   }
 }
 
+function updatePageTitle() {
+  const BASE_TITLE = 'ACNHEX Market';
+  let title = BASE_TITLE;
+
+  switch (state.page) {
+    case 'catalog':
+      // Default title for browse
+      break;
+    case 'detail':
+      if (state.itemDetail) {
+        const variant = state.itemDetail.variants[state.selectedVariantIdx];
+        const variantName = variant?.name || '';
+        title = `${state.itemDetail.name}${variantName ? ' - ' + variantName : ''} | ${BASE_TITLE}`;
+      }
+      break;
+    case 'cart':
+      title = `Cart (${state.cart.length}) | ${BASE_TITLE}`;
+      break;
+    case 'wishlist':
+      if (state.viewingListId) {
+        const list = state.wishlists.lists.find(l => l.id === state.viewingListId);
+        title = list ? `${list.name} | ${BASE_TITLE}` : `Wishlist | ${BASE_TITLE}`;
+      } else {
+        title = `Wishlist | ${BASE_TITLE}`;
+      }
+      break;
+    case 'settings':
+      title = `Settings | ${BASE_TITLE}`;
+      break;
+    case 'info':
+      title = `About | ${BASE_TITLE}`;
+      break;
+  }
+
+  document.title = title;
+}
+
 async function parseHashAndNavigate() {
   const hash = window.location.hash || '#/';
   const parts = hash.replace('#/', '').split('/').filter(Boolean);
@@ -3713,6 +3750,7 @@ async function render() {
   }
   app.innerHTML = `<div id="ptr-indicator" class="ptr-indicator"><span class="ptr-icon">🍃</span><span class="ptr-text">Pull to refresh</span></div>` + content + renderNav() + renderModal() + renderSearch() + renderWishlistToast() + renderListPicker() + renderMovePicker() + renderSetPicker() + renderDuplicatePicker() + renderExportModal() + renderImportModal() + renderEmojiPicker() + ads.renderActivePopup(state.activePopup) + ads.renderAdToast(state.adToastVisible) + ads.renderFloatingNotif(state.floatingNotif) + renderJumpFab();
   attachEvents();
+  updatePageTitle();
 
   // Apply entrance animations only on page/category navigation
   if (state._pageEnter) {
