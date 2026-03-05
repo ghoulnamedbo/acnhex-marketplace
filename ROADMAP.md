@@ -997,21 +997,21 @@
 
 ---
 
-### 6.7 — Fake Promos Preview in Settings
+### 6.7 — Fake Promos Preview in Settings ✅
 **Risk: 🟡 Medium** — Adds inline ad previews, uses existing ad render code
 
 #### CHECKLIST
-- [ ] Read `js/ads.js` — understand the ad template/render functions
-- [ ] Read `js/pages/settings.js` — find the Fake Promos section
-- [ ] Add a "Preview" button next to each ad type toggle
-- [ ] On click, render a small inline preview of that ad type directly below the toggle:
+- [x] Read `js/ads.js` — understand the ad template/render functions
+- [x] Read `js/pages/settings.js` — find the Fake Promos section
+- [x] Add a "Preview" button next to each ad type toggle
+- [x] On click, render a small inline preview of that ad type directly below the toggle:
   - **Banner**: Show a mini version of one banner ad (scaled down)
   - **Interstitial**: Show a screenshot-like thumbnail
   - **Popup**: Show a mini overlay preview in a contained box
   - **Notification**: Show the notification banner inline
-- [ ] Each preview should be self-contained (no full-screen overlays) and dismissible
-- [ ] Reuse existing ad render HTML but wrap in a `.ad-preview-container` with `transform: scale(0.6)` and `pointer-events: none`
-- [ ] Style: bordered preview box with "Preview" label
+- [x] Each preview should be self-contained (no full-screen overlays) and dismissible
+- [x] Reuse existing ad render HTML but wrap in a `.ad-preview-container` with `transform: scale(0.6)` and `pointer-events: none`
+- [x] Style: bordered preview box with "Preview" label
 
 #### TEST PLAN
 1. Go to Settings → Fake Promos section

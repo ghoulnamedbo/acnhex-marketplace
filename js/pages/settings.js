@@ -147,32 +147,48 @@ export function renderSettings(state) {
         <div class="ad-options-group ${state.adsEnabled ? '' : 'disabled'}" id="adOptionsGroup">
           <div class="ad-toggle-row">
             <span>🖼️ Banner Ads</span>
-            <label class="toggle-container toggle-small">
-              <input type="checkbox" id="adsBannersToggle" ${state.adsBanners ? 'checked' : ''} ${state.adsEnabled ? '' : 'disabled'}>
-              <span class="toggle-track"><span class="toggle-thumb"></span></span>
-            </label>
+            <div class="ad-toggle-actions">
+              <button class="ad-preview-btn" data-preview-ad="banner">👁 Preview</button>
+              <label class="toggle-container toggle-small">
+                <input type="checkbox" id="adsBannersToggle" ${state.adsBanners ? 'checked' : ''} ${state.adsEnabled ? '' : 'disabled'}>
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </label>
+            </div>
           </div>
+          <div class="ad-preview-slot" id="preview-banner"></div>
           <div class="ad-toggle-row">
             <span>📺 Full-page Interstitials</span>
-            <label class="toggle-container toggle-small">
-              <input type="checkbox" id="adsInterstitialsToggle" ${state.adsInterstitials ? 'checked' : ''} ${state.adsEnabled ? '' : 'disabled'}>
-              <span class="toggle-track"><span class="toggle-thumb"></span></span>
-            </label>
+            <div class="ad-toggle-actions">
+              <button class="ad-preview-btn" data-preview-ad="interstitial">👁 Preview</button>
+              <label class="toggle-container toggle-small">
+                <input type="checkbox" id="adsInterstitialsToggle" ${state.adsInterstitials ? 'checked' : ''} ${state.adsEnabled ? '' : 'disabled'}>
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </label>
+            </div>
           </div>
+          <div class="ad-preview-slot" id="preview-interstitial"></div>
           <div class="ad-toggle-row">
             <span>💬 Popup Overlays</span>
-            <label class="toggle-container toggle-small">
-              <input type="checkbox" id="adsPopupsToggle" ${state.adsPopups ? 'checked' : ''} ${state.adsEnabled ? '' : 'disabled'}>
-              <span class="toggle-track"><span class="toggle-thumb"></span></span>
-            </label>
+            <div class="ad-toggle-actions">
+              <button class="ad-preview-btn" data-preview-ad="popup">👁 Preview</button>
+              <label class="toggle-container toggle-small">
+                <input type="checkbox" id="adsPopupsToggle" ${state.adsPopups ? 'checked' : ''} ${state.adsEnabled ? '' : 'disabled'}>
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </label>
+            </div>
           </div>
+          <div class="ad-preview-slot" id="preview-popup"></div>
           <div class="ad-toggle-row">
             <span>🔔 Floating Notifications</span>
-            <label class="toggle-container toggle-small">
-              <input type="checkbox" id="adsFloatingToggle" ${state.adsFloatingNotifs ? 'checked' : ''} ${state.adsEnabled ? '' : 'disabled'}>
-              <span class="toggle-track"><span class="toggle-thumb"></span></span>
-            </label>
+            <div class="ad-toggle-actions">
+              <button class="ad-preview-btn" data-preview-ad="notification">👁 Preview</button>
+              <label class="toggle-container toggle-small">
+                <input type="checkbox" id="adsFloatingToggle" ${state.adsFloatingNotifs ? 'checked' : ''} ${state.adsEnabled ? '' : 'disabled'}>
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </label>
+            </div>
           </div>
+          <div class="ad-preview-slot" id="preview-notification"></div>
         </div>
       </div>
 

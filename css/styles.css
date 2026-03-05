@@ -5571,8 +5571,62 @@ body.drag-active .wishlist-item:not(.dragging) {
   color: var(--text-secondary);
 }
 
-.ad-toggle-row:not(:last-child) {
-  border-bottom: 1px solid var(--border);
+.ad-toggle-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ad-preview-btn {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: var(--tag-bg);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ad-preview-btn:hover {
+  background: var(--pines);
+  color: white;
+  border-color: var(--pines);
+}
+
+.ad-preview-slot {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.ad-preview-slot.visible {
+  max-height: 400px;
+  margin: 12px 0;
+}
+
+.ad-preview-container {
+  transform: scale(0.75);
+  transform-origin: top left;
+  width: 133%; /* Counter-scale to fit container */
+  pointer-events: none;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.ad-preview-container .nook-promo,
+.ad-preview-container .nook-interstitial {
+  margin: 0;
+}
+
+.ad-preview-container .floating-notif {
+  position: relative;
+  top: auto;
+  right: auto;
+  margin: 0;
+  width: 100%;
 }
 
 .toggle-small {

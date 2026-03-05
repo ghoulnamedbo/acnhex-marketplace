@@ -6604,6 +6604,69 @@ function attachEvents() {
     localStorage.setItem('acnhex_ads_floating', state.adsFloatingNotifs);
   });
 
+  // Ad preview buttons
+  document.querySelectorAll('[data-preview-ad]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const type = btn.dataset.previewAd;
+      const slot = document.getElementById(`preview-${type}`);
+      if (!slot) return;
+
+      // Toggle preview
+      if (slot.classList.contains('visible')) {
+        slot.classList.remove('visible');
+        slot.innerHTML = '';
+        return;
+      }
+
+      // Close any other open previews
+      document.querySelectorAll('.ad-preview-slot.visible').forEach(s => {
+        s.classList.remove('visible');
+        s.innerHTML = '';
+      });
+
+      // Generate preview content
+      let previewHTML = '';
+      switch (type) {
+        case 'banner':
+          previewHTML = ads.renderBannerAd();
+          break;
+        case 'interstitial':
+          previewHTML = ads.renderInterstitialAd('mortgage');
+          break;
+        case 'popup':
+          // Simplified popup preview (just the modal content, not full overlay)
+          previewHTML = `<div class="modal-box modal-premium" style="position:relative;max-width:100%">
+            <div class="modal-header">
+              <span class="sparkle-icon">✨</span>
+              <h3>Nook Inc. Premium</h3>
+              <div class="tier-label">Gold Leaf Tier</div>
+            </div>
+            <div class="modal-body" style="padding:12px">
+              <div class="feature-list" style="gap:6px">
+                <div class="feature-row"><span class="f-icon">📦</span><span class="f-text"><strong>80-item</strong> cart limit</span></div>
+                <div class="feature-row"><span class="f-icon">🦤</span><span class="f-text"><strong>Priority</strong> delivery</span></div>
+              </div>
+            </div>
+          </div>`;
+          break;
+        case 'notification':
+          previewHTML = `<div class="floating-notif notif-sale" style="position:relative;transform:none;animation:none">
+            <div class="notif-icon">🎉</div>
+            <div class="notif-content">
+              <div class="notif-title">Flash Sale at Nook's Cranny!</div>
+              <div class="notif-body">Hot item today: Gold toilet.</div>
+            </div>
+            <div class="notif-time">Just now</div>
+            <div class="notif-promo-badge">Sponsored</div>
+          </div>`;
+          break;
+      }
+
+      slot.innerHTML = `<div class="ad-preview-container">${previewHTML}</div>`;
+      slot.classList.add('visible');
+    });
+  });
+
   // Clear data
   const clearBtn = document.getElementById('clear-data');
   if (clearBtn) clearBtn.addEventListener('click', async () => {
