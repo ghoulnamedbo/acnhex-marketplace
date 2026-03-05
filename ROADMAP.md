@@ -906,18 +906,18 @@
 **Risk: 🟠 Medium-High** — Replaces existing intro modal entirely
 
 #### CHECKLIST
-- [ ] Read the current intro modal code in `js/app.js` (search for `seenIntro`, `intro-modal`, first-time)
-- [ ] Replace the single-screen modal with a 3-step slide-through:
+- [x] Read the current intro modal code in `js/app.js` (search for `seenIntro`, `intro-modal`, first-time)
+- [x] Replace the single-screen modal with a 3-step slide-through:
   - **Step 1**: "Welcome to ACNHEX Market" — brief explanation with illustration (browse → cart → Discord)
   - **Step 2**: "Set your prefix" — the existing prefix picker + presets + live preview
   - **Step 3**: "Choose your style" — load mode toggle + theme selector (Light/Dark/System)
-- [ ] Add slide indicators (3 dots) at the bottom
-- [ ] "Next" button advances steps, "Back" button goes back, final step has "Let's go! 🛒"
-- [ ] Add swipe gesture support (left/right) between steps
-- [ ] Each step should have a smooth slide transition (translateX animation)
-- [ ] Save all preferences at the end (not per-step) — so canceling mid-flow doesn't partially save
-- [ ] Keep the `seenIntro` flag behavior — only shows once
-- [ ] Style: match existing modal aesthetic but wider/taller to accommodate content
+- [x] Add slide indicators (3 dots) at the bottom
+- [x] "Next" button advances steps, "Back" button goes back, final step has "Let's go! 🛒"
+- [x] Add swipe gesture support (left/right) between steps
+- [x] Each step should have a smooth slide transition (translateX animation)
+- [x] Save all preferences at the end (not per-step) — so canceling mid-flow doesn't partially save
+- [x] Keep the `seenIntro` flag behavior — only shows once
+- [x] Style: match existing modal aesthetic but wider/taller to accommodate content
 
 #### TEST PLAN
 1. Clear all data (Settings → Clear All Data) → reload app

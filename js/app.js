@@ -47,6 +47,8 @@ const state = {
   prefix: storage.getPrefix(),
   seenIntro: storage.getSeenIntro(),
   loadMode: storage.getLoadMode(),
+  onboardingStep: 0, // 0-2 for the 3 steps
+  onboardingPrefs: null, // Temp storage for preferences during onboarding
   activeCategory: 'All',
   selectedItemId: null,
   selectedVariantIdx: 0,
@@ -2389,46 +2391,120 @@ function _localRenderInfo() {
   </div>`;
 }
 
-// ─── First-Time Modal ───
+// ─── First-Time Modal (Multi-Step Onboarding) ───
 function renderModal() {
   if (state.seenIntro) return '';
-  return `<div class="modal-overlay" id="intro-modal">
-    <div class="modal-card">
-      <p style="font-size:32px;margin-bottom:16px;text-align:center">🍃</p>
-      <h2 style="font-size:20px;font-weight:700;color:var(--palm-leaf);text-align:center;margin-bottom:8px">Welcome to ACNHEX Market!</h2>
-      <p style="font-size:12px;color:var(--text-secondary);text-align:center;margin-bottom:24px;line-height:1.5">Before you start, set your Discord order bot's command prefix.</p>
 
-      <h4 class="label-upper" style="margin-bottom:10px">Prefix</h4>
-      <input type="text" class="prefix-input" id="modal-prefix" value="${esc(state.prefix)}" maxlength="5" style="margin-bottom:16px">
+  // Initialize temp prefs if not set
+  if (!state.onboardingPrefs) {
+    state.onboardingPrefs = {
+      prefix: state.prefix,
+      loadMode: state.loadMode,
+      theme: state.theme
+    };
+  }
+  const prefs = state.onboardingPrefs;
+  const step = state.onboardingStep;
 
-      <div class="presets-grid" style="margin-bottom:20px">
+  const step0 = `
+    <div class="onboard-step ${step === 0 ? 'active' : step > 0 ? 'left' : ''}">
+      <p class="onboard-emoji">🍃</p>
+      <h2 class="onboard-title">Welcome to ACNHEX Market!</h2>
+      <p class="onboard-desc">The complete Animal Crossing item catalog with Discord bot integration.</p>
+      <div class="onboard-flow">
+        <div class="onboard-flow-step">
+          <span class="onboard-flow-icon">🔍</span>
+          <span class="onboard-flow-label">Browse</span>
+        </div>
+        <span class="onboard-flow-arrow">→</span>
+        <div class="onboard-flow-step">
+          <span class="onboard-flow-icon">🛒</span>
+          <span class="onboard-flow-label">Add to Cart</span>
+        </div>
+        <span class="onboard-flow-arrow">→</span>
+        <div class="onboard-flow-step">
+          <span class="onboard-flow-icon">📋</span>
+          <span class="onboard-flow-label">Copy Command</span>
+        </div>
+      </div>
+      <p class="onboard-hint">Paste the command in Discord to order items!</p>
+    </div>`;
+
+  const step1 = `
+    <div class="onboard-step ${step === 1 ? 'active' : step > 1 ? 'left' : 'right'}">
+      <p class="onboard-emoji">⌨️</p>
+      <h2 class="onboard-title">Set Your Prefix</h2>
+      <p class="onboard-desc">What prefix does your Discord order bot use?</p>
+
+      <input type="text" class="prefix-input" id="modal-prefix" value="${esc(prefs.prefix)}" maxlength="5">
+
+      <div class="presets-grid">
         ${['!', '.', '$', '?', '/'].map(p => `
-          <button class="preset-btn ${state.prefix === p ? 'active' : ''}" data-modal-preset="${p}">${p}</button>
+          <button class="preset-btn ${prefs.prefix === p ? 'active' : ''}" data-modal-preset="${esc(p)}">${esc(p)}</button>
         `).join('')}
       </div>
 
-      <h4 class="label-upper" style="margin-bottom:10px">Preview</h4>
-      <div class="code-block" id="modal-preview" style="border-radius:14px;padding:14px 16px;font-size:12px;margin-bottom:8px">
-        <span class="code-keyword">${esc(state.prefix)}order</span>
+      <div class="code-block" id="modal-preview">
+        <span class="code-keyword">${esc(prefs.prefix)}order</span>
         <span class="code-value">0x0A3F</span>
         <span class="code-value">0x1B2C</span>
       </div>
+    </div>`;
 
-      <h4 class="label-upper" style="margin-bottom:10px;margin-top:20px">How should items load?</h4>
-      <div class="load-mode-options">
-        <button class="load-mode-btn ${state.loadMode === 'batch' ? 'active' : ''}" data-modal-load="batch">
-          <span class="load-mode-icon">📦</span>
-          <span class="load-mode-label">Item Batches</span>
-          <span class="load-mode-desc">Load 50 items at a time</span>
+  const step2 = `
+    <div class="onboard-step ${step === 2 ? 'active' : 'right'}">
+      <p class="onboard-emoji">🎨</p>
+      <h2 class="onboard-title">Choose Your Style</h2>
+      <p class="onboard-desc">Customize how the app looks and loads items.</p>
+
+      <h4 class="label-upper" style="margin-bottom:10px">Theme</h4>
+      <div class="theme-options onboard-theme">
+        <button class="theme-btn ${prefs.theme === 'light' ? 'active' : ''}" data-modal-theme="light">
+          <span class="theme-icon">☀️</span>
+          <span class="theme-label">Light</span>
         </button>
-        <button class="load-mode-btn ${state.loadMode === 'scroll' ? 'active' : ''}" data-modal-load="scroll">
-          <span class="load-mode-icon">🔄</span>
-          <span class="load-mode-label">Continuous Scroll</span>
-          <span class="load-mode-desc">Items load as you scroll</span>
+        <button class="theme-btn ${prefs.theme === 'dark' ? 'active' : ''}" data-modal-theme="dark">
+          <span class="theme-icon">🌙</span>
+          <span class="theme-label">Dark</span>
+        </button>
+        <button class="theme-btn ${prefs.theme === 'system' ? 'active' : ''}" data-modal-theme="system">
+          <span class="theme-icon">💻</span>
+          <span class="theme-label">System</span>
         </button>
       </div>
 
-      <button class="modal-confirm-btn" id="modal-confirm">Let's go! 🛒</button>
+      <h4 class="label-upper" style="margin-bottom:10px;margin-top:20px">Loading</h4>
+      <div class="load-mode-options">
+        <button class="load-mode-btn ${prefs.loadMode === 'batch' ? 'active' : ''}" data-modal-load="batch">
+          <span class="load-mode-icon">📦</span>
+          <span class="load-mode-label">Item Batches</span>
+        </button>
+        <button class="load-mode-btn ${prefs.loadMode === 'scroll' ? 'active' : ''}" data-modal-load="scroll">
+          <span class="load-mode-icon">🔄</span>
+          <span class="load-mode-label">Continuous</span>
+        </button>
+      </div>
+    </div>`;
+
+  return `<div class="modal-overlay" id="intro-modal">
+    <div class="modal-card onboard-card">
+      <div class="onboard-slider" id="onboard-slider">
+        ${step0}${step1}${step2}
+      </div>
+
+      <div class="onboard-dots">
+        <span class="onboard-dot ${step === 0 ? 'active' : ''}" data-onboard-step="0"></span>
+        <span class="onboard-dot ${step === 1 ? 'active' : ''}" data-onboard-step="1"></span>
+        <span class="onboard-dot ${step === 2 ? 'active' : ''}" data-onboard-step="2"></span>
+      </div>
+
+      <div class="onboard-nav">
+        ${step > 0 ? `<button class="onboard-back" id="onboard-back">← Back</button>` : '<span></span>'}
+        ${step < 2
+          ? `<button class="onboard-next" id="onboard-next">Next →</button>`
+          : `<button class="modal-confirm-btn" id="modal-confirm">Let's go! 🛒</button>`
+        }
+      </div>
     </div>
   </div>`;
 }
@@ -6371,49 +6447,141 @@ function attachEvents() {
     }
   });
 
-  // Modal
+  // Modal — Multi-step onboarding
   const modalConfirm = document.getElementById('modal-confirm');
   if (modalConfirm) modalConfirm.addEventListener('click', () => {
+    // Save all preferences from temp state
+    const prefs = state.onboardingPrefs || { prefix: state.prefix, loadMode: state.loadMode, theme: state.theme };
+    state.prefix = prefs.prefix;
+    state.loadMode = prefs.loadMode;
+    state.theme = prefs.theme;
     state.seenIntro = true;
+    state.onboardingPrefs = null;
     storage.setSeenIntro(true);
     storage.setPrefix(state.prefix);
     storage.setLoadMode(state.loadMode);
+    storage.setTheme(state.theme);
+    applyTheme(state.theme);
     render();
   });
 
+  // Onboarding navigation
+  const onboardNext = document.getElementById('onboard-next');
+  if (onboardNext) onboardNext.addEventListener('click', () => {
+    if (state.onboardingStep < 2) {
+      state.onboardingStep++;
+      render();
+    }
+  });
+
+  const onboardBack = document.getElementById('onboard-back');
+  if (onboardBack) onboardBack.addEventListener('click', () => {
+    if (state.onboardingStep > 0) {
+      state.onboardingStep--;
+      render();
+    }
+  });
+
+  // Dot navigation
+  app.querySelectorAll('[data-onboard-step]').forEach(dot => {
+    dot.addEventListener('click', () => {
+      const step = parseInt(dot.dataset.onboardStep);
+      if (step >= 0 && step <= 2) {
+        state.onboardingStep = step;
+        render();
+      }
+    });
+  });
+
+  // Onboarding swipe gesture
+  const onboardSlider = document.getElementById('onboard-slider');
+  if (onboardSlider) {
+    let touchStartX = 0;
+    onboardSlider.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+    }, { passive: true });
+    onboardSlider.addEventListener('touchend', (e) => {
+      const touchEndX = e.changedTouches[0].clientX;
+      const diff = touchStartX - touchEndX;
+      if (Math.abs(diff) > 50) {
+        if (diff > 0 && state.onboardingStep < 2) {
+          state.onboardingStep++;
+          render();
+        } else if (diff < 0 && state.onboardingStep > 0) {
+          state.onboardingStep--;
+          render();
+        }
+      }
+    }, { passive: true });
+  }
+
+  // Modal load mode toggle (updates temp prefs)
   app.querySelectorAll('[data-modal-load]').forEach(btn => {
     btn.addEventListener('click', () => {
-      state.loadMode = btn.dataset.modalLoad;
+      if (state.onboardingPrefs) {
+        state.onboardingPrefs.loadMode = btn.dataset.modalLoad;
+      } else {
+        state.loadMode = btn.dataset.modalLoad;
+      }
       app.querySelectorAll('[data-modal-load]').forEach(b => {
-        b.classList.toggle('active', b.dataset.modalLoad === state.loadMode);
+        const active = state.onboardingPrefs
+          ? b.dataset.modalLoad === state.onboardingPrefs.loadMode
+          : b.dataset.modalLoad === state.loadMode;
+        b.classList.toggle('active', active);
       });
     });
   });
 
-  const modalPrefix = document.getElementById('modal-prefix');
-  if (modalPrefix) modalPrefix.addEventListener('input', (e) => {
-    state.prefix = e.target.value;
-    const preview = document.getElementById('modal-preview');
-    if (preview) {
-      preview.innerHTML = `<span class="code-keyword">${esc(state.prefix)}order</span> <span class="code-value">0x0A3F</span> <span class="code-value">0x1B2C</span>`;
-    }
-    // Update preset active states
-    app.querySelectorAll('[data-modal-preset]').forEach(b => {
-      b.classList.toggle('active', b.dataset.modalPreset === state.prefix);
+  // Modal theme toggle (updates temp prefs)
+  app.querySelectorAll('[data-modal-theme]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const newTheme = btn.dataset.modalTheme;
+      if (state.onboardingPrefs) {
+        state.onboardingPrefs.theme = newTheme;
+      }
+      // Apply theme immediately for preview
+      applyTheme(newTheme);
+      app.querySelectorAll('[data-modal-theme]').forEach(b => {
+        b.classList.toggle('active', b.dataset.modalTheme === newTheme);
+      });
     });
   });
 
+  // Modal prefix input (updates temp prefs)
+  const modalPrefix = document.getElementById('modal-prefix');
+  if (modalPrefix) modalPrefix.addEventListener('input', (e) => {
+    const val = e.target.value;
+    if (state.onboardingPrefs) {
+      state.onboardingPrefs.prefix = val;
+    } else {
+      state.prefix = val;
+    }
+    const preview = document.getElementById('modal-preview');
+    if (preview) {
+      preview.innerHTML = `<span class="code-keyword">${esc(val)}order</span> <span class="code-value">0x0A3F</span> <span class="code-value">0x1B2C</span>`;
+    }
+    app.querySelectorAll('[data-modal-preset]').forEach(b => {
+      b.classList.toggle('active', b.dataset.modalPreset === val);
+    });
+  });
+
+  // Modal preset buttons (updates temp prefs)
   app.querySelectorAll('[data-modal-preset]').forEach(btn => {
     btn.addEventListener('click', () => {
-      state.prefix = btn.dataset.modalPreset;
+      const val = btn.dataset.modalPreset;
+      if (state.onboardingPrefs) {
+        state.onboardingPrefs.prefix = val;
+      } else {
+        state.prefix = val;
+      }
       const inp = document.getElementById('modal-prefix');
-      if (inp) inp.value = state.prefix;
+      if (inp) inp.value = val;
       const preview = document.getElementById('modal-preview');
       if (preview) {
-        preview.innerHTML = `<span class="code-keyword">${esc(state.prefix)}order</span> <span class="code-value">0x0A3F</span> <span class="code-value">0x1B2C</span>`;
+        preview.innerHTML = `<span class="code-keyword">${esc(val)}order</span> <span class="code-value">0x0A3F</span> <span class="code-value">0x1B2C</span>`;
       }
       app.querySelectorAll('[data-modal-preset]').forEach(b => {
-        b.classList.toggle('active', b.dataset.modalPreset === state.prefix);
+        b.classList.toggle('active', b.dataset.modalPreset === val);
       });
     });
   });
