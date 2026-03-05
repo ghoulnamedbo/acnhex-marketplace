@@ -3387,21 +3387,20 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   transition: none;
 }
 
-.wl-drag-placeholder {
-  background: var(--border);
-  border-radius: 18px;
-  opacity: 0.5;
-  margin-bottom: 12px;
-  border: 2px dashed var(--pines);
+/* Drop target indicators - items stay in place, just show border */
+.wl-drop-target-above {
+  border-top: 3px solid var(--pines) !important;
+  margin-top: -1px;
+}
+
+.wl-drop-target-below {
+  border-bottom: 3px solid var(--pines) !important;
+  margin-bottom: -1px;
 }
 
 body.drag-active {
   cursor: grabbing;
   user-select: none;
-}
-
-body.drag-active .wishlist-item:not(.dragging) {
-  transition: transform 0.2s ease;
 }
 
 @media (prefers-reduced-motion: reduce) {

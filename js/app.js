@@ -5268,11 +5268,18 @@ function attachEvents() {
   if (draggableLists.length > 1) {
     let draggedEl = null;
     let draggedListId = null;
-    let placeholder = null;
+    let dropTargetEl = null;
     let startY = 0;
     let isDragging = false;
 
     const getListContainer = () => app.querySelector('.draggable-list')?.parentElement;
+
+    const clearDropTarget = () => {
+      if (dropTargetEl) {
+        dropTargetEl.classList.remove('wl-drop-target-above', 'wl-drop-target-below');
+        dropTargetEl = null;
+      }
+    };
 
     const handleDragStart = (e, handle) => {
       const listItem = handle.closest('.draggable-list');
@@ -5289,12 +5296,6 @@ function attachEvents() {
         isDragging = true;
         draggedEl.classList.add('dragging');
         document.body.classList.add('drag-active');
-
-        // Create placeholder
-        placeholder = document.createElement('div');
-        placeholder.className = 'wl-drag-placeholder';
-        placeholder.style.height = draggedEl.offsetHeight + 'px';
-        draggedEl.parentElement.insertBefore(placeholder, draggedEl);
       }, e.touches ? 150 : 0);
     };
 
@@ -5315,34 +5316,29 @@ function attachEvents() {
       const deltaY = currentY - startY;
       draggedEl.style.transform = `translateY(${deltaY}px)`;
 
-      // Find which element to insert before
+      // Find which element we're hovering over to show drop indicator
       const container = getListContainer();
-      if (!container || !placeholder) return;
+      if (!container) return;
 
-      const siblings = [...container.querySelectorAll('.draggable-list:not(.dragging), [data-view-list="__loved__"]')];
+      clearDropTarget();
+
+      const siblings = [...container.querySelectorAll('.draggable-list:not(.dragging)')];
       const draggedRect = draggedEl.getBoundingClientRect();
       const draggedCenter = draggedRect.top + draggedRect.height / 2;
 
-      let insertBefore = null;
       for (const sibling of siblings) {
         const rect = sibling.getBoundingClientRect();
         const siblingCenter = rect.top + rect.height / 2;
-        // Skip Loved Items - placeholder should always be after it
-        if (sibling.dataset.viewList === '__loved__') continue;
-        if (draggedCenter < siblingCenter) {
-          insertBefore = sibling;
-          break;
-        }
-      }
 
-      // Move placeholder to new position
-      if (insertBefore) {
-        container.insertBefore(placeholder, insertBefore);
-      } else {
-        // Append to end (after all siblings)
-        const lastDraggable = siblings.filter(s => s.dataset.viewList !== '__loved__').pop();
-        if (lastDraggable && lastDraggable.nextSibling !== placeholder) {
-          container.insertBefore(placeholder, lastDraggable.nextSibling);
+        // Check if we're over this sibling
+        if (draggedCenter >= rect.top && draggedCenter <= rect.bottom) {
+          dropTargetEl = sibling;
+          if (draggedCenter < siblingCenter) {
+            sibling.classList.add('wl-drop-target-above');
+          } else {
+            sibling.classList.add('wl-drop-target-below');
+          }
+          break;
         }
       }
     };
@@ -5351,39 +5347,28 @@ function attachEvents() {
       if (!draggedEl) return;
       clearTimeout(draggedEl._longPressTimer);
 
-      if (isDragging && placeholder && draggedListId) {
-        // Get new order from DOM
-        const container = getListContainer();
-        if (container) {
-          const newOrder = [];
-          const lovedList = state.wishlists.lists.find(l => l.id === '__loved__');
-          if (lovedList) newOrder.push(lovedList);
+      if (isDragging && dropTargetEl && draggedListId) {
+        // Get the list indices
+        const draggedIdx = state.wishlists.lists.findIndex(l => l.id === draggedListId);
+        const targetIdx = state.wishlists.lists.findIndex(l => l.id === dropTargetEl.dataset.viewList);
 
-          // Get order of draggable elements and placeholder
-          const elements = [...container.children];
-          for (const el of elements) {
-            if (el === placeholder) {
-              // Insert dragged list at placeholder position
-              const draggedList = state.wishlists.lists.find(l => l.id === draggedListId);
-              if (draggedList && draggedList.id !== '__loved__') newOrder.push(draggedList);
-            } else if (el.classList.contains('draggable-list') && !el.classList.contains('dragging')) {
-              const listId = el.dataset.viewList;
-              const list = state.wishlists.lists.find(l => l.id === listId);
-              if (list && list.id !== '__loved__') newOrder.push(list);
-            }
-          }
+        if (draggedIdx !== -1 && targetIdx !== -1 && draggedIdx !== targetIdx) {
+          // Calculate insert position
+          const isAbove = dropTargetEl.classList.contains('wl-drop-target-above');
+          let newIdx = isAbove ? targetIdx : targetIdx + 1;
+          if (draggedIdx < newIdx) newIdx--; // Adjust for removal
 
-          // Only update if order actually changed
-          const oldIds = state.wishlists.lists.map(l => l.id).join(',');
-          const newIds = newOrder.map(l => l.id).join(',');
-          if (oldIds !== newIds && newOrder.length === state.wishlists.lists.length) {
-            state.wishlists.lists = newOrder;
-            storage.setWishlists(state.wishlists);
-            NookSounds.play('addToCart');
-          }
+          // Reorder the array
+          const [draggedList] = state.wishlists.lists.splice(draggedIdx, 1);
+          state.wishlists.lists.splice(newIdx, 0, draggedList);
+
+          storage.setWishlists(state.wishlists);
+          NookSounds.play('addToCart');
+          render(); // Re-render to show new order
         }
-        placeholder.remove();
       }
+
+      clearDropTarget();
 
       if (draggedEl) {
         draggedEl.classList.remove('dragging');
@@ -5393,7 +5378,6 @@ function attachEvents() {
 
       draggedEl = null;
       draggedListId = null;
-      placeholder = null;
       isDragging = false;
 
       render();
@@ -6684,18 +6668,23 @@ function attachEvents() {
           previewHTML = ads.renderInterstitialAd('mortgage');
           break;
         case 'popup':
-          // Simplified popup preview (just the modal content, not full overlay)
-          previewHTML = `<div class="modal-box modal-premium" style="position:relative;max-width:100%">
+          // Full popup preview (modal content without overlay wrapper)
+          previewHTML = `<div class="modal-box modal-premium" style="position:relative;max-width:100%;transform:none">
             <div class="modal-header">
-              <span class="sparkle-icon">✨</span>
+              <button class="close-btn">&times;</button>
+              <span class="sparkle-icon">\u2728</span>
               <h3>Nook Inc. Premium</h3>
               <div class="tier-label">Gold Leaf Tier</div>
             </div>
-            <div class="modal-body" style="padding:12px">
-              <div class="feature-list" style="gap:6px">
-                <div class="feature-row"><span class="f-icon">📦</span><span class="f-text"><strong>80-item</strong> cart limit</span></div>
-                <div class="feature-row"><span class="f-icon">🦤</span><span class="f-text"><strong>Priority</strong> delivery</span></div>
+            <div class="modal-body">
+              <div class="feature-list">
+                <div class="feature-row"><span class="f-icon">\u{1F4E6}</span><span class="f-text"><strong>80-item</strong> cart limit</span></div>
+                <div class="feature-row"><span class="f-icon">\u{1F9A4}</span><span class="f-text"><strong>Priority</strong> Dodo delivery</span></div>
+                <div class="feature-row"><span class="f-icon">\u{1F3F7}\uFE0F</span><span class="f-text"><strong>Exclusive</strong> Nook Shopping deals</span></div>
               </div>
+              <div class="price-block"><span class="price-amount">49,999 \u{1F514}</span><span class="price-period">bells / month</span></div>
+              <button class="cta-button">Subscribe Now \u{1F343}</button>
+              <div class="fine-print-premium">* No actual bells required. Tom Nook sends his regards.</div>
             </div>
           </div>`;
           break;
