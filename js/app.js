@@ -403,21 +403,54 @@ function showWishlistToast(itemId, variantIdx, listName, isRemoval = false) {
   }, 3000);
 }
 
-let simpleToastTimer = null;
-function showToast(message) {
-  clearTimeout(simpleToastTimer);
-  // Remove any existing simple toast
-  const existing = document.getElementById('simple-toast');
+// ─── Unified Toast System ───
+let unifiedToastTimer = null;
+
+function showToast(message, options = {}) {
+  const { type = 'info', duration = 2500, undoCallback = null, undoData = null } = options;
+
+  // Clear any existing timer and toast
+  clearTimeout(unifiedToastTimer);
+  const existing = document.getElementById('unified-toast');
   if (existing) existing.remove();
-  // Create and show new toast
+
+  // Create toast element
   const toast = document.createElement('div');
-  toast.id = 'simple-toast';
-  toast.className = 'wishlist-toast';
-  toast.innerHTML = `<span>${esc(message)}</span>`;
+  toast.id = 'unified-toast';
+  toast.className = `unified-toast toast-${type}`;
+
+  const iconMap = {
+    success: '✓',
+    info: 'ℹ',
+    warning: '⚠',
+    undo: '↩'
+  };
+
+  toast.innerHTML = `
+    <span class="toast-icon">${iconMap[type] || ''}</span>
+    <span class="toast-message">${esc(message)}</span>
+    ${undoCallback ? `<button class="toast-undo-btn">Undo</button>` : ''}
+  `;
+
   document.getElementById('app').appendChild(toast);
-  simpleToastTimer = setTimeout(() => {
-    toast.remove();
-  }, 2500);
+
+  // Handle undo button with fresh reference
+  if (undoCallback) {
+    const undoBtn = toast.querySelector('.toast-undo-btn');
+    if (undoBtn) {
+      undoBtn.addEventListener('click', () => {
+        clearTimeout(unifiedToastTimer);
+        undoCallback(undoData);
+        toast.remove();
+      });
+    }
+  }
+
+  // Auto-dismiss
+  unifiedToastTimer = setTimeout(() => {
+    toast.classList.add('toast-exit');
+    setTimeout(() => toast.remove(), 200);
+  }, duration);
 }
 
 function getTotalWishlistItems() {
@@ -1762,7 +1795,7 @@ async function shareWishlistAsImage() {
   link.download = `${list.name.replace(/[^a-z0-9]/gi, '-')}-wishlist.png`;
   link.href = dataUrl;
   link.click();
-  showToast('📸 Image downloaded!');
+  showToast('Image downloaded!', { type: 'success' });
 }
 
 // ─── Daily Pick Helper ───
@@ -4292,7 +4325,7 @@ function attachEvents() {
       const item = state.itemDetail;
       if (!item) return;
       if (getCartTotal() >= 40) {
-        showToast('Cart is full (40 items)');
+        showToast('Cart is full (40 items)', { type: 'warning' });
         return;
       }
       const variant = item.variants[idx];
@@ -4760,23 +4793,42 @@ function attachEvents() {
     });
   });
 
-  // Cart remove by index (with slide-out animation)
+  // Cart remove by index (with slide-out animation and undo)
   app.querySelectorAll('[data-remove-idx]').forEach(btn => {
     btn.addEventListener('click', () => {
       const idx = parseInt(btn.dataset.removeIdx);
+      const removedItem = state.cart[idx];
+      if (!removedItem) return;
+
+      // Copy the item data immediately (before any async operations)
+      const itemCopy = { ...removedItem };
+
       NookSounds.play('removeItem');
       const row = btn.closest('[data-cart-row]');
-      if (row) {
-        row.style.animation = 'slideOutRight 0.2s ease-in forwards';
-        row.addEventListener('animationend', () => {
-          state.cart.splice(idx, 1);
-          storage.setCart(state.cart);
-          render();
-        }, { once: true });
-      } else {
+
+      const doRemove = () => {
         state.cart.splice(idx, 1);
         storage.setCart(state.cart);
         render();
+        // Show undo toast with copied item data
+        showToast(`Removed ${itemCopy.name}`, {
+          type: 'undo',
+          duration: 4000,
+          undoCallback: (item) => {
+            state.cart.push(item); // Add to end (not original position)
+            storage.setCart(state.cart);
+            NookSounds.play('addToCart');
+            render();
+          },
+          undoData: itemCopy
+        });
+      };
+
+      if (row) {
+        row.style.animation = 'slideOutRight 0.2s ease-in forwards';
+        row.addEventListener('animationend', doRemove, { once: true });
+      } else {
+        doRemove();
       }
     });
   });
@@ -4833,7 +4885,7 @@ function attachEvents() {
         try {
           await navigator.clipboard.writeText(order.command);
           NookSounds.play('copy');
-          showToast('📋 Command copied!');
+          showToast('Command copied!', { type: 'success' });
         } catch {
           showToast('Failed to copy');
         }
@@ -5150,7 +5202,7 @@ function attachEvents() {
           list.name = newName;
           storage.setWishlists(state.wishlists);
           NookSounds.play('click');
-          showToast('✏️ List renamed!');
+          showToast('List renamed!', { type: 'success' });
         }
         render(); // Re-render to restore normal state
       };
@@ -5198,7 +5250,7 @@ function attachEvents() {
         storage.setWishlists(state.wishlists);
         NookSounds.play('newList');
         await render();
-        showToast('📋 List duplicated!');
+        showToast('List duplicated!', { type: 'success' });
       }
     });
   });
@@ -5739,7 +5791,7 @@ function attachEvents() {
     const remaining = 40 - state.cart.length;
     if (remaining <= 0) {
       NookSounds.play('cartFull');
-      showToast('Cart is full (40/40)');
+      showToast('Cart is full (40/40)', { type: 'warning' });
       return;
     }
 

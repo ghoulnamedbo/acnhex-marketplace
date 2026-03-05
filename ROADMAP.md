@@ -597,16 +597,16 @@
 
 ---
 
-### 5.1 — Toast/Feedback System Overhaul
+### 5.1 — Toast/Feedback System Overhaul ✅
 **Risk: 🟠 Medium** — Introduces a unified toast system used across the app
 
 #### CHECKLIST
-- [ ] Read all existing toast/feedback implementations:
+- [x] Read all existing toast/feedback implementations:
   - Wishlist toast ("Saved to [list name]")
   - Hex badge "✓ Copied!"
   - Ad toast ("This is a fake Nook Inc. ad!")
   - Copy command "📦 Copied!" stamp
-- [ ] Create a unified toast function in `js/utils.js` or a new `js/toast.js`:
+- [x] Create a unified toast function in `js/utils.js` or a new `js/toast.js`:
   ```js
   export function showToast(message, { type = 'info', duration = 2500, undoCallback = null } = {}) { ... }
   ```
@@ -615,14 +615,14 @@
   - All toasts appear in the same fixed position (bottom center, above nav bar)
   - Slide up to enter, slide down to exit
   - Queue system: if multiple toasts, stack or wait
-- [ ] Add CSS for the toast container and toast types
-- [ ] Replace existing toast implementations one by one:
+- [x] Add CSS for the toast container and toast types
+- [x] Replace existing toast implementations one by one:
   - Cart remove → undo toast: "Removed [item name]" with Undo button
   - Wishlist heart toggle → success toast: "Saved to Loved Items"
   - Copy hex → success toast: "Hex copied!"
   - Copy command → success toast: "📦 Order copied!"
-- [ ] Keep the fake ad toast separate (it has unique styling)
-- [ ] Ensure toasts don't block interaction (pointer-events: none on container, auto on toast)
+- [x] Keep the fake ad toast separate (it has unique styling)
+- [x] Ensure toasts don't block interaction (pointer-events: none on container, auto on toast)
 
 #### TEST PLAN
 1. Add item to wishlist → **PASS IF**: Consistent toast at bottom center

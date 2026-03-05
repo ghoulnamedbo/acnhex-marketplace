@@ -2541,6 +2541,75 @@ body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; overflow-y: au
   font-family: var(--font);
 }
 
+/* ─── Unified Toast System ─── */
+.unified-toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--card);
+  color: var(--text-primary);
+  padding: 12px 18px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 350;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12), 0 8px 24px rgba(0,0,0,0.08);
+  animation: toastSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-width: calc(100vw - 32px);
+}
+@keyframes toastSlideUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+.unified-toast.toast-exit {
+  animation: toastSlideDown 0.2s ease-out forwards;
+}
+@keyframes toastSlideDown {
+  from { opacity: 1; transform: translateX(-50%) translateY(0); }
+  to { opacity: 0; transform: translateX(-50%) translateY(16px); }
+}
+.toast-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.toast-message {
+  flex: 1;
+  min-width: 0;
+}
+.toast-undo-btn {
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: none;
+  background: var(--pines);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font);
+  flex-shrink: 0;
+  transition: transform 0.1s ease;
+}
+.toast-undo-btn:active {
+  transform: scale(0.95);
+}
+/* Toast Types */
+.toast-success { border-left: 3px solid var(--pines); }
+.toast-success .toast-icon { color: var(--pines); }
+.toast-warning { border-left: 3px solid #E6A141; }
+.toast-warning .toast-icon { color: #E6A141; }
+.toast-undo { border-left: 3px solid var(--pines); }
+.toast-undo .toast-icon { color: var(--pines); }
+.toast-info .toast-icon { color: var(--text-secondary); }
+/* Dark mode */
+[data-theme="dark"] .unified-toast {
+  background: #252820;
+  border-color: #3A3D32;
+}
+
 /* ─── List Picker ─── */
 .list-pick-btn {
   display: flex; justify-content: space-between; align-items: center;
