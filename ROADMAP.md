@@ -1086,28 +1086,28 @@
 
 ---
 
-### 6.10 — Dark Mode Parity Audit
+### 6.10 — Dark Mode Parity Audit ✅
 **Risk: 🟡 Low-Medium** — CSS adjustments for dark theme
 
 #### CHECKLIST
-- [ ] Open `css/styles.css` — review all `[data-theme="dark"]` rules
-- [ ] **Thumbnail backgrounds**: The pastel rotating colors (`BG_COLORS` in data.js) need dark variants:
+- [x] Open `css/styles.css` — review all `[data-theme="dark"]` rules
+- [x] **Thumbnail backgrounds**: The pastel rotating colors (`BG_COLORS` in data.js) need dark variants:
   ```css
   [data-theme="dark"] .item-thumb { background: var(--card) !important; }
   ```
   Or define dark-mode BG_COLORS: `['#3D2A30', '#352F28', '#2E3528', '#3D2A35']`
-- [ ] **Code blocks**: Already dark in light mode — in dark mode, ensure sufficient contrast:
+- [x] **Code blocks**: Already dark in light mode — in dark mode, ensure sufficient contrast:
   ```css
   [data-theme="dark"] .code-block { background: #1a1e16; }
   ```
-- [ ] **Shadows**: In dark mode, shadows should be much more subtle or replaced with borders:
+- [x] **Shadows**: In dark mode, shadows should be much more subtle or replaced with borders:
   ```css
   [data-theme="dark"] { --shadow-card: 0 1px 2px rgba(0,0,0,0.2); }
   ```
   (Already partially done — audit for completeness)
-- [ ] **Hero banner**: Verify the dark green gradient looks intentional, not just "dark"
-- [ ] **Skeleton loaders** (from 5.2): Ensure shimmer uses dark-appropriate colors
-- [ ] Test every page in dark mode: Browse, Detail, Cart, Wishlist, Settings, Info
+- [x] **Hero banner**: Verify the dark green gradient looks intentional, not just "dark"
+- [x] **Skeleton loaders** (from 5.2): Ensure shimmer uses dark-appropriate colors
+- [x] Test every page in dark mode: Browse, Detail, Cart, Wishlist, Settings, Info
 
 #### TEST PLAN
 1. Switch to Dark mode
